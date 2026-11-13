@@ -7,6 +7,7 @@ import {
 import {
   isDefined,
   isSafeInternalPath,
+  isNativePageKey,
   isValidUrl,
   isValidUuid,
 } from 'twenty-shared/utils';
@@ -53,6 +54,10 @@ export const validateNavigationMenuItemTypeRequiredProperties = ({
     targetObjectMetadataUniversalIdentifier,
     viewUniversalIdentifier,
     pageLayoutUniversalIdentifier,
+    agentChatChannelUniversalIdentifier,
+    nativePageKey,
+    workflowUniversalIdentifier,
+    agentUniversalIdentifier,
   } = flatNavigationMenuItem;
 
   if (!isDefined(type)) {
@@ -118,6 +123,37 @@ export const validateNavigationMenuItemTypeRequiredProperties = ({
         value: pageLayoutUniversalIdentifier,
         message: t`A valid pageLayoutUniversalIdentifier is required for PAGE_LAYOUT type`,
         userFriendlyMessage: msg`A valid pageLayoutUniversalIdentifier is required for PAGE_LAYOUT type`,
+      });
+    }
+    case NavigationMenuItemType.AGENT_CHAT_CHANNEL: {
+      return validateUuidProperty({
+        value: agentChatChannelUniversalIdentifier,
+        message: t`A valid agentChatChannelUniversalIdentifier is required for AGENT_CHAT_CHANNEL type`,
+        userFriendlyMessage: msg`A valid agentChatChannelUniversalIdentifier is required for AGENT_CHAT_CHANNEL type`,
+      });
+    }
+    case NavigationMenuItemType.NATIVE_PAGE: {
+      return isNativePageKey(nativePageKey)
+        ? []
+        : [
+            buildInvalidInputError(
+              t`A valid nativePageKey is required for NATIVE_PAGE type`,
+              msg`A valid nativePageKey is required for NATIVE_PAGE type`,
+            ),
+          ];
+    }
+    case NavigationMenuItemType.WORKFLOW: {
+      return validateUuidProperty({
+        value: workflowUniversalIdentifier,
+        message: t`A valid workflowUniversalIdentifier is required for WORKFLOW type`,
+        userFriendlyMessage: msg`A valid workflowUniversalIdentifier is required for WORKFLOW type`,
+      });
+    }
+    case NavigationMenuItemType.AGENT: {
+      return validateUuidProperty({
+        value: agentUniversalIdentifier,
+        message: t`A valid agentUniversalIdentifier is required for AGENT type`,
+        userFriendlyMessage: msg`A valid agentUniversalIdentifier is required for AGENT type`,
       });
     }
     default: {

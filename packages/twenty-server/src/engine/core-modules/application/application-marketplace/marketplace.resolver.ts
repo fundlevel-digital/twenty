@@ -2,29 +2,23 @@ import { UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Args, Mutation, Query } from '@nestjs/graphql';
 
 import { PermissionFlagType } from 'twenty-shared/constants';
+
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
 import { ApplicationRegistrationExceptionFilter } from 'src/engine/core-modules/application/application-registration/application-registration-exception-filter';
 import { MarketplaceAppDTO } from 'src/engine/core-modules/application/application-marketplace/dtos/marketplace-app.dto';
 import { MarketplaceAppDetailDTO } from 'src/engine/core-modules/application/application-marketplace/dtos/marketplace-app-detail.dto';
 import { MarketplaceQueryService } from 'src/engine/core-modules/application/application-marketplace/marketplace-query.service';
-import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
-import { SettingsPermissionGuard } from 'src/engine/guards/settings-permission.guard';
-import { AuthPrincipalGuard } from 'src/engine/guards/auth-principal.guard';
 import { WorkspaceMigrationGraphqlApiExceptionInterceptor } from 'src/engine/workspace-manager/workspace-migration/interceptors/workspace-migration-graphql-api-exception.interceptor';
 import { MarketplaceCatalogSyncCronJob } from 'src/engine/core-modules/application/application-marketplace/crons/marketplace-catalog-sync.cron.job';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-graphql-api-exception.filter';
+import { AccessPolicyGuard } from 'src/engine/guards/access-policy.guard';
+import { type AccessPolicy } from 'src/engine/guards/types/access-policy.type';
 
-@MetadataResolver()
-@UseFilters(
-  ApplicationRegistrationExceptionFilter,
-  AuthGraphqlApiExceptionFilter,
-)
-@UseInterceptors(WorkspaceMigrationGraphqlApiExceptionInterceptor)
-@UseGuards(
-  AuthPrincipalGuard({
+const MARKETPLACE_READ_ACCESS_POLICY: AccessPolicy = {
+  authPrincipals: {
     userSession: {
       standard: true,
       impersonated: true,
@@ -34,9 +28,16 @@ import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filt
     apiKey: true,
     oauthClient: true,
     application: true,
-  }),
-  NoPermissionGuard,
+  },
+  requiredPermissionFlags: [],
+};
+
+@MetadataResolver()
+@UseFilters(
+  ApplicationRegistrationExceptionFilter,
+  AuthGraphqlApiExceptionFilter,
 )
+@UseInterceptors(WorkspaceMigrationGraphqlApiExceptionInterceptor)
 export class MarketplaceResolver {
   constructor(
     private readonly marketplaceQueryService: MarketplaceQueryService,
@@ -45,6 +46,7 @@ export class MarketplaceResolver {
   ) {}
 
   @Query(() => [MarketplaceAppDTO])
+  @UseGuards(AccessPolicyGuard(MARKETPLACE_READ_ACCESS_POLICY))
   async findManyMarketplaceApps(
     @Args({
       name: 'universalIdentifiers',
@@ -55,38 +57,43 @@ export class MarketplaceResolver {
   ): Promise<MarketplaceAppDTO[]> {
     return this.marketplaceQueryService.findManyMarketplaceApps({
       universalIdentifiers,
+      shouldIncludeBuiltInApplications: true,
     });
   }
 
   @Query(() => MarketplaceAppDetailDTO)
+  @UseGuards(AccessPolicyGuard(MARKETPLACE_READ_ACCESS_POLICY))
   async findMarketplaceAppDetail(
     @Args('universalIdentifier') universalIdentifier: string,
   ): Promise<MarketplaceAppDetailDTO> {
-    return this.marketplaceQueryService.findMarketplaceAppDetail(
+    return this.marketplaceQueryService.findMarketplaceAppDetail({
       universalIdentifier,
-    );
+      shouldIncludeBuiltInApplications: true,
+    });
   }
 
   @Mutation(() => Boolean)
   @UseGuards(
-    AuthPrincipalGuard({
-      userSession: {
-        standard: true,
-        impersonated: true,
-        playground: true,
-        workspaceAgnostic: false,
+    AccessPolicyGuard({
+      authPrincipals: {
+        userSession: {
+          standard: true,
+          impersonated: true,
+          playground: true,
+          workspaceAgnostic: false,
+        },
+        apiKey: true,
+        oauthClient: true,
+        application: false,
       },
-      apiKey: true,
-      oauthClient: true,
-      application: false,
+      requiredPermissionFlags: [PermissionFlagType.MARKETPLACE_APPS],
     }),
-    SettingsPermissionGuard(PermissionFlagType.MARKETPLACE_APPS),
   )
   async syncMarketplaceCatalog(): Promise<boolean> {
     await this.messageQueueService.add(
       MarketplaceCatalogSyncCronJob.name,
       {},
-      { id: 'marketplace-catalog-sync' }, // Avoids triggering multiple pending jobs
+      { id: 'marketplace-catalog-sync', isSystemJob: true }, // Avoids triggering multiple pending jobs
     );
 
     return true;

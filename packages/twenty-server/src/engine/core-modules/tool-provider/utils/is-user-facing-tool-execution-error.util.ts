@@ -26,7 +26,7 @@ import {
 import {
   PermissionsException,
   PermissionsExceptionCode,
-} from 'src/engine/metadata-modules/permissions/permissions.exception';
+} from 'src/engine/permissions/permissions.exception';
 import {
   RowLevelPermissionPredicateException,
   RowLevelPermissionPredicateExceptionCode,
@@ -77,6 +77,7 @@ const USER_FACING_AI_EXCEPTION_CODES = [
   AiExceptionCode.AGENT_NOT_FOUND,
   AiExceptionCode.AGENT_ALREADY_EXISTS,
   AiExceptionCode.AGENT_IS_STANDARD,
+  AiExceptionCode.AGENT_IS_INACTIVE,
   AiExceptionCode.INVALID_AGENT_INPUT,
   AiExceptionCode.ROLE_NOT_FOUND,
   AiExceptionCode.ROLE_CANNOT_BE_ASSIGNED_TO_AGENTS,
@@ -95,6 +96,8 @@ const USER_FACING_PERMISSIONS_EXCEPTION_CODES = [
   PermissionsExceptionCode.CANNOT_ADD_OBJECT_PERMISSION_ON_SYSTEM_OBJECT,
   PermissionsExceptionCode.CANNOT_ADD_FIELD_PERMISSION_ON_SYSTEM_OBJECT,
   PermissionsExceptionCode.INVALID_ARG,
+  PermissionsExceptionCode.RECORD_PERMISSION_QUERY_INVALID,
+  PermissionsExceptionCode.RLS_VALIDATION_FAILED,
   PermissionsExceptionCode.INVALID_SETTING,
   PermissionsExceptionCode.CANNOT_GIVE_WRITING_PERMISSION_ON_NON_READABLE_OBJECT,
   PermissionsExceptionCode.CANNOT_GIVE_WRITING_PERMISSION_WITHOUT_READING_PERMISSION,

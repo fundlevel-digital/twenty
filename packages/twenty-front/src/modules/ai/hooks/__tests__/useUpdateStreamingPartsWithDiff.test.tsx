@@ -7,7 +7,7 @@ import { type ExtendedUIMessage } from 'twenty-shared/ai';
 import { sleep } from '~/utils/sleep';
 
 import { useUpdateStreamingPartsWithDiff } from '@/ai/hooks/useUpdateStreamingPartsWithDiff';
-import { agentChatUISessionStartTimeState } from '@/ai/states/agentChatUISessionStartTimeState';
+import { aiChatUISessionStartTimeState } from '@/ai/states/aiChatUISessionStartTimeState';
 import {
   jotaiStore,
   resetJotaiStore,
@@ -57,7 +57,7 @@ describe('useUpdateStreamingPartsWithDiff', () => {
     resetJotaiStore();
     jest.clearAllMocks();
     jotaiStore.set(
-      agentChatUISessionStartTimeState.atom,
+      aiChatUISessionStartTimeState.atom,
       Temporal.Instant.from(SESSION_START),
     );
   });
@@ -78,15 +78,6 @@ describe('useUpdateStreamingPartsWithDiff', () => {
     expect(processWorkspaceSetupCompletion).toHaveBeenLastCalledWith(
       nextStreamingMessage,
     );
-  });
-
-  it('does not process again a refetched message whose content did not change', () => {
-    const updateStreamingPartsWithDiff = renderUpdateStreamingPartsWithDiff();
-
-    updateStreamingPartsWithDiff([buildMessage('answer', 'Done')]);
-    updateStreamingPartsWithDiff([buildMessage('answer', 'Done')]);
-
-    expect(processWorkspaceSetupCompletion).toHaveBeenCalledTimes(1);
   });
 
   it('leaves messages written before this session alone', () => {

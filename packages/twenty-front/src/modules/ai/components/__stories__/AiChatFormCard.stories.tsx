@@ -1,11 +1,11 @@
 import { type Meta, type StoryObj } from '@storybook/react-vite';
 import { useStore } from 'jotai';
-import { type ReactNode, useEffect } from 'react';
+import { useEffect } from 'react';
 import { FieldMetadataType } from 'twenty-shared/types';
 import { ComponentDecorator } from 'twenty-ui/testing';
 
 import { AiChatFormCard } from '@/ai/components/AiChatFormCard';
-import { agentChatDisplayedThreadState } from '@/ai/states/agentChatDisplayedThreadState';
+import { aiChatDisplayedThreadState } from '@/ai/states/aiChatDisplayedThreadState';
 import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
 
 import { styled } from '@linaria/react';
@@ -18,15 +18,15 @@ const StyledContainer = styled.div`
   padding: 24px;
 `;
 
-const StoreSeeder = ({ children }: { children: ReactNode }) => {
+const StoreSeederEffect = () => {
   const store = useStore();
 
   useEffect(() => {
     store.set(currentAiChatThreadState.atom, 'thread-1');
-    store.set(agentChatDisplayedThreadState.atom, 'thread-1');
+    store.set(aiChatDisplayedThreadState.atom, 'thread-1');
   }, [store]);
 
-  return <>{children}</>;
+  return null;
 };
 
 const meta: Meta<typeof AiChatFormCard> = {
@@ -34,11 +34,10 @@ const meta: Meta<typeof AiChatFormCard> = {
   component: AiChatFormCard,
   decorators: [
     (Story) => (
-      <StoreSeeder>
-        <StyledContainer>
-          <Story />
-        </StyledContainer>
-      </StoreSeeder>
+      <StyledContainer>
+        <StoreSeederEffect />
+        <Story />
+      </StyledContainer>
     ),
     ToastDecorator,
     ComponentDecorator,

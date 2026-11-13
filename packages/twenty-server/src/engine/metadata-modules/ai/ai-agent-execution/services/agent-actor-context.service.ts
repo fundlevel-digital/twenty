@@ -25,8 +25,8 @@ import { type RunAsWorkspaceMemberContext } from 'src/engine/metadata-modules/ai
 import {
   PermissionsException,
   PermissionsExceptionCode,
-} from 'src/engine/metadata-modules/permissions/permissions.exception';
-import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
+} from 'src/engine/permissions/permissions.exception';
+import { RolePermissionsService } from 'src/engine/permissions/role-permissions.service';
 import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -39,7 +39,7 @@ export type UserContext = {
 };
 
 export type AgentActorContext = {
-  actorContext: ActorMetadata;
+  actorMetadata: ActorMetadata;
   roleId: string;
   userId: string;
   userWorkspaceId: string;
@@ -51,7 +51,7 @@ export type AgentActorContext = {
 export class AgentActorContextService {
   constructor(
     private readonly userWorkspaceService: UserWorkspaceService,
-    private readonly userRoleService: UserRoleService,
+    private readonly rolePermissionsService: RolePermissionsService,
     private readonly workspaceOrmManager: WorkspaceOrmManager,
     private readonly applicationLookupService: ApplicationLookupService,
     private readonly aiAgentRoleService: AiAgentRoleService,
@@ -116,9 +116,9 @@ export class AgentActorContextService {
     const workspaceMember =
       await this.workspaceOrmManager.executeInWorkspaceContext(async () => {
         const workspaceMemberRepository =
-          this.workspaceOrmManager.getRepository('workspaceMember', {
-            shouldBypassPermissionChecks: true,
-          });
+          this.workspaceOrmManager.getRepositoryWithoutPermissionChecks(
+            'workspaceMember',
+          );
 
         return workspaceMemberRepository.findOne({
           where: {
@@ -134,12 +134,13 @@ export class AgentActorContextService {
       );
     }
 
-    const roleId = await this.userRoleService.getRoleIdForUserWorkspace({
-      userWorkspaceId,
-      workspaceId,
-    });
+    const roleId =
+      await this.rolePermissionsService.findUserWorkspaceRoleIdOrThrow({
+        userWorkspaceId,
+        workspaceId,
+      });
 
-    const actorContext = buildCreatedByFromFullNameMetadata({
+    const actorMetadata = buildCreatedByFromFullNameMetadata({
       fullNameMetadata: workspaceMember.name,
       workspaceMemberId: workspaceMember.id,
       source: FieldActorSource.AGENT,
@@ -154,7 +155,7 @@ export class AgentActorContextService {
     };
 
     return {
-      actorContext,
+      actorMetadata,
       roleId,
       userId: userWorkspace.userId,
       userWorkspaceId,
@@ -165,11 +166,9 @@ export class AgentActorContextService {
   async buildRunAsWorkspaceMemberContext({
     workspaceMemberId,
     workspaceId,
-    viaApplication,
   }: {
     workspaceMemberId: string;
     workspaceId: string;
-    viaApplication?: FlatApplication;
   }): Promise<RunAsWorkspaceMemberContext> {
     const workspaceMember = await this.userWorkspaceService.getWorkspaceMember({
       workspaceMemberId,
@@ -204,7 +203,7 @@ export class AgentActorContextService {
     });
 
     return {
-      actorContext: buildCreatedByFromFullNameMetadata({
+      actorMetadata: buildCreatedByFromFullNameMetadata({
         fullNameMetadata: workspaceMember.name,
         workspaceMemberId: workspaceMember.id,
         source: FieldActorSource.AGENT,
@@ -215,7 +214,7 @@ export class AgentActorContextService {
         user: fromUserEntityToFlat(userWorkspace.user),
         workspaceMemberId: workspaceMember.id,
         workspaceMember,
-        viaApplication,
+        userSessionVariant: 'standard',
       }),
       roleId,
     };
@@ -231,7 +230,7 @@ export class AgentActorContextService {
     workspaceMemberId: string;
   }): Promise<string> {
     try {
-      return await this.userRoleService.getRoleIdForUserWorkspace({
+      return await this.rolePermissionsService.findUserWorkspaceRoleIdOrThrow({
         userWorkspaceId,
         workspaceId,
       });

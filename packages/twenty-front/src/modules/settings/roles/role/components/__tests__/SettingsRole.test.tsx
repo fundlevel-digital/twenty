@@ -32,6 +32,35 @@ jest.mock('@/settings/roles/role/hooks/useSaveDraftRoleToDB', () => ({
   useSaveDraftRoleToDB: () => ({ saveDraftRoleToDB: mockSaveDraftRoleToDB }),
 }));
 
+jest.mock(
+  '@/settings/roles/role-permissions/inbox-channels/hooks/useIsRoleInboxChannelAccessDirty',
+  () => ({
+    useIsRoleInboxChannelAccessDirty: () => false,
+  }),
+);
+
+jest.mock(
+  '@/settings/roles/role-permissions/inbox-channels/hooks/useSaveRoleInboxChannelAccess',
+  () => ({
+    useSaveRoleInboxChannelAccess: () => ({
+      saveRoleInboxChannelAccess: jest.fn(),
+    }),
+  }),
+);
+
+jest.mock(
+  '@/settings/roles/role-permissions/inbox-channels/hooks/useResetRoleInboxChannelAccess',
+  () => ({
+    useResetRoleInboxChannelAccess: () => ({
+      resetRoleInboxChannelAccess: jest.fn(),
+    }),
+  }),
+);
+
+jest.mock('@/inbox/hooks/useRefreshInboxChannels', () => ({
+  useRefreshInboxChannels: () => ({ refreshInboxChannels: jest.fn() }),
+}));
+
 jest.mock('@/users/hooks/useLoadCurrentUser', () => ({
   useLoadCurrentUser: () => ({ loadCurrentUser: mockLoadCurrentUser }),
 }));
@@ -96,6 +125,7 @@ const PERSISTED_ROLE: RoleWithPartialMembers = {
   icon: 'IconUser',
   canUpdateAllSettings: false,
   canAccessAllTools: false,
+  canAccessAllAgentChatChannels: false,
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: true,
   canSoftDeleteAllObjectRecords: true,

@@ -3,26 +3,59 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { useCallback } from 'react';
 import { useToast } from 'twenty-ui/components/feedback';
 
-import { type AgentChatParticipantMention } from '@/ai/types/AgentChatParticipantMention';
+import { useFetchAiChatThreadsPage } from '@/ai/hooks/useFetchAiChatThreadsPage';
+import { type AiChatParticipantMention } from '@/ai/types/AiChatParticipantMention';
+import { getAiChatParticipantAdditionStatus } from '@/ai/utils/getAiChatParticipantAdditionStatus';
+import { logError } from '~/utils/logError';
 
 export const useWarnAboutParticipantMentionsNotAdded = () => {
   const { enqueueToast } = useToast();
+  const { fetchAiChatThreadsPage } = useFetchAiChatThreadsPage();
 
   const warnAboutParticipantMentionsNotAdded = useCallback(
-    ({
+    async ({
+      threadId,
+      initialRecipients,
       participantMentions,
       addedWorkspaceMemberIds,
     }: {
-      participantMentions: AgentChatParticipantMention[];
+      threadId: string;
+      initialRecipients: AiChatParticipantMention[];
+      participantMentions: AiChatParticipantMention[];
       addedWorkspaceMemberIds: string[];
     }) => {
-      const notAddedLabels = participantMentions
-        .filter(
-          ({ workspaceMemberId }) =>
-            !addedWorkspaceMemberIds.includes(workspaceMemberId),
-        )
-        .map(({ label }) => label)
-        .join(', ');
+      const requestedParticipants = {
+        initialRecipients,
+        participantMentions,
+        addedWorkspaceMemberIds,
+      };
+      const { hasUnverifiedInitialRecipients: shouldVerifyInitialRecipients } =
+        getAiChatParticipantAdditionStatus(requestedParticipants);
+      const verificationPage = shouldVerifyInitialRecipients
+        ? await fetchAiChatThreadsPage({
+            lastCursor: null,
+            threadIdFilter: { id: { eq: threadId } },
+          }).catch((error) => {
+            logError(error);
+
+            return undefined;
+          })
+        : undefined;
+      const writerWorkspaceMemberIds = verificationPage?.threads.find(
+        ({ id }) => id === threadId,
+      )?.writerWorkspaceMemberIds;
+      const { hasUnverifiedInitialRecipients, notAddedLabels } =
+        getAiChatParticipantAdditionStatus({
+          ...requestedParticipants,
+          writerWorkspaceMemberIds,
+        });
+
+      if (hasUnverifiedInitialRecipients) {
+        enqueueToast({
+          status: 'warning',
+          children: t`Recipient delivery could not be verified. Check the chat participants.`,
+        });
+      }
 
       if (isNonEmptyString(notAddedLabels)) {
         enqueueToast({
@@ -31,7 +64,7 @@ export const useWarnAboutParticipantMentionsNotAdded = () => {
         });
       }
     },
-    [enqueueToast],
+    [enqueueToast, fetchAiChatThreadsPage],
   );
 
   return { warnAboutParticipantMentionsNotAdded };

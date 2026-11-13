@@ -1,24 +1,27 @@
 /* @license Enterprise */
 
 import { SelectOptionIcon } from '@/ui/input/components/SelectOptionIcon';
-
-import { t } from '@lingui/core/macro';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useState } from 'react';
 import { Dropdown } from 'twenty-ui/components/navigation';
-import { IconUserCircle, useIcons } from 'twenty-ui/icon';
+import { IconUserCircle } from 'twenty-ui/icon';
+import { useIcons } from 'twenty-ui/icon/provider';
 import { Field } from 'twenty-ui/primitives/input';
 import {
-  CoreObjectNameSingular,
+  StandardObjectNameSingular,
   FieldMetadataType,
   compositeTypeDefinitions,
 } from 'twenty-shared/types';
-import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
+import {
+  getFieldOrSubFieldType,
+  getRlsPredicateCompatibleWorkspaceMemberFieldTypes,
+  isDefined,
+  isNonEmptyArray,
+} from 'twenty-shared/utils';
 
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { fieldMetadataItemUsedInDropdownComponentSelector } from '@/object-record/object-filter-dropdown/states/fieldMetadataItemUsedInDropdownComponentSelector';
 import { getCompositeSubFieldLabel } from '@/object-record/object-filter-dropdown/utils/getCompositeSubFieldLabel';
-import { getCompositeSubFieldType } from '@/object-record/object-filter-dropdown/utils/getCompositeSubFieldType';
 import { getFieldMetadataTypeLabel } from '@/object-record/object-filter-dropdown/utils/getFieldMetadataTypeLabel';
 import { isCompositeFieldType } from '@/object-record/object-filter-dropdown/utils/isCompositeFieldType';
 import { currentRecordFiltersComponentState } from '@/object-record/record-filter/states/currentRecordFiltersComponentState';
@@ -30,6 +33,7 @@ import { RECORD_LEVEL_PERMISSION_PREDICATE_FIELD_TYPES } from '@/settings/roles/
 import { getComparableWorkspaceMemberRelationFields } from '@/settings/roles/role-permissions/object-level-permissions/record-level-permissions/utils/getComparableWorkspaceMemberRelationFields';
 import { useAtomComponentSelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentSelectorValue';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { useLingui } from '@lingui/react/macro';
 
 type SettingsRolePermissionsObjectLevelRecordLevelPermissionMeValueSelectProps =
   {
@@ -42,12 +46,13 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionMeValueSelec
     onSelect,
     recordFilterId,
   }: SettingsRolePermissionsObjectLevelRecordLevelPermissionMeValueSelectProps) => {
+    const { t } = useLingui();
     const { getIcon } = useIcons();
     const [searchInput, setSearchInput] = useState('');
 
     const { objectMetadataItem: workspaceMemberMetadataItem } =
       useObjectMetadataItem({
-        objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
+        objectNameSingular: StandardObjectNameSingular.WorkspaceMember,
       });
 
     const selectedFieldMetadataItem = useAtomComponentSelectorValue(
@@ -65,27 +70,24 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionMeValueSelec
     const selectedFieldType = selectedFieldMetadataItem?.type;
     const selectedSubFieldName = recordFilter?.subFieldName;
 
-    let targetFieldType: FieldMetadataType | null = null;
+    const targetFieldType = isDefined(selectedFieldType)
+      ? getFieldOrSubFieldType({
+          fieldType: selectedFieldType,
+          subFieldName: selectedSubFieldName,
+        })
+      : null;
 
-    if (isDefined(selectedFieldType)) {
-      if (
-        isCompositeFieldType(selectedFieldType) &&
-        isDefined(selectedFieldMetadataItem) &&
-        isDefined(selectedSubFieldName)
-      ) {
-        targetFieldType = getCompositeSubFieldType(
-          selectedFieldMetadataItem,
-          selectedSubFieldName,
-        );
-      } else {
-        targetFieldType = selectedFieldType;
-      }
-    }
+    const compatibleWorkspaceMemberFieldTypes = isDefined(selectedFieldType)
+      ? getRlsPredicateCompatibleWorkspaceMemberFieldTypes({
+          fieldType: selectedFieldType,
+          subFieldName: selectedSubFieldName,
+        })
+      : undefined;
 
     const isRelationToWorkspaceMember =
       selectedFieldMetadataItem?.type === FieldMetadataType.RELATION &&
       selectedFieldMetadataItem.relation?.targetObjectMetadata.nameSingular ===
-        CoreObjectNameSingular.WorkspaceMember;
+        StandardObjectNameSingular.WorkspaceMember;
 
     const getCompatibleWorkspaceMemberFields = () => {
       if (!isDefined(workspaceMemberMetadataItem)) {
@@ -110,7 +112,10 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionMeValueSelec
           return false;
         }
 
-        if (!targetFieldType) {
+        if (
+          !isDefined(targetFieldType) ||
+          !isDefined(compatibleWorkspaceMemberFieldTypes)
+        ) {
           return true;
         }
 
@@ -122,7 +127,7 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionMeValueSelec
           return false;
         }
 
-        if (field.type === targetFieldType) {
+        if (compatibleWorkspaceMemberFieldTypes.includes(field.type)) {
           return true;
         }
 
@@ -130,8 +135,8 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionMeValueSelec
           const fieldCompositeType = compositeTypeDefinitions.get(field.type);
 
           if (isDefined(fieldCompositeType)) {
-            return fieldCompositeType.properties.some(
-              (property) => property.type === targetFieldType,
+            return fieldCompositeType.properties.some((property) =>
+              compatibleWorkspaceMemberFieldTypes.includes(property.type),
             );
           }
         }
@@ -190,13 +195,13 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionMeValueSelec
           );
 
           for (const subField of filterableSubFields) {
-            if (isDefined(targetFieldType)) {
-              const subFieldType = getCompositeSubFieldType(
-                field,
-                subField.subFieldName,
-              );
+            if (isDefined(compatibleWorkspaceMemberFieldTypes)) {
+              const subFieldType = getFieldOrSubFieldType({
+                fieldType: field.type,
+                subFieldName: subField.subFieldName,
+              });
 
-              if (subFieldType !== targetFieldType) {
+              if (!compatibleWorkspaceMemberFieldTypes.includes(subFieldType)) {
                 continue;
               }
             }

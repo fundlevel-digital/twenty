@@ -9,10 +9,9 @@ import {
 } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 import { IconButton, LightIconButton } from 'twenty-ui/components/input';
+import { CountPager } from 'twenty-ui/components/navigation';
 import {
   IconArrowUp,
-  IconChevronLeft,
-  IconChevronRightPipe,
   type IconComponent,
   IconInfoCircle,
   IconSquareNumber1,
@@ -25,15 +24,17 @@ import {
   IconSquareNumber8,
   IconSquareNumber9,
 } from 'twenty-ui/icon';
+import { Button } from 'twenty-ui/primitives/input';
 import { Tooltip } from 'twenty-ui/primitives/surfaces';
 import { useTheme, themeCssVariables } from 'twenty-ui/theme';
 
-import { StyledAiChatAskCard } from '@/ai/components/AiChatAskStyledComponents';
+import { StyledAiChatAskCard } from '@/ai/components/StyledAiChatAskCard';
 import { TextWithChatReferences } from '@/ai/components/TextWithChatReferences';
 import { AiChatComposerActionsRow } from '@/ai/components/internal/AiChatComposerActionsRow';
+import { AiChatContextUsageButton } from '@/ai/components/internal/AiChatContextUsageButton';
 import { AiChatQuestionOtherOption } from '@/ai/components/internal/AiChatQuestionOtherOption';
-import { useAnswerAgentChatToolCall } from '@/ai/hooks/useAnswerAgentChatToolCall';
-import { type AgentChatPendingQuestion } from '@/ai/types/AgentChatPendingQuestion';
+import { useAnswerAiChatToolCall } from '@/ai/hooks/useAnswerAiChatToolCall';
+import { type AiChatPendingQuestion } from '@/ai/types/AiChatPendingQuestion';
 import { TooltipDelay } from '@/ui/layout/tooltip/constants/TooltipDelay';
 
 const NUMBER_ICONS: IconComponent[] = [
@@ -76,18 +77,6 @@ const StyledQuestionText = styled.p`
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
-`;
-
-const StyledPager = styled.div`
-  align-items: center;
-  display: flex;
-  flex-shrink: 0;
-  gap: ${themeCssVariables.spacing[1]};
-`;
-
-const StyledPagerLabel = styled.span`
-  color: ${themeCssVariables.font.color.light};
-  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledOptionsList = styled.div`
@@ -176,11 +165,13 @@ const areAllQuestionsAnswered = (
   );
 
 type AiChatQuestionCardProps = {
-  pendingQuestion: AgentChatPendingQuestion;
+  pendingQuestion: AiChatPendingQuestion;
+  onSkip?: () => void;
 };
 
 export const AiChatQuestionCard = ({
   pendingQuestion,
+  onSkip,
 }: AiChatQuestionCardProps) => {
   const { t } = useLingui();
   const theme = useTheme();
@@ -202,7 +193,7 @@ export const AiChatQuestionCard = ({
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { answerAgentChatToolCall } = useAnswerAgentChatToolCall();
+  const { answerAiChatToolCall } = useAnswerAiChatToolCall();
 
   const currentQuestion = questions[currentIndex];
   const hasMultipleQuestions = questions.length > 1;
@@ -232,7 +223,7 @@ export const AiChatQuestionCard = ({
     setIsSubmitting(true);
 
     const [{ selectedOptionIndices, freeText }] = answers;
-    const isAnswered = await answerAgentChatToolCall(
+    const isAnswered = await answerAiChatToolCall(
       pendingQuestion.kind === 'question'
         ? {
             toolCallId,
@@ -388,33 +379,15 @@ export const AiChatQuestionCard = ({
             <TextWithChatReferences text={currentQuestion.question} />
           </StyledQuestionText>
           {hasMultipleQuestions && (
-            <StyledPager>
-              <LightIconButton
-                size="sm"
-                disabled={currentIndex === 0}
-                onClick={() =>
-                  setCurrentIndex((index) => Math.max(0, index - 1))
-                }
-                aria-label={t`Previous`}
-              >
-                <IconChevronLeft />
-              </LightIconButton>
-              <StyledPagerLabel>
-                {currentIndex + 1}/{questions.length}
-              </StyledPagerLabel>
-              <LightIconButton
-                size="sm"
-                disabled={isLastQuestion}
-                onClick={() =>
-                  setCurrentIndex((index) =>
-                    Math.min(questions.length - 1, index + 1),
-                  )
-                }
-                aria-label={t`Next question`}
-              >
-                <IconChevronRightPipe />
-              </LightIconButton>
-            </StyledPager>
+            <CountPager
+              aria-label={t`Questions`}
+              index={currentIndex}
+              count={questions.length}
+              onIndexChange={setCurrentIndex}
+              positionText={`${currentIndex + 1}/${questions.length}`}
+              previousLabel={t`Previous`}
+              nextLabel={t`Next question`}
+            />
           )}
         </StyledQuestionHeaderRow>
 
@@ -495,6 +468,16 @@ export const AiChatQuestionCard = ({
 
       <StyledComposerSection>
         <AiChatComposerActionsRow
+          leftActions={
+            <>
+              {isDefined(onSkip) && (
+                <Button size="sm" disabled={isSubmitting} onClick={onSkip}>
+                  {t`Skip`}
+                </Button>
+              )}
+              <AiChatContextUsageButton />
+            </>
+          }
           modelTierDropdownId={`ai-chat-question-model-tier-dropdown-${toolCallId}`}
           sendButton={
             <IconButton

@@ -1,10 +1,11 @@
+import { TEST_APPLICATION_PACKAGE_JSON_CHECKSUM } from 'test/integration/metadata/suites/application/constants/test-application-package-json.constant';
 import { buildBaseManifest } from 'test/integration/metadata/suites/application/utils/build-base-manifest.util';
 import { findOneApplication } from 'test/integration/metadata/suites/application/utils/find-one-application.util';
 import { setupApplicationForSync } from 'test/integration/metadata/suites/application/utils/setup-application-for-sync.util';
 import { syncApplication } from 'test/integration/metadata/suites/application/utils/sync-application.util';
 import {
   type ApplicationVariableScope,
-  type ObjectPermissionManifest,
+  type LegacyObjectPermissionManifest,
 } from 'twenty-shared/application';
 import { SystemPermissionFlag } from 'twenty-shared/constants';
 import { isDefined } from 'twenty-shared/utils';
@@ -39,7 +40,7 @@ export const setupApplicationWithVariable = async ({
   permissionFlagUniversalIdentifiers?: string[];
   // An application-owned role can only be granted object permissions through
   // its own manifest; upserting them afterwards is refused.
-  objectPermissions?: ObjectPermissionManifest[];
+  objectPermissions?: LegacyObjectPermissionManifest[];
 }): Promise<ApplicationWithVariable> => {
   const applicationUniversalIdentifier = uuidv4();
   const roleUniversalIdentifier = uuidv4();
@@ -69,7 +70,7 @@ export const setupApplicationWithVariable = async ({
               ...(isSecret || !isDefined(value) ? {} : { value }),
             },
           },
-          packageJsonChecksum: null,
+          packageJsonChecksum: TEST_APPLICATION_PACKAGE_JSON_CHECKSUM,
           yarnLockChecksum: null,
         },
         roles: [

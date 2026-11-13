@@ -34,7 +34,6 @@ import { type CachedCronTrigger } from 'src/modules/workflow/workflow-trigger/au
 import { publishCronTriggerCacheEntry } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/utils/publish-cron-trigger-cache-entry.util';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { type WorkflowVersionWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
-import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
 
 @Injectable()
 export class WorkflowVersionCoreSyncService {
@@ -93,7 +92,12 @@ export class WorkflowVersionCoreSyncService {
 
   async upsertToCore(
     workspaceId: string,
-    workflowVersions: WorkflowVersionWorkspaceEntity[],
+    workflowVersions: (Pick<
+      WorkflowVersionWorkspaceEntity,
+      'id' | 'coreWorkflowVersionId' | 'trigger' | 'steps' | 'status'
+    > & {
+      workflowId: string;
+    })[],
   ): Promise<void> {
     if (workflowVersions.length === 0) {
       return;
@@ -155,7 +159,7 @@ export class WorkflowVersionCoreSyncService {
         { workspaceId },
       );
 
-    const { flatWorkflowVersionMaps } =
+    let { flatWorkflowVersionMaps } =
       await this.flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
         { workspaceId, flatMapsKeys: ['flatWorkflowVersionMaps'] },
       );
@@ -169,6 +173,28 @@ export class WorkflowVersionCoreSyncService {
         })
       ).map(({ id }) => id),
     );
+
+    if (
+      coreRows.some(
+        ({ id }) =>
+          persistedCoreVersionIds.has(id) &&
+          !isDefined(
+            findFlatEntityByIdInFlatEntityMaps({
+              flatEntityId: id,
+              flatEntityMaps: flatWorkflowVersionMaps,
+            }),
+          ),
+      )
+    ) {
+      await this.flatEntityMapsCacheService.invalidateFlatEntityMaps({
+        workspaceId,
+        flatMapsKeys: ['flatWorkflowVersionMaps'],
+      });
+      ({ flatWorkflowVersionMaps } =
+        await this.flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
+          { workspaceId, flatMapsKeys: ['flatWorkflowVersionMaps'] },
+        ));
+    }
 
     const timestamp = new Date().toISOString();
     const flatVersionsToCreate: (UniversalFlatWorkflowVersion & {
@@ -200,6 +226,14 @@ export class WorkflowVersionCoreSyncService {
         id: string;
       } = {
         ...coreRow,
+        // Non-comparable, so an update must carry the stored values or the builder rejects it
+        ...(isDefined(existingFlatWorkflowVersion)
+          ? {
+              workflowId: existingFlatWorkflowVersion.workflowId,
+              workspaceWorkflowVersionId:
+                existingFlatWorkflowVersion.workspaceWorkflowVersionId,
+            }
+          : {}),
         isSystemSideEffect: false,
         coreWorkflowId:
           coreRow.coreWorkflowId ??
@@ -247,7 +281,10 @@ export class WorkflowVersionCoreSyncService {
   // Same caller-writable column as coreWorkflowId, see WorkflowCoreSyncService.
   private async resolveOwnedCoreVersions(
     workspaceId: string,
-    workflowVersions: WorkflowVersionWorkspaceEntity[],
+    workflowVersions: Pick<
+      WorkflowVersionWorkspaceEntity,
+      'coreWorkflowVersionId'
+    >[],
   ): Promise<Map<string, string | null>> {
     const candidateIds = workflowVersions
       .map((workflowVersion) => workflowVersion.coreWorkflowVersionId)
@@ -291,6 +328,33 @@ export class WorkflowVersionCoreSyncService {
     });
   }
 
+  async resolveDispatchedCoreVersionId({
+    workspaceId,
+    coreWorkflowVersionId,
+    workspaceWorkflowVersionId,
+    lastPublishedCoreWorkflowVersionId,
+  }: {
+    workspaceId: string;
+    coreWorkflowVersionId?: string | null;
+    workspaceWorkflowVersionId?: string | null;
+    lastPublishedCoreWorkflowVersionId?: string | null;
+  }): Promise<string | undefined> {
+    if (isDefined(coreWorkflowVersionId)) {
+      return coreWorkflowVersionId;
+    }
+
+    if (isDefined(workspaceWorkflowVersionId)) {
+      return (
+        await this.findCoreVersionByWorkspaceVersionId(
+          workspaceId,
+          workspaceWorkflowVersionId,
+        )
+      )?.id;
+    }
+
+    return lastPublishedCoreWorkflowVersionId ?? undefined;
+  }
+
   async findCoreVersionByWorkspaceVersionId(
     workspaceId: string,
     workspaceWorkflowVersionId: string,
@@ -307,9 +371,9 @@ export class WorkflowVersionCoreSyncService {
     const linkedCoreVersionId =
       await this.workspaceOrmManager.executeInWorkspaceContext(async () => {
         const workflowVersion = await this.workspaceOrmManager
-          .getRepository<WorkflowVersionWorkspaceEntity>('workflowVersion', {
-            shouldBypassPermissionChecks: true,
-          })
+          .getRepositoryWithoutPermissionChecks<WorkflowVersionWorkspaceEntity>(
+            'workflowVersion',
+          )
           .findOne({
             where: { id: workspaceWorkflowVersionId },
             select: { coreWorkflowVersionId: true },
@@ -339,9 +403,9 @@ export class WorkflowVersionCoreSyncService {
   ): Promise<string | null> {
     return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
       const workflowVersion = await this.workspaceOrmManager
-        .getRepository<WorkflowVersionWorkspaceEntity>('workflowVersion', {
-          shouldBypassPermissionChecks: true,
-        })
+        .getRepositoryWithoutPermissionChecks<WorkflowVersionWorkspaceEntity>(
+          'workflowVersion',
+        )
         .findOne({ where: { coreWorkflowVersionId }, select: { id: true } });
 
       return workflowVersion?.id ?? null;
@@ -358,53 +422,12 @@ export class WorkflowVersionCoreSyncService {
       return new Map();
     }
 
-    const workflows = await this.workspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const workflowRepository =
-          this.workspaceOrmManager.getRepository<WorkflowWorkspaceEntity>(
-            'workflow',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        return workflowRepository.find({
-          where: { id: In(distinctWorkflowIds) },
-          withDeleted: true,
-        });
-      },
-      buildSystemAuthContext(workspaceId),
-    );
-
-    const coreWorkflowIdByWorkflowId = new Map<string, string>();
-
-    for (const workflow of workflows) {
-      if (isNonEmptyString(workflow.coreWorkflowId)) {
-        coreWorkflowIdByWorkflowId.set(workflow.id, workflow.coreWorkflowId);
-      }
-    }
-
-    const unresolvedWorkflowIds = distinctWorkflowIds.filter(
-      (candidateWorkflowId) =>
-        !coreWorkflowIdByWorkflowId.has(candidateWorkflowId),
-    );
-
-    const reverseMappedCoreWorkflowIds =
-      await resolveCoreWorkflowIdsByWorkspaceWorkflowId({
-        executeQuery: (query, parameters) =>
-          this.workspaceRepository.manager.query(query, parameters),
-        workspaceId,
-        workspaceWorkflowIds: unresolvedWorkflowIds,
-      });
-
-    for (const [
-      workspaceWorkflowId,
-      coreWorkflowId,
-    ] of reverseMappedCoreWorkflowIds) {
-      if (!coreWorkflowIdByWorkflowId.has(workspaceWorkflowId)) {
-        coreWorkflowIdByWorkflowId.set(workspaceWorkflowId, coreWorkflowId);
-      }
-    }
-
-    return coreWorkflowIdByWorkflowId;
+    return resolveCoreWorkflowIdsByWorkspaceWorkflowId({
+      executeQuery: (query, parameters) =>
+        this.workspaceRepository.manager.query(query, parameters),
+      workspaceId,
+      workspaceWorkflowIds: distinctWorkflowIds,
+    });
   }
 
   private async writeBackCoreVersionIds(
@@ -425,9 +448,8 @@ export class WorkflowVersionCoreSyncService {
 
     await this.workspaceOrmManager.executeInWorkspaceContext(async () => {
       const workspaceWorkflowVersionRepository =
-        this.workspaceOrmManager.getRepository<WorkflowVersionWorkspaceEntity>(
+        this.workspaceOrmManager.getRepositoryWithoutPermissionChecks<WorkflowVersionWorkspaceEntity>(
           'workflowVersion',
-          { shouldBypassPermissionChecks: true },
         );
 
       for (const [

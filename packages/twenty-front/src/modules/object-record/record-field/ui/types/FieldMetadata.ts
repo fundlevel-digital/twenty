@@ -169,14 +169,21 @@ export type FieldMorphRelationMetadata = BaseFieldMetadata & {
   settings?: FieldRelationMetadataSettings;
 };
 
+type FieldSelectMetadataOption = {
+  label: string;
+  color: ThemeColor;
+  value: string;
+  isActive?: boolean;
+};
+
 export type FieldSelectMetadata = BaseFieldMetadata & {
-  options: { label: string; color: ThemeColor; value: string }[];
+  options: FieldSelectMetadataOption[];
   isNullable: boolean;
   settings?: null;
 };
 
 export type FieldMultiSelectMetadata = BaseFieldMetadata & {
-  options: { label: string; color: ThemeColor; value: string }[];
+  options: FieldSelectMetadataOption[];
   settings?: null;
 };
 
@@ -303,8 +310,9 @@ export type Json = ZodHelperLiteral | { [key: string]: Json } | Json[];
 export type FieldJsonValue = Record<string, Json> | Json[] | null;
 
 export type FieldRichTextValue = {
-  blocknote: string | null;
-  markdown: string | null;
+  tiptap?: string | null;
+  markdown?: string | null;
+  blocknote?: string | null;
 };
 
 const FieldActorSourceSchema = z.union([

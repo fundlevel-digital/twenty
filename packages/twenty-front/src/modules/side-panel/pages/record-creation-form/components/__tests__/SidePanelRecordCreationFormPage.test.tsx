@@ -118,10 +118,8 @@ jest.mock('@/object-metadata/hooks/useObjectMetadataItems', () => ({
 
 jest.mock('@/object-record/hooks/useObjectPermissionsForObject', () => ({
   useObjectPermissionsForObject: () => ({
-    restrictedFields: {
-      'field-secret': { canRead: true, canUpdate: false },
-      'field-internalNote': { canRead: true, canUpdate: false },
-    },
+    unreadableFields: [],
+    uneditableFields: ['field-secret', 'field-internalNote'],
   }),
 }));
 
@@ -160,6 +158,13 @@ jest.mock(
       createElement: typeof createElement;
       Fragment: typeof Fragment;
     };
+    const jotaiStoreModuleForMock = require('@/ui/utilities/state/jotai/jotaiStore');
+    const {
+      recordFieldInputIsFieldInErrorComponentState: errorStateForMock,
+    } = require('@/object-record/record-field/ui/states/recordFieldInputIsFieldInErrorComponentState');
+    const {
+      getRecordFormFieldInputInstanceId: getInstanceIdForMock,
+    } = require('@/object-record/record-form/utils/getRecordFormFieldInputInstanceId');
 
     return {
       RecordFormFieldInputs: ({
@@ -167,6 +172,7 @@ jest.mock(
         draftRecord,
         validationRuleViolationsByFieldMetadataId = {},
         onFieldValueChange,
+        formInstanceId,
       }: {
         fieldMetadataItems: { id: string; name: string; label: string }[];
         draftRecord: Record<string, unknown>;
@@ -175,6 +181,7 @@ jest.mock(
           { ruleId: string; message: string }[]
         >;
         onFieldValueChange: (gqlFieldName: string, value: string) => void;
+        formInstanceId: string;
       }) =>
         ReactForMock.createElement(
           ReactForMock.Fragment,
@@ -190,11 +197,21 @@ jest.mock(
               ReactForMock.createElement('input', {
                 'aria-label': fieldMetadataItem.label,
                 value: (draftRecord[fieldMetadataItem.name] as string) ?? '',
-                onChange: (event: { target: { value: string } }) =>
+                onChange: (event: { target: { value: string } }) => {
                   onFieldValueChange(
                     fieldMetadataItem.name,
                     event.target.value,
-                  ),
+                  );
+                  jotaiStoreModuleForMock.jotaiStore.set(
+                    errorStateForMock.atomFamily({
+                      instanceId: getInstanceIdForMock({
+                        formInstanceId,
+                        fieldMetadataId: fieldMetadataItem.id,
+                      }),
+                    }),
+                    event.target.value === 'invalid',
+                  );
+                },
               }),
               (
                 validationRuleViolationsByFieldMetadataId[
@@ -306,6 +323,7 @@ describe('SidePanelRecordCreationFormPage', () => {
         requestId: REQUEST_ID,
         objectMetadataId: OBJECT_METADATA_ID,
         initialDraftRecord: {},
+        canCreateAnother: true,
       },
     );
   });
@@ -526,6 +544,57 @@ describe('SidePanelRecordCreationFormPage', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('leaves Create another out of the options menu when the request allows a single record', async () => {
+    const user = userEvent.setup();
+
+    jotaiStore.set(
+      recordCreationFormRequestComponentState.atomFamily({
+        instanceId: REQUEST_ID,
+      }),
+      {
+        requestId: REQUEST_ID,
+        objectMetadataId: OBJECT_METADATA_ID,
+        initialDraftRecord: {},
+        canCreateAnother: false,
+      },
+    );
+
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Options' }));
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'Edit form' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: /Create another/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides the options menu when the request allows a single record and the member cannot edit layouts', () => {
+    mockHasPermissionFlag.mockReturnValue(false);
+    jotaiStore.set(
+      recordCreationFormRequestComponentState.atomFamily({
+        instanceId: REQUEST_ID,
+      }),
+      {
+        requestId: REQUEST_ID,
+        objectMetadataId: OBJECT_METADATA_ID,
+        initialDraftRecord: {},
+        canCreateAnother: false,
+      },
+    );
+
+    renderPage();
+
+    expect(
+      screen.queryByRole('button', { name: 'Options' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId('record-creation-form-create-button'),
+    ).toBeInTheDocument();
+  });
+
   it('creates another record from the options menu and keeps an empty form open', async () => {
     const user = userEvent.setup();
 
@@ -565,5 +634,41 @@ describe('SidePanelRecordCreationFormPage', () => {
     expect(
       screen.queryByRole('button', { name: 'Hide fields' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('does not submit when a field input reports a validation error', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.type(screen.getByLabelText('Name'), 'invalid');
+    await user.click(screen.getByTestId('record-creation-form-create-button'));
+
+    expect(settleRecordCreationDraft).not.toHaveBeenCalled();
+
+    await user.clear(screen.getByLabelText('Name'));
+    await user.type(screen.getByLabelText('Name'), 'Valid Name');
+    await user.click(screen.getByTestId('record-creation-form-create-button'));
+
+    expect(settleRecordCreationDraft).toHaveBeenCalledTimes(1);
+    expect(settleRecordCreationDraft).toHaveBeenCalledWith({
+      requestId: REQUEST_ID,
+      draftRecord: { name: 'Valid Name' },
+      shouldKeepOpen: false,
+    });
+  });
+
+  it('stops blocking creation once a hidden field with an input error is collapsed and shown again', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'All fields (3)' }));
+    await user.type(screen.getByLabelText('Nickname'), 'invalid');
+    await user.click(screen.getByRole('button', { name: 'Hide fields' }));
+    await user.click(screen.getByRole('button', { name: 'All fields (3)' }));
+    await user.click(screen.getByTestId('record-creation-form-create-button'));
+
+    expect(settleRecordCreationDraft).toHaveBeenCalledTimes(1);
   });
 });

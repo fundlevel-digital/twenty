@@ -1,10 +1,12 @@
-import { agentChatUISessionStartTimeState } from '@/ai/states/agentChatUISessionStartTimeState';
+import { aiChatUISessionStartTimeState } from '@/ai/states/aiChatUISessionStartTimeState';
+import { resetClosingInboxThread } from '@/inbox/utils/resetClosingInboxThread';
 import { useIsWorkspaceActivationStatusEqualsTo } from '@/workspace/hooks/useIsWorkspaceActivationStatusEqualsTo';
 import { useSidePanelMenu } from '@/side-panel/hooks/useSidePanelMenu';
 import { isSidePanelOpenedState } from '@/side-panel/states/isSidePanelOpenedState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { t } from '@lingui/core/macro';
+import { useStore } from 'jotai';
 import { useCallback } from 'react';
 import { Temporal } from 'temporal-polyfill';
 import { SidePanelPages } from 'twenty-shared/types';
@@ -14,10 +16,11 @@ import { v4 } from 'uuid';
 import { isCurrentPathAiChatPage } from '~/utils/isCurrentPathAiChatPage';
 
 export const useOpenAskAiPageInSidePanel = () => {
+  const store = useStore();
   const { navigateSidePanelMenu } = useSidePanelMenu();
   const isSidePanelOpened = useAtomStateValue(isSidePanelOpenedState);
-  const setAgentChatUISessionStartTime = useSetAtomState(
-    agentChatUISessionStartTimeState,
+  const setAiChatUISessionStartTime = useSetAtomState(
+    aiChatUISessionStartTimeState,
   );
   const isWorkspaceSuspended = useIsWorkspaceActivationStatusEqualsTo(
     WorkspaceActivationStatus.SUSPENDED,
@@ -33,14 +36,16 @@ export const useOpenAskAiPageInSidePanel = () => {
         return;
       }
 
+      resetClosingInboxThread(store);
+
       const shouldReset =
         resetNavigationStack !== undefined
           ? resetNavigationStack
           : isSidePanelOpened;
 
-      setAgentChatUISessionStartTime(
-        (agentChatUISessionStartTime) =>
-          agentChatUISessionStartTime ?? Temporal.Now.instant(),
+      setAiChatUISessionStartTime(
+        (aiChatUISessionStartTime) =>
+          aiChatUISessionStartTime ?? Temporal.Now.instant(),
       );
 
       navigateSidePanelMenu({
@@ -54,8 +59,9 @@ export const useOpenAskAiPageInSidePanel = () => {
     [
       navigateSidePanelMenu,
       isSidePanelOpened,
-      setAgentChatUISessionStartTime,
+      setAiChatUISessionStartTime,
       isWorkspaceSuspended,
+      store,
     ],
   );
 

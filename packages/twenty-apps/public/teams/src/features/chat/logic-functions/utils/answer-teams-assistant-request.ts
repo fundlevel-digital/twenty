@@ -2,18 +2,20 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { CoreApiClient } from 'twenty-client-sdk/core';
 import { isDefined } from 'twenty-sdk/utils';
 
-import { TEAMS_ASSISTANT_FAILURE_TEXT } from 'src/features/chat/logic-functions/constants/teams-assistant-failure-text';
 import { TEAMS_ASSISTANT_REQUEST_STATUS } from 'src/features/chat/logic-functions/constants/teams-assistant-request-status';
 import { TEAMS_ASSISTANT_UNMATCHED_SENDER_TEXT } from 'src/features/chat/logic-functions/constants/teams-assistant-unmatched-sender-text';
 import { claimTeamsAssistantRequest } from 'src/features/chat/logic-functions/data/claim-teams-assistant-request';
+import { findTeamsAssistantHistory } from 'src/features/chat/logic-functions/data/find-teams-assistant-history';
 import { updateTeamsAssistantRequest } from 'src/features/chat/logic-functions/data/update-teams-assistant-request';
-import { type TeamsActivity } from 'src/features/chat/logic-functions/types/teams-activity.type';
 import { type TeamsAssistantAnswerResult } from 'src/features/chat/logic-functions/types/teams-assistant-answer-result.type';
 import { type TeamsAssistantRequestRecord } from 'src/features/chat/logic-functions/types/teams-assistant-request-record.type';
+import { buildTeamsAssistantAnswerText } from 'src/features/chat/logic-functions/utils/build-teams-assistant-answer-text';
+import { fetchWorkspaceBaseUrl } from 'src/features/chat/logic-functions/utils/fetch-workspace-base-url';
+import { getTeamsAssistantFailureText } from 'src/features/chat/logic-functions/utils/get-teams-assistant-failure-text';
 import { getTeamsConnectorAccessTokenOrThrow } from 'src/features/chat/logic-functions/utils/get-teams-connector-access-token-or-throw';
 import { resolveTeamsSenderWorkspaceMemberId } from 'src/features/chat/logic-functions/utils/resolve-teams-sender-workspace-member-id';
 import { runTeamsAssistantAgentOrThrow } from 'src/features/chat/logic-functions/utils/run-teams-assistant-agent-or-throw';
-import { sendTeamsActivity } from 'src/features/chat/logic-functions/utils/send-teams-activity';
+import { startTeamsAssistantStatus } from 'src/features/chat/logic-functions/utils/start-teams-assistant-status';
 import { toErrorMessage } from 'src/utils/to-error-message';
 
 export const answerTeamsAssistantRequest = async ({
@@ -26,6 +28,7 @@ export const answerTeamsAssistantRequest = async ({
   const {
     teamsServiceUrl,
     teamsConversationId,
+    teamsConversationType,
     teamsUserId,
     teamsTenantId,
     requestText,
@@ -34,6 +37,7 @@ export const answerTeamsAssistantRequest = async ({
   if (
     !isNonEmptyString(teamsServiceUrl) ||
     !isNonEmptyString(teamsConversationId) ||
+    !isNonEmptyString(teamsConversationType) ||
     !isNonEmptyString(teamsUserId) ||
     !isNonEmptyString(teamsTenantId) ||
     !isNonEmptyString(requestText)
@@ -47,17 +51,13 @@ export const answerTeamsAssistantRequest = async ({
     return { status: 'skipped', reason: 'Request is already being processed' };
   }
 
-  const sendActivity = async (activity: TeamsActivity) =>
-    sendTeamsActivity({
-      serviceUrl: teamsServiceUrl,
-      conversationId: teamsConversationId,
-      accessToken: await getTeamsConnectorAccessTokenOrThrow(),
-      activity,
-    });
+  const status = await startTeamsAssistantStatus({
+    serviceUrl: teamsServiceUrl,
+    conversationId: teamsConversationId,
+    conversationType: teamsConversationType,
+  });
 
   try {
-    await sendActivity({ type: 'typing' }).catch(() => undefined);
-
     const workspaceMemberId = await resolveTeamsSenderWorkspaceMemberId({
       client,
       serviceUrl: teamsServiceUrl,
@@ -68,10 +68,7 @@ export const answerTeamsAssistantRequest = async ({
     });
 
     if (!isDefined(workspaceMemberId)) {
-      await sendActivity({
-        type: 'message',
-        text: TEAMS_ASSISTANT_UNMATCHED_SENDER_TEXT,
-      });
+      await status.finish(TEAMS_ASSISTANT_UNMATCHED_SENDER_TEXT);
       await updateTeamsAssistantRequest({
         client,
         id: request.id,
@@ -88,13 +85,37 @@ export const answerTeamsAssistantRequest = async ({
       workspaceMemberId,
     });
 
+    const [history, workspaceBaseUrl] = await Promise.all([
+      findTeamsAssistantHistory({
+        client,
+        teamsConversationId,
+        workspaceMemberId,
+      }).catch((error: unknown) => {
+        console.warn(
+          `[teams] could not load the history of ${teamsConversationId}`,
+          error,
+        );
+
+        return [];
+      }),
+      fetchWorkspaceBaseUrl(),
+    ]);
+
     const responseText = await runTeamsAssistantAgentOrThrow({
       requestText,
+      history,
       workspaceMemberId,
+      workspaceBaseUrl,
       deadlineAtMs: agentDeadlineAtMs,
     });
 
-    await sendActivity({ type: 'message', text: responseText });
+    await status.finish(
+      buildTeamsAssistantAnswerText({
+        responseText,
+        requestId: request.id,
+        workspaceBaseUrl,
+      }),
+    );
     await updateTeamsAssistantRequest({
       client,
       id: request.id,
@@ -106,10 +127,9 @@ export const answerTeamsAssistantRequest = async ({
   } catch (error) {
     const errorMessage = toErrorMessage(error);
 
-    await sendActivity({
-      type: 'message',
-      text: TEAMS_ASSISTANT_FAILURE_TEXT,
-    }).catch(() => undefined);
+    await status
+      .finish(getTeamsAssistantFailureText(error))
+      .catch(() => undefined);
     await updateTeamsAssistantRequest({
       client,
       id: request.id,

@@ -35,10 +35,11 @@ export const buildFlowWithLocalEdits = ({
         return serverStep;
       }
 
-      return (
-        localFlow.steps?.find((localStep) => localStep.id === serverStep.id) ??
-        serverStep
+      const localStep = localFlow.steps?.find(
+        (candidateStep) => candidateStep.id === serverStep.id,
       );
+
+      return localStep ?? serverStep;
     }) ?? null;
 
   return { workflowVersionId: serverFlow.workflowVersionId, trigger, steps };

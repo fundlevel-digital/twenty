@@ -16,14 +16,18 @@ import { useNavigatePageLayoutSidePanel } from '@/side-panel/pages/page-layout/h
 import { usePageLayoutSidePanelTarget } from '@/side-panel/pages/page-layout/hooks/usePageLayoutSidePanelTarget';
 import { getFrontComponentWidgetTypeSelectItemId } from '@/side-panel/pages/page-layout/utils/getFrontComponentWidgetTypeSelectItemId';
 import { isExistingWidgetMissingOrDifferentType } from '@/side-panel/pages/page-layout/utils/isExistingWidgetMissingOrDifferentType';
-import { isFrontComponentAvailableInWidgetPicker } from '@/side-panel/pages/page-layout/utils/isFrontComponentAvailableInWidgetPicker';
 import { SelectableListItem } from '@/ui/layout/selectable-list/components/SelectableListItem';
 import { useAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useQuery } from '@apollo/client/react';
-import { t } from '@lingui/core/macro';
-import { CoreObjectNameSingular, SidePanelPages } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
+import {
+  StandardObjectNameSingular,
+  SidePanelPages,
+} from 'twenty-shared/types';
+import {
+  isDefined,
+  isFrontComponentAvailableInWidgetPicker,
+} from 'twenty-shared/utils';
 import {
   IconAlignBoxLeftTop,
   IconApps,
@@ -37,8 +41,10 @@ import {
   WidgetConfigurationType,
   WidgetType,
 } from '~/generated-metadata/graphql';
+import { useLingui } from '@lingui/react/macro';
 
 export const SidePanelPageLayoutDashboardWidgetTypeSelect = () => {
+  const { t } = useLingui();
   const { pageLayoutId, targetRecordIdentifier } =
     usePageLayoutSidePanelTarget();
 
@@ -79,7 +85,7 @@ export const SidePanelPageLayoutDashboardWidgetTypeSelect = () => {
   const firstAvailableObjectMetadataItem =
     readableObjectMetadataItems.find(
       (objectMetadataItem) =>
-        objectMetadataItem.nameSingular === CoreObjectNameSingular.Company,
+        objectMetadataItem.nameSingular === StandardObjectNameSingular.Company,
     ) ||
     [...readableObjectMetadataItems].sort((first, second) =>
       first.labelPlural.localeCompare(second.labelPlural),
@@ -182,7 +188,7 @@ export const SidePanelPageLayoutDashboardWidgetTypeSelect = () => {
         title: t`Untitled Rich Text`,
         configuration: {
           configurationType: WidgetConfigurationType.STANDALONE_RICH_TEXT,
-          body: { blocknote: '', markdown: null },
+          body: { tiptap: '', markdown: null },
         },
       });
       setPageLayoutEditingWidgetId(newWidget.id);

@@ -21,7 +21,7 @@ import { ErrorCode } from 'src/engine/core-modules/graphql/utils/graphql-errors.
 import {
   PermissionsExceptionCode,
   PermissionsExceptionMessage,
-} from 'src/engine/metadata-modules/permissions/permissions.exception';
+} from 'src/engine/permissions/permissions.exception';
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 
 const client = request(`http://localhost:${APP_PORT}`);
@@ -466,6 +466,38 @@ describe('roles permissions', () => {
       await assertPermissionDeniedForMemberWithMemberRole({
         query: getRoleQuery(guestRoleId),
       });
+    });
+  });
+
+  describe('accessGroupPropagationProgress', () => {
+    const query = {
+      query: `
+        query AccessGroupPropagationProgress {
+          accessGroupPropagationProgress {
+            totalRecordCount
+            remainingRecordCount
+            isInProgress
+          }
+        }
+      `,
+    };
+
+    it('should allow admin to read the propagation progress', async () => {
+      const response = await client
+        .post('/metadata')
+        .set('Authorization', `Bearer ${APPLE_JANE_ADMIN_ACCESS_TOKEN}`)
+        .send(query)
+        .expect(200);
+
+      expect(response.body.data.accessGroupPropagationProgress).toEqual({
+        totalRecordCount: expect.any(Number),
+        remainingRecordCount: expect.any(Number),
+        isInProgress: expect.any(Boolean),
+      });
+    });
+
+    it('should throw a permission error when user does not have permission (member role)', async () => {
+      await assertPermissionDeniedForMemberWithMemberRole({ query });
     });
   });
 

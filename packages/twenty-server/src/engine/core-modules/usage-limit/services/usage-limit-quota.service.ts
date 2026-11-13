@@ -16,6 +16,7 @@ import { UsageLimitException } from 'src/engine/core-modules/usage-limit/excepti
 import { UsageLimitDefaultValueService } from 'src/engine/core-modules/usage-limit/services/usage-limit-default-value.service';
 import { UsageLimitEntitlementService } from 'src/engine/core-modules/usage-limit/services/usage-limit-entitlement.service';
 import { UsagePeriodService } from 'src/engine/core-modules/usage-limit/services/usage-period.service';
+import { type AllowanceUsage } from 'src/engine/core-modules/usage-limit/types/allowance-usage.type';
 import { type WorkspaceAllowanceQuotaCounter } from 'src/engine/core-modules/usage-limit/types/workspace-allowance-quota-counter.type';
 import { type ExhaustedKind } from 'src/engine/core-modules/usage-limit/types/exhausted-kind.type';
 import { type ExhaustedScope } from 'src/engine/core-modules/usage-limit/types/exhausted-scope.type';
@@ -27,6 +28,7 @@ import { type QuotaCost } from 'src/engine/core-modules/usage-limit/types/quota-
 import { type QuotaCounter } from 'src/engine/core-modules/usage-limit/types/quota-counter.type';
 import { type QuotaDebit } from 'src/engine/core-modules/usage-limit/types/quota-debit.type';
 import { type QuotaDebitResult } from 'src/engine/core-modules/usage-limit/types/quota-debit-result.type';
+import { type QuotaLimitDefaultWithNullableValue } from 'src/engine/core-modules/usage-limit/types/quota-limit-default-with-nullable-value.type';
 import { type QuotaLimitDefault } from 'src/engine/core-modules/usage-limit/types/quota-limit-default.type';
 import { type UserAllowanceQuotaCounter } from 'src/engine/core-modules/usage-limit/types/user-allowance-quota-counter.type';
 import { buildWorkspaceAllowanceCounterKey } from 'src/engine/core-modules/usage-limit/utils/build-workspace-allowance-counter-key.util';
@@ -34,6 +36,7 @@ import { buildConsumeScriptArguments } from 'src/engine/core-modules/usage-limit
 import { buildIntraWorkspaceLimitCounterKeys } from 'src/engine/core-modules/usage-limit/utils/build-intra-workspace-limit-counter-keys.util';
 import { buildLimitQuotaCounter } from 'src/engine/core-modules/usage-limit/utils/build-limit-quota-counter.util';
 import { buildPeriodGroupKey } from 'src/engine/core-modules/usage-limit/utils/build-period-group-key.util';
+import { applyPerSpenderDefaultOverrides } from 'src/engine/core-modules/usage-limit/utils/apply-per-spender-default-overrides.util';
 import { buildQuotaCounters } from 'src/engine/core-modules/usage-limit/utils/build-quota-counters.util';
 import { buildQuotaDebits } from 'src/engine/core-modules/usage-limit/utils/build-quota-debits.util';
 import { buildQuotaExhaustedScope } from 'src/engine/core-modules/usage-limit/utils/build-quota-exhausted-scope.util';
@@ -50,7 +53,7 @@ import { isQuotaLimit } from 'src/engine/core-modules/usage-limit/utils/is-quota
 import { splitUserCreditsAcrossEvents } from 'src/engine/core-modules/usage-limit/utils/split-user-credits-across-events.util';
 import { getPeriodAnchor } from 'src/engine/core-modules/usage-limit/utils/get-period-anchor.util';
 import { type UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
-import { type UsageResourceType } from 'src/engine/core-modules/usage/enums/usage-resource-type.enum';
+import { UsageResourceType } from 'src/engine/core-modules/usage/enums/usage-resource-type.enum';
 import { UsageUnit } from 'src/engine/core-modules/usage/enums/usage-unit.enum';
 import { UsageAnalyticsService } from 'src/engine/core-modules/usage/services/usage-analytics.service';
 import { UsageRecorderService } from 'src/engine/core-modules/usage/services/usage-recorder.service';
@@ -195,11 +198,9 @@ export class UsageLimitQuotaService {
     );
   }
 
-  async getWorkspaceAllowanceUsage(workspaceId: string): Promise<{
-    limitValue: number;
-    consumedValue: number | null;
-    periodEnd: Date;
-  } | null> {
+  async getWorkspaceAllowanceUsage(
+    workspaceId: string,
+  ): Promise<AllowanceUsage | null> {
     const counter = await this.buildWorkspaceAllowanceCounter(workspaceId);
 
     if (!isDefined(counter)) {
@@ -218,6 +219,44 @@ export class UsageLimitQuotaService {
       consumedValue: consumedValue ?? null,
       periodEnd: counter.periodEnd,
     };
+  }
+
+  async getUserAllowanceUsage(
+    scope: QuotaConsumeArgs,
+  ): Promise<AllowanceUsage | null> {
+    const counter = (await this.buildQuotaCountersForScope(scope)).find(
+      (quotaCounter) => quotaCounter.kind === 'userAllowance',
+    );
+
+    if (!isDefined(counter)) {
+      return null;
+    }
+
+    const {
+      consumedValues: [consumedValue],
+    } = await this.readCountersAdmittingOnFailure({
+      workspaceId: scope.workspaceId,
+      counters: [counter],
+    });
+
+    return {
+      limitValue: counter.limitValue,
+      consumedValue: consumedValue ?? null,
+      periodEnd: counter.periodEnd,
+    };
+  }
+
+  async hasUserCredits(workspaceId: string): Promise<boolean> {
+    const { quotaLimitDefaults } = await this.findQuotaLimitsAndDefaults({
+      workspaceId,
+      resourceType: UsageResourceType.AI,
+    });
+
+    return quotaLimitDefaults.some(
+      (quotaLimitDefault) =>
+        quotaLimitDefault.unit === UsageUnit.USER_CREDIT &&
+        quotaLimitDefault.limitValue > 0,
+    );
   }
 
   async getWorkspaceAllowanceRemainingMicro(
@@ -661,15 +700,8 @@ export class UsageLimitQuotaService {
   }: QuotaConsumeArgs): Promise<
     (LimitQuotaCounter | UserAllowanceQuotaCounter)[]
   > {
-    const quotaLimitDefaults = await this.buildQuotaLimitDefaults({
-      workspaceId,
-      resourceType,
-    });
-
-    const quotaLimits = await this.findQuotaLimits({
-      workspaceId,
-      resourceType,
-    });
+    const { quotaLimitDefaults, quotaLimits } =
+      await this.findQuotaLimitsAndDefaults({ workspaceId, resourceType });
 
     if (quotaLimits.length === 0 && quotaLimitDefaults.length === 0) {
       return [];
@@ -693,13 +725,31 @@ export class UsageLimitQuotaService {
     });
   }
 
+  private async findQuotaLimitsAndDefaults({
+    workspaceId,
+    resourceType,
+  }: {
+    workspaceId: string;
+    resourceType: UsageResourceType;
+  }): Promise<{
+    quotaLimitDefaults: QuotaLimitDefault[];
+    quotaLimits: FlatQuotaLimit[];
+  }> {
+    const [quotaLimitDefaults, quotaLimits] = await Promise.all([
+      this.buildQuotaLimitDefaults({ workspaceId, resourceType }),
+      this.findQuotaLimits({ workspaceId, resourceType }),
+    ]);
+
+    return applyPerSpenderDefaultOverrides({ quotaLimitDefaults, quotaLimits });
+  }
+
   private async buildQuotaLimitDefaults({
     workspaceId,
     resourceType,
   }: {
     workspaceId: string;
     resourceType: UsageResourceType;
-  }): Promise<QuotaLimitDefault[]> {
+  }): Promise<QuotaLimitDefaultWithNullableValue[]> {
     if (!this.twentyConfigService.get('CLICKHOUSE_URL')) {
       return [];
     }
@@ -709,26 +759,21 @@ export class UsageLimitQuotaService {
       limitKind: 'quota',
     });
 
-    const quotaLimitDefaults = await Promise.all(
+    return Promise.all(
       (definition?.defaults ?? []).map(
         async ({
           limitValueConfigVariable,
           ...quotaLimitDefaultDefinition
-        }) => {
-          const limitValue =
+        }) => ({
+          ...quotaLimitDefaultDefinition,
+          limitValue:
             await this.usageLimitDefaultValueService.findDefaultLimitValue({
               workspaceId,
               limitValueConfigVariable,
-            });
-
-          return isDefined(limitValue)
-            ? [{ ...quotaLimitDefaultDefinition, limitValue }]
-            : [];
-        },
+            }),
+        }),
       ),
     );
-
-    return quotaLimitDefaults.flat();
   }
 
   private async buildWorkspaceAllowanceCounterAdmittingOnFailure(

@@ -1,13 +1,13 @@
 import { type Meta, type StoryObj } from '@storybook/react-vite';
 import { useStore } from 'jotai';
-import { type ReactNode, useEffect } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
+import { useEffect } from 'react';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { ComponentDecorator } from 'twenty-ui/testing';
 
 import { AiChatQuestionCard } from '@/ai/components/AiChatQuestionCard';
-import { agentChatDisplayedThreadState } from '@/ai/states/agentChatDisplayedThreadState';
+import { aiChatDisplayedThreadState } from '@/ai/states/aiChatDisplayedThreadState';
 import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
-import { type AgentChatPendingQuestion } from '@/ai/types/AgentChatPendingQuestion';
+import { type AiChatPendingQuestion } from '@/ai/types/AiChatPendingQuestion';
 
 import { styled } from '@linaria/react';
 import { MemoryRouterDecorator } from '~/testing/decorators/MemoryRouterDecorator';
@@ -33,7 +33,7 @@ const EMAIL_TYPE_QUESTION = {
   ],
 };
 
-const singleQuestion: AgentChatPendingQuestion = {
+const singleQuestion: AiChatPendingQuestion = {
   toolCallId: 'call-1',
   kind: 'question',
   question: EMAIL_TYPE_QUESTION,
@@ -46,13 +46,13 @@ const TONE_QUESTION = {
 };
 
 // calls asked before ask_question took one question at a time
-const multipleQuestions: AgentChatPendingQuestion = {
+const multipleQuestions: AiChatPendingQuestion = {
   toolCallId: 'call-2',
   kind: 'questions',
   questions: [EMAIL_TYPE_QUESTION, TONE_QUESTION],
 };
 
-const longQuestion: AgentChatPendingQuestion = {
+const longQuestion: AiChatPendingQuestion = {
   toolCallId: 'call-3',
   kind: 'questions',
   questions: [
@@ -71,7 +71,7 @@ const longQuestion: AgentChatPendingQuestion = {
   ],
 };
 
-const multiSelectQuestion: AgentChatPendingQuestion = {
+const multiSelectQuestion: AiChatPendingQuestion = {
   toolCallId: 'call-4',
   kind: 'question',
   question: {
@@ -86,15 +86,15 @@ const multiSelectQuestion: AgentChatPendingQuestion = {
   },
 };
 
-const StoreSeeder = ({ children }: { children: ReactNode }) => {
+const StoreSeederEffect = () => {
   const store = useStore();
 
   useEffect(() => {
     store.set(currentAiChatThreadState.atom, 'thread-1');
-    store.set(agentChatDisplayedThreadState.atom, 'thread-1');
+    store.set(aiChatDisplayedThreadState.atom, 'thread-1');
   }, [store]);
 
-  return <>{children}</>;
+  return null;
 };
 
 const meta: Meta<typeof AiChatQuestionCard> = {
@@ -102,11 +102,10 @@ const meta: Meta<typeof AiChatQuestionCard> = {
   component: AiChatQuestionCard,
   decorators: [
     (Story) => (
-      <StoreSeeder>
-        <StyledContainer>
-          <Story />
-        </StyledContainer>
-      </StoreSeeder>
+      <StyledContainer>
+        <StoreSeederEffect />
+        <Story />
+      </StyledContainer>
     ),
     ToastDecorator,
     ComponentDecorator,
@@ -125,6 +124,37 @@ export const SingleQuestion: Story = {
 
 export const MultipleQuestions: Story = {
   args: { pendingQuestion: multipleQuestions },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const previous = await canvas.findByRole('button', { name: 'Previous' });
+    const next = canvas.getByRole('button', { name: 'Next question' });
+
+    expect(previous).toBeDisabled();
+    expect(canvas.getByText('1/2')).toBeVisible();
+    await userEvent.type(
+      canvas.getByPlaceholderText('Type your own answer here'),
+      'Welcome email draft',
+    );
+    await userEvent.click(next);
+
+    expect(canvas.getByText(TONE_QUESTION.question)).toBeVisible();
+    expect(canvas.getByText('2/2')).toBeVisible();
+    expect(next).toBeDisabled();
+    await userEvent.type(
+      canvas.getByPlaceholderText('Type your own answer here'),
+      'Friendly tone draft',
+    );
+    await userEvent.click(previous);
+
+    expect(canvas.getByText(EMAIL_TYPE_QUESTION.question)).toBeVisible();
+    expect(
+      canvas.getByPlaceholderText('Type your own answer here'),
+    ).toHaveValue('Welcome email draft');
+    await userEvent.click(next);
+    expect(
+      canvas.getByPlaceholderText('Type your own answer here'),
+    ).toHaveValue('Friendly tone draft');
+  },
 };
 
 export const LongQuestion: Story = {
@@ -155,5 +185,16 @@ export const MultiSelectQuestion: Story = {
 
     await userEvent.click(otherOption);
     expect(otherOption).toHaveAttribute('aria-pressed', 'true');
+  },
+};
+
+export const SkipQuestion: Story = {
+  args: { pendingQuestion: singleQuestion, onSkip: fn() },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.click(await canvas.findByRole('button', { name: 'Skip' }));
+    expect(args.onSkip).toHaveBeenCalledOnce();
+    expect(canvas.getByText(EMAIL_TYPE_QUESTION.question)).toBeVisible();
   },
 };

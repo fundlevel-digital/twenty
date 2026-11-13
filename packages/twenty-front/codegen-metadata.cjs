@@ -24,14 +24,17 @@ module.exports = {
     // not the metadata schema, so they must not be validated against /metadata.
     '!./src/modules/settings/legal/**/graphql/**/*.{ts,tsx}',
     './src/modules/logic-functions/graphql/**/*.{ts,tsx}',
+    './src/modules/mcp-servers/graphql/**/*.{ts,tsx}',
 
     './src/modules/analytics/graphql/**/*.{ts,tsx}',
     './src/modules/object-metadata/graphql/**/*.{ts,tsx}',
     './src/modules/validation-rules/graphql/**/*.{ts,tsx}',
+    './src/modules/related-record-paths/graphql/**/*.{ts,tsx}',
     './src/modules/navigation-menu-item/**/graphql/**/*.{ts,tsx}',
     './src/modules/command-menu-item/graphql/**/*.{ts,tsx}',
     './src/modules/file/graphql/**/*.{ts,tsx}',
     './src/modules/onboarding/graphql/**/*.{ts,tsx}',
+    './src/modules/getting-started/graphql/**/*.{ts,tsx}',
     './src/modules/front-components/graphql/**/*.{ts,tsx}',
 
     './src/modules/page-layout/widgets/**/graphql/**/*.{ts,tsx}',
@@ -55,18 +58,30 @@ module.exports = {
     '!./src/**/__mocks__/*.ts',
   ],
   overwrite: true,
+  config: {
+    useTypeImports: true,
+    defaultScalarType: 'any',
+    scalars: {
+      DateTime: 'string',
+      UUID: 'string',
+    },
+    namingConvention: { enumValues: 'keep' },
+    enumType: 'native',
+  },
   generates: {
+    './src/generated-metadata/schema.ts': {
+      plugins: ['typescript'],
+    },
     './src/generated-metadata/graphql.ts': {
-      plugins: ['typescript', 'typescript-operations', 'typed-document-node'],
+      plugins: [
+        { add: { content: "export * from './schema';" } },
+        'typescript-operations',
+        'typed-document-node',
+      ],
       config: {
-        skipTypename: false,
-        useTypeImports: true,
-        defaultScalarType: 'any',
-        scalars: {
-          DateTime: 'string',
-          UUID: 'string',
-        },
-        namingConvention: { enumValues: 'keep' },
+        importSchemaTypesFrom: './src/generated-metadata/schema',
+        nonOptionalTypename: true,
+        skipTypeNameForRoot: true,
       },
     },
   },

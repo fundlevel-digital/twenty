@@ -3,13 +3,17 @@ import { assertUnreachable } from 'twenty-shared/utils';
 import { AiChatFormCard } from '@/ai/components/AiChatFormCard';
 import { AiChatQuestionCard } from '@/ai/components/AiChatQuestionCard';
 import { AiChatToolCallApprovalCard } from '@/ai/components/AiChatToolCallApprovalCard';
-import { type AgentChatPendingToolCall } from '@/ai/types/AgentChatPendingToolCall';
+import { type AiChatPendingToolCall } from '@/ai/types/AiChatPendingToolCall';
 
 type AiChatAskCardProps = {
-  pendingToolCall: AgentChatPendingToolCall;
+  pendingToolCall: AiChatPendingToolCall;
+  isActive?: boolean;
 };
 
-export const AiChatAskCard = ({ pendingToolCall }: AiChatAskCardProps) => {
+export const AiChatAskCard = ({
+  pendingToolCall,
+  isActive = true,
+}: AiChatAskCardProps) => {
   switch (pendingToolCall.kind) {
     case 'question':
     case 'questions':
@@ -26,6 +30,7 @@ export const AiChatAskCard = ({ pendingToolCall }: AiChatAskCardProps) => {
         <AiChatToolCallApprovalCard
           toolCallId={pendingToolCall.toolCallId}
           proposal={pendingToolCall.proposal}
+          isActive={isActive}
         />
       );
     default:

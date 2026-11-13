@@ -1,15 +1,14 @@
 import { useProcessWorkspaceSetupCompletion } from '@/ai/hooks/useProcessWorkspaceSetupCompletion';
-import { agentChatUISessionStartTimeState } from '@/ai/states/agentChatUISessionStartTimeState';
+import { aiChatUISessionStartTimeState } from '@/ai/states/aiChatUISessionStartTimeState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useState } from 'react';
 import { Temporal } from 'temporal-polyfill';
 import { type ExtendedUIMessage } from 'twenty-shared/ai';
-import { isDeeplyEqual } from '~/utils/isDeeplyEqual';
 
 export const useUpdateStreamingPartsWithDiff = () => {
-  const agentChatUISessionStartTime = useAtomStateValue(
-    agentChatUISessionStartTimeState,
+  const aiChatUISessionStartTime = useAtomStateValue(
+    aiChatUISessionStartTimeState,
   );
 
   const { processWorkspaceSetupCompletion } =
@@ -21,7 +20,7 @@ export const useUpdateStreamingPartsWithDiff = () => {
   );
 
   const isMessageFromCurrentSession = (message: ExtendedUIMessage) => {
-    if (agentChatUISessionStartTime === null) {
+    if (aiChatUISessionStartTime === null) {
       return false;
     }
 
@@ -30,7 +29,7 @@ export const useUpdateStreamingPartsWithDiff = () => {
     return (
       !isNonEmptyString(messageCreatedAt) ||
       Temporal.Instant.from(messageCreatedAt).epochNanoseconds >=
-        agentChatUISessionStartTime.epochNanoseconds
+        aiChatUISessionStartTime.epochNanoseconds
     );
   };
 
@@ -52,10 +51,7 @@ export const useUpdateStreamingPartsWithDiff = () => {
       const lastSeenMessage = lastSeenMessages[index];
 
       // a stream flush keeps the unchanged messages, a refetch rebuilds them all
-      if (
-        lastSeenMessage === incomingMessage ||
-        isDeeplyEqual(lastSeenMessage, incomingMessage)
-      ) {
+      if (lastSeenMessage === incomingMessage) {
         continue;
       }
 

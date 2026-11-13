@@ -17,7 +17,7 @@ const buildStep = ({
   valid: true,
   type: 'CODE',
   settings: {
-    input: { logicFunctionId: 'logic-function-id', logicFunctionInput: {} },
+    input: { code: `// ${name}`, logicFunctionInput: {} },
     outputSchema: {},
     errorHandlingOptions: {
       retryOnFailure: { value: 0 },

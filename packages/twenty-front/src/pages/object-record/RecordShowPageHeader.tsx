@@ -1,3 +1,4 @@
+import { MessageThreadSidePanelTitle } from '@/activities/emails/components/MessageThreadSidePanelTitle';
 import { getObjectMetadataIdentifierFields } from '@/object-metadata/utils/getObjectMetadataIdentifierFields';
 import { ObjectRecordShowPageBreadcrumb } from '@/object-record/record-show/components/ObjectRecordShowPageBreadcrumb';
 import { RecordIdentifierBarTitle } from '@/object-record/record-show/components/RecordIdentifierBarTitle';
@@ -6,10 +7,12 @@ import { type RecordShowPageHeaderTitleMode } from '@/object-record/record-show/
 import { useRecordShowPagePagination } from '@/object-record/record-show/hooks/useRecordShowPagePagination';
 import { useWorkspaceSurface } from '@/ui/layout/hooks/useWorkspaceSurface';
 import { PageCardHeader } from '@/ui/layout/page/components/PageCardHeader';
+import { StandardObjectNameSingular } from 'twenty-shared/types';
 
 type RecordShowPageHeaderProps = {
   objectNameSingular: string;
   objectRecordId: string;
+  title?: React.ReactNode;
   titleMode?: RecordShowPageHeaderTitleMode;
   titlePrefix?: React.ReactNode;
   titleAccessory?: React.ReactNode;
@@ -25,6 +28,7 @@ type RecordShowPagePanelHeaderProps = Omit<
 const RecordShowPageMainHeader = ({
   objectNameSingular,
   objectRecordId,
+  title,
   titleMode = 'breadcrumb',
   titlePrefix,
   titleAccessory,
@@ -44,10 +48,12 @@ const RecordShowPageMainHeader = ({
         title={
           <>
             {titlePrefix}
-            <RecordShowPageHeaderRecordTitle
-              objectNameSingular={objectNameSingular}
-              objectRecordId={objectRecordId}
-            />
+            {title ?? (
+              <RecordShowPageHeaderRecordTitle
+                objectNameSingular={objectNameSingular}
+                objectRecordId={objectRecordId}
+              />
+            )}
             {titleAccessory}
           </>
         }
@@ -74,26 +80,41 @@ const RecordShowPageMainHeader = ({
 const RecordShowPagePanelHeader = ({
   objectNameSingular,
   objectRecordId,
+  title,
   titleAccessory,
-}: RecordShowPagePanelHeaderProps) => (
-  <PageCardHeader
-    title={
-      <>
-        <RecordIdentifierBarTitle
-          objectNameSingular={objectNameSingular}
-          objectRecordId={objectRecordId}
-          variant="side-panel"
-          recordLinkSurface="main"
-        />
-        {titleAccessory}
-      </>
-    }
-  />
-);
+}: RecordShowPagePanelHeaderProps) => {
+  const recordTitle = title ?? (
+    <RecordIdentifierBarTitle
+      objectNameSingular={objectNameSingular}
+      objectRecordId={objectRecordId}
+      variant="side-panel"
+      recordLinkSurface="main"
+    />
+  );
+
+  return (
+    <PageCardHeader
+      title={
+        <>
+          {objectNameSingular === StandardObjectNameSingular.MessageThread ? (
+            <MessageThreadSidePanelTitle
+              messageThreadId={objectRecordId}
+              emailThreadTitle={recordTitle}
+            />
+          ) : (
+            recordTitle
+          )}
+          {titleAccessory}
+        </>
+      }
+    />
+  );
+};
 
 export const RecordShowPageHeader = ({
   objectNameSingular,
   objectRecordId,
+  title,
   titleMode,
   titlePrefix,
   titleAccessory,
@@ -105,12 +126,14 @@ export const RecordShowPageHeader = ({
     <RecordShowPagePanelHeader
       objectNameSingular={objectNameSingular}
       objectRecordId={objectRecordId}
+      title={title}
       titleAccessory={titleAccessory}
     />
   ) : (
     <RecordShowPageMainHeader
       objectNameSingular={objectNameSingular}
       objectRecordId={objectRecordId}
+      title={title}
       titleMode={titleMode}
       titlePrefix={titlePrefix}
       titleAccessory={titleAccessory}

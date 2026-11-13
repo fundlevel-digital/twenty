@@ -71,6 +71,7 @@ export const convertRecordFilterToPredicate = (
       __typename: 'RowLevelPermissionPredicate',
       id: filter.id,
       fieldMetadataId: filter.fieldMetadataId,
+      relationFieldMetadataId: null,
       objectMetadataId,
       operand: filter.operand as unknown as RowLevelPermissionPredicateOperand,
       value: null,
@@ -90,6 +91,7 @@ export const convertRecordFilterToPredicate = (
     __typename: 'RowLevelPermissionPredicate',
     id: filter.id,
     fieldMetadataId: filter.fieldMetadataId,
+    relationFieldMetadataId: null,
     objectMetadataId,
     operand: filter.operand as unknown as RowLevelPermissionPredicateOperand,
     value: filter.value || null,
@@ -120,11 +122,23 @@ export const convertPredicateGroupToRecordFilterGroup = (
   };
 };
 
-export const convertRecordFilterGroupToPredicateGroup = (
-  filterGroup: RecordFilterGroup,
-  roleId: string,
-  objectMetadataId: string,
-): RowLevelPermissionPredicateGroup => {
+export const convertRecordFilterGroupToPredicateGroup = ({
+  filterGroup,
+  roleId,
+  objectMetadataId,
+  existingPredicateGroup,
+}: {
+  filterGroup: RecordFilterGroup;
+  roleId: string;
+  objectMetadataId: string;
+  existingPredicateGroup?: Pick<
+    RowLevelPermissionPredicateGroup,
+    | 'canReadRecords'
+    | 'canUpdateRecords'
+    | 'canSoftDeleteRecords'
+    | 'canDestroyRecords'
+  >;
+}): RowLevelPermissionPredicateGroup => {
   return {
     __typename: 'RowLevelPermissionPredicateGroup',
     id: filterGroup.id,
@@ -136,6 +150,10 @@ export const convertRecordFilterGroupToPredicateGroup = (
         : RowLevelPermissionPredicateGroupLogicalOperator.OR,
     positionInRowLevelPermissionPredicateGroup:
       filterGroup.positionInRecordFilterGroup ?? null,
+    canReadRecords: existingPredicateGroup?.canReadRecords ?? false,
+    canUpdateRecords: existingPredicateGroup?.canUpdateRecords ?? false,
+    canSoftDeleteRecords: existingPredicateGroup?.canSoftDeleteRecords ?? false,
+    canDestroyRecords: existingPredicateGroup?.canDestroyRecords ?? false,
     roleId,
     objectMetadataId,
   };

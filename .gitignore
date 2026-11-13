@@ -15,6 +15,7 @@
 .nx/cache
 .nx/workspace-data
 .nx/nxw.js
+.nx/migrate-runs
 
 .pnp.*
 .yarn/*

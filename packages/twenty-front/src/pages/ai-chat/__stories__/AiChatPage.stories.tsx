@@ -6,14 +6,14 @@ import {
 import { graphql, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { AppPath, CoreObjectNameSingular } from 'twenty-shared/types';
+import { AppPath, StandardObjectNameSingular } from 'twenty-shared/types';
 import { getAppPath, isDefined } from 'twenty-shared/utils';
 import { Button } from 'twenty-ui/primitives/input';
 import { ComponentDecorator } from 'twenty-ui/testing';
 
 import { serializePlainTextAsAdvancedTextEditorDocument } from '@/advanced-text-editor/utils/serializePlainTextAsAdvancedTextEditorDocument';
 import { AI_CHAT_NEW_THREAD_PATH_SEGMENT } from '@/ai/constants/AiChatNewThreadPathSegment';
-import { agentChatDraftsByThreadIdState } from '@/ai/states/agentChatDraftsByThreadIdState';
+import { aiChatDraftsByThreadIdState } from '@/ai/states/aiChatDraftsByThreadIdState';
 import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
 import { newAiChatThreadIdState } from '@/ai/states/newAiChatThreadIdState';
 import { initializeNewAiChatStory } from '@/ai/testing/initializeNewAiChatStory';
@@ -87,7 +87,7 @@ const initializeChatPageStory = () => {
   initializeNewAiChatStory({ isInboxEnabled: false });
   const draftThreadId = jotaiStore.get(newAiChatThreadIdState.atom);
 
-  jotaiStore.set(agentChatDraftsByThreadIdState.atom, {
+  jotaiStore.set(aiChatDraftsByThreadIdState.atom, {
     [draftThreadId]: serializePlainTextAsAdvancedTextEditorDocument(DRAFT_TEXT),
   });
   jotaiStore.set(currentAiChatThreadState.atom, EXISTING_THREAD_ID);
@@ -99,7 +99,9 @@ const allowSelectedConversationUpdates = () => {
   const threadId = jotaiStore.get(currentAiChatThreadState.atom);
   const objectMetadataTemplate = jotaiStore
     .get(flatObjectMetadataItemsSelector.atom)
-    .find(({ nameSingular }) => nameSingular === CoreObjectNameSingular.Note);
+    .find(
+      ({ nameSingular }) => nameSingular === StandardObjectNameSingular.Note,
+    );
 
   if (
     !isDefined(workspace) ||
@@ -114,7 +116,7 @@ const allowSelectedConversationUpdates = () => {
     ...objectMetadataTemplate,
     id: CHAT_OBJECT_METADATA_ID,
     universalIdentifier: CHAT_OBJECT_METADATA_ID,
-    nameSingular: CoreObjectNameSingular.AgentChatThread,
+    nameSingular: StandardObjectNameSingular.AgentChatThread,
     namePlural: 'agentChatThreads',
     labelSingular: 'Chat',
     labelPlural: 'Chats',
@@ -231,7 +233,7 @@ export const NewChatRouteHistory: Story = {
       DRAFT_TEXT,
     );
 
-    jotaiStore.set(agentChatDraftsByThreadIdState.atom, (drafts) => ({
+    jotaiStore.set(aiChatDraftsByThreadIdState.atom, (drafts) => ({
       ...drafts,
       [NEXT_DRAFT_THREAD_ID]:
         serializePlainTextAsAdvancedTextEditorDocument(NEXT_DRAFT_TEXT),
@@ -251,7 +253,7 @@ export const NewChatRouteHistory: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Leave chat' }));
     await expect(await canvas.findByText('Outside chat')).toBeVisible();
 
-    jotaiStore.set(agentChatDraftsByThreadIdState.atom, (drafts) => ({
+    jotaiStore.set(aiChatDraftsByThreadIdState.atom, (drafts) => ({
       ...drafts,
       [RETURNED_DRAFT_THREAD_ID]:
         serializePlainTextAsAdvancedTextEditorDocument(RETURNED_DRAFT_TEXT),

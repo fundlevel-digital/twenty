@@ -7,14 +7,30 @@ import { type ProposedToolCall } from 'twenty-shared/ai';
 
 import { AiChatToolCallApprovalCard } from '@/ai/components/AiChatToolCallApprovalCard';
 
-const answerAgentChatToolCall = jest.fn();
-jest.mock('@/ai/hooks/useAnswerAgentChatToolCall', () => ({
-  useAnswerAgentChatToolCall: () => ({ answerAgentChatToolCall }),
+jest.mock('@/ai/hooks/useRefreshFrontComponents', () => ({
+  useRefreshFrontComponents: () => ({ refreshFrontComponents: jest.fn() }),
+}));
+
+const answerAiChatToolCall = jest.fn();
+jest.mock('@/ai/hooks/useAnswerAiChatToolCall', () => ({
+  useAnswerAiChatToolCall: () => ({ answerAiChatToolCall }),
 }));
 
 jest.mock(
+  '@/activities/emails/recipients/hooks/useEmailRecipientsResolution',
+  () => ({
+    useEmailRecipientsResolution: () => ({
+      resolutionByRecipientKey: new Map(),
+    }),
+  }),
+);
+jest.mock(
   '@/ai/components/internal/AiChatToolCallApprovalArgumentsCard',
   () => ({ AiChatToolCallApprovalArgumentsCard: () => null }),
+);
+jest.mock(
+  '@/ai/components/internal/AiChatToolCallApprovalFrontComponentCard',
+  () => ({ AiChatToolCallApprovalFrontComponentCard: () => null }),
 );
 jest.mock(
   '@/activities/emails/editor/constants/InlineEmailBodyEditorProfile',
@@ -27,14 +43,18 @@ jest.mock(
   () => ({
     FormAdvancedTextFieldInput: ({
       defaultValue,
+      value,
       onChange,
     }: {
-      defaultValue: string;
+      defaultValue?: string;
+      value?: string;
       onChange: (value: string) => void;
     }) => (
       <textarea
         aria-label="Email body"
-        defaultValue={JSON.parse(defaultValue).content[0].content[0].text}
+        defaultValue={
+          JSON.parse(value ?? defaultValue ?? '').content[0].content[0].text
+        }
         onChange={(event) =>
           onChange(
             JSON.stringify({
@@ -87,12 +107,12 @@ const renderCard = (proposal: ProposedToolCall = PROPOSAL) =>
 
 describe('AiChatToolCallApprovalCard for an email', () => {
   beforeEach(() => {
-    answerAgentChatToolCall.mockReset();
+    answerAiChatToolCall.mockReset();
   });
 
   it('sends the email as the person edited it', async () => {
     const user = userEvent.setup();
-    answerAgentChatToolCall.mockReturnValue(new Promise(() => {}));
+    answerAiChatToolCall.mockReturnValue(new Promise(() => {}));
 
     renderCard();
 
@@ -108,7 +128,7 @@ describe('AiChatToolCallApprovalCard for an email', () => {
     });
     await user.click(screen.getByRole('button', { name: 'Send' }));
 
-    expect(answerAgentChatToolCall).toHaveBeenCalledWith({
+    expect(answerAiChatToolCall).toHaveBeenCalledWith({
       toolCallId: 'call-1',
       response: {
         decision: 'approve',
@@ -135,13 +155,13 @@ describe('AiChatToolCallApprovalCard for an email', () => {
 
   it('saves the email as a draft through the alternative tool', async () => {
     const user = userEvent.setup();
-    answerAgentChatToolCall.mockResolvedValue(true);
+    answerAiChatToolCall.mockResolvedValue(true);
 
     renderCard();
 
     await user.click(screen.getByRole('button', { name: 'Save as draft' }));
 
-    expect(answerAgentChatToolCall).toHaveBeenCalledWith(
+    expect(answerAiChatToolCall).toHaveBeenCalledWith(
       expect.objectContaining({
         response: {
           decision: 'approve',
@@ -154,7 +174,7 @@ describe('AiChatToolCallApprovalCard for an email', () => {
 
   it('discards the email with the feedback the person wrote', async () => {
     const user = userEvent.setup();
-    answerAgentChatToolCall.mockResolvedValue(true);
+    answerAiChatToolCall.mockResolvedValue(true);
 
     renderCard();
 
@@ -165,7 +185,7 @@ describe('AiChatToolCallApprovalCard for an email', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Discard' }));
 
-    expect(answerAgentChatToolCall).toHaveBeenCalledWith(
+    expect(answerAiChatToolCall).toHaveBeenCalledWith(
       expect.objectContaining({
         response: { decision: 'reject', feedback: 'Too formal' },
       }),

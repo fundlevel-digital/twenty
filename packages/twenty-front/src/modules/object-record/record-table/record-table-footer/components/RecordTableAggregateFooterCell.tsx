@@ -18,7 +18,7 @@ import { getRecordTableColumnFieldWidthClassName } from '@/object-record/record-
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { cx } from '@linaria/core';
-import { findByProperty, isDefined } from 'twenty-shared/utils';
+import { findById, isDefined } from 'twenty-shared/utils';
 
 const FIRST_COLUMN_WIDTH_CSS_VAR = `var(${getRecordTableColumnFieldWidthCSSVariableName(0)})`;
 
@@ -37,7 +37,7 @@ const StyledColumnFooterCell = styled.div<{
   cursor: ${({ isReadOnly }) => (isReadOnly ? 'default' : 'pointer')};
   height: ${RECORD_TABLE_ROW_HEIGHT}px;
 
-  left: ${({ isFirstCell }) =>
+  inset-inline-start: ${({ isFirstCell }) =>
     isFirstCell ? `var(${RECORD_TABLE_FIRST_COLUMN_LEFT_CSS_VAR})` : 'auto'};
 
   @media (hover: hover) {
@@ -107,9 +107,7 @@ export const RecordTableAggregateFooterCell = ({
     useIsRecordTableWidgetAggregateNonInteractive() ??
     !isRecordTableColumnResizable;
 
-  const recordField = visibleRecordFields.find(
-    findByProperty('fieldMetadataItemId', fieldMetadataId),
-  );
+  const recordField = visibleRecordFields.find(findById(viewFieldId));
 
   const isFirstCell = columnIndex === 0;
 
@@ -134,7 +132,7 @@ export const RecordTableAggregateFooterCell = ({
           hasAggregateOperationForViewField ? (
             <RecordTableColumnAggregateFooterValue
               fieldMetadataId={fieldMetadataId}
-              dropdownId={`${fieldMetadataId}-footer-readonly`}
+              dropdownId={`${viewFieldId}-footer-readonly`}
             />
           ) : null
         ) : (

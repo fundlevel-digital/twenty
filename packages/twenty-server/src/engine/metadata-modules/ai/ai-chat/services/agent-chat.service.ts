@@ -6,26 +6,42 @@ import { AgentHistoryRepository } from 'src/engine/metadata-modules/ai/ai-histor
 import { Injectable } from '@nestjs/common';
 import { type ActorMetadata } from 'twenty-shared/types';
 
-import { ExtendedUIMessage } from 'twenty-shared/ai';
+import {
+  AgentChatThreadConversationType,
+  ExtendedUIMessage,
+} from 'twenty-shared/ai';
 import {
   isDefined,
   isNonEmptyArray,
   isNonEmptyString,
 } from 'twenty-shared/utils';
-import { In, Not } from 'typeorm';
+import { In, IsNull, Not, Or } from 'typeorm';
 
+import { isBuiltInAssistantMessage } from 'src/engine/metadata-modules/ai/ai-history/utils/is-built-in-assistant-message.util';
 import { AgentMessageRole } from 'src/engine/metadata-modules/ai/ai-history/enums/agent-message-role.enum';
+
 import { AgentMessageWorkspaceEntity } from 'src/engine/metadata-modules/ai/ai-history/standard-objects/agent-message.workspace-entity';
 import { AgentTurnStatus } from 'src/engine/metadata-modules/ai/ai-history/enums/agent-turn-status.enum';
 import { buildActorMetadataFromAuthContext } from 'src/engine/core-modules/actor/utils/build-actor-metadata-from-auth-context.util';
 import { AgentTurnWorkspaceEntity } from 'src/engine/metadata-modules/ai/ai-history/standard-objects/agent-turn.workspace-entity';
 import { AgentChatThreadWorkspaceEntity } from 'src/engine/metadata-modules/ai/ai-history/standard-objects/agent-chat-thread.workspace-entity';
 import { AgentChatThreadRecordEventService } from 'src/engine/metadata-modules/ai/ai-chat/services/agent-chat-thread-record-event.service';
+import { filterPartsOfTurnActedByOthers } from 'src/engine/metadata-modules/ai/ai-history/utils/filter-parts-of-turn-acted-by-others.util';
 import { resolveMessageSenderApplicationId } from 'src/engine/metadata-modules/ai/ai-chat/utils/resolve-message-sender-application-id.util';
 import { AgentChatThreadService } from 'src/engine/metadata-modules/ai/ai-chat/services/agent-chat-thread.service';
 import { AgentConversationWriterService } from 'src/engine/metadata-modules/ai/ai-history/services/agent-conversation-writer.service';
 import { AgentTitleGenerationService } from 'src/engine/metadata-modules/ai/ai-chat/services/agent-title-generation.service';
-import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
+import { type AgentHistoryTransactionScope } from 'src/engine/metadata-modules/ai/ai-history/types/agent-history-transaction-scope.type';
+import { isAgentTurnOpenedByOtherMember } from 'src/engine/metadata-modules/ai/ai-history/utils/is-agent-turn-opened-by-other-member.util';
+
+type AddMessageArgs = {
+  threadId: string;
+  uiMessage: Omit<ExtendedUIMessage, 'id'>;
+  turnStatus?: AgentTurnStatus;
+  id?: string;
+  workspaceId: string;
+  userWorkspaceId?: string;
+};
 
 @Injectable()
 export class AgentChatService {
@@ -84,20 +100,15 @@ export class AgentChatService {
     id,
     workspaceId,
     userWorkspaceId,
-  }: {
-    threadId: string;
-    uiMessage: Omit<ExtendedUIMessage, 'id'>;
-    turnStatus?: AgentTurnStatus;
-    id?: string;
-    workspaceId: string;
-    userWorkspaceId?: string;
-  }) {
+    scope,
+  }: AddMessageArgs & { scope?: AgentHistoryTransactionScope }) {
     const turnId = await this.conversationWriterService.insertTurn({
       workspaceId,
       threadId,
       agentId: null,
       status: turnStatus,
       createdBy: this.getMessageSenderActor({ workspaceId, userWorkspaceId }),
+      scope,
     });
 
     const senderValues = this.getMessageSenderValues({
@@ -116,6 +127,7 @@ export class AgentChatService {
       ...senderValues,
       processedAt,
       parts: uiMessage.parts ?? [],
+      scope,
     });
 
     return {
@@ -182,52 +194,98 @@ export class AgentChatService {
       select: ['id', 'turnId'],
     });
 
-    if (isNonEmptyArray(earlierContexts)) {
-      await this.messageRepository.delete(workspaceId, {
-        id: In(earlierContexts.map(({ id }) => id)),
-      });
-    }
-
     const earlierTurnIds = earlierContexts.flatMap(({ turnId }) =>
       isDefined(turnId) ? [turnId] : [],
     );
 
-    if (isNonEmptyArray(earlierTurnIds)) {
-      await this.turnRepository.delete(workspaceId, {
-        id: In(earlierTurnIds),
-      });
-    }
-
-    return this.conversationWriterService.insertAgentOpenedTurn({
+    return this.conversationWriterService.runInTransaction({
       workspaceId,
       threadId,
-      context,
+      work: async (scope) => {
+        if (isNonEmptyArray(earlierContexts)) {
+          await scope.delete({
+            name: 'agentMessage',
+            where: {
+              id: In(earlierContexts.map(({ id }) => id)),
+              threadId,
+            },
+          });
+        }
+
+        if (isNonEmptyArray(earlierTurnIds)) {
+          await scope.delete({
+            name: 'agentTurn',
+            where: { id: In(earlierTurnIds), threadId },
+          });
+        }
+
+        return this.conversationWriterService.insertAgentOpenedTurn({
+          workspaceId,
+          threadId,
+          context,
+          scope,
+        });
+      },
     });
   }
 
   async hasMessages({
     threadId,
     workspaceId,
+    excludedMessage,
   }: {
     threadId: string;
     workspaceId: string;
+    excludedMessage?: Pick<AgentMessageWorkspaceEntity, 'id' | 'turnId'>;
   }): Promise<boolean> {
     return this.messageRepository.existsBy(workspaceId, {
       threadId,
       role: Not(AgentMessageRole.SYSTEM),
+      ...(isDefined(excludedMessage) ? { id: Not(excludedMessage.id) } : {}),
+      ...(isDefined(excludedMessage?.turnId)
+        ? { turnId: Or(IsNull(), Not(excludedMessage.turnId)) }
+        : {}),
+    });
+  }
+
+  async findMemberMessage({
+    messageId,
+    threadId,
+    workspaceMemberId,
+    workspaceId,
+  }: {
+    messageId: string;
+    threadId: string;
+    workspaceMemberId: string;
+    workspaceId: string;
+  }): Promise<AgentMessageWorkspaceEntity | null> {
+    return this.messageRepository.findOne(workspaceId, {
+      where: {
+        id: messageId,
+        threadId,
+        role: AgentMessageRole.USER,
+        senderWorkspaceMemberId: workspaceMemberId,
+      },
     });
   }
 
   async deleteAssistantMessagesForTurn({
+    threadId,
     turnId,
     workspaceId,
   }: {
+    threadId: string;
     turnId: string;
     workspaceId: string;
   }): Promise<void> {
-    await this.messageRepository.delete(workspaceId, {
-      turnId,
-      role: AgentMessageRole.ASSISTANT,
+    await this.conversationWriterService.runInTransaction({
+      workspaceId,
+      threadId,
+      work: (scope) =>
+        scope.delete({
+          name: 'agentMessage',
+          where: { threadId, turnId, role: AgentMessageRole.ASSISTANT },
+        }),
     });
   }
 
@@ -246,45 +304,66 @@ export class AgentChatService {
       workspaceId,
     });
 
-    // contexts are given to the model, never shown
-    return this.messageRepository.find(workspaceId, {
-      where: {
-        threadId,
-        role: Not(AgentMessageRole.SYSTEM),
-      },
-      order: { processedAt: { order: 'ASC', nulls: 'NULLS LAST' } },
-      relations: ['parts', 'parts.file'],
-    });
-  }
-
-  async restoreThread({
-    threadId,
-    workspaceMemberId,
-    workspaceId,
-  }: {
-    threadId: string;
-    workspaceMemberId: string;
-    workspaceId: string;
-  }): Promise<AgentChatThreadWorkspaceEntity> {
-    // Access-checked writes return raw rows; record events carry ORM records
-    const threadBefore = await this.threadRepository.findOne(workspaceId, {
-      where: { id: threadId },
-    });
-    const thread = await this.sharingService.restoreThreadWithAccess({
+    return this.getMessagesVisibleTo({
       threadId,
       workspaceMemberId,
       workspaceId,
     });
+  }
 
-    if (isDefined(threadBefore)) {
-      await this.threadRecordEventService.emitThreadUpdated({
-        workspaceId,
-        threadBefore,
-        action: DatabaseEventAction.RESTORED,
-      });
-    }
+  async getMessagesVisibleTo({
+    threadId,
+    workspaceMemberId,
+    applicationId,
+    workspaceId,
+  }: {
+    threadId: string;
+    workspaceMemberId: string | undefined;
+    applicationId?: string;
+    workspaceId: string;
+  }) {
+    // contexts are given to the model, never shown
+    const [messages, turns] = await Promise.all([
+      this.messageRepository.find(workspaceId, {
+        where: {
+          threadId,
+          role: Not(AgentMessageRole.SYSTEM),
+        },
+        order: { processedAt: { order: 'ASC', nulls: 'NULLS LAST' } },
+        relations: ['parts', 'parts.file'],
+      }),
+      this.turnRepository.find(workspaceId, { where: { threadId } }),
+    ]);
+    const turnsById = new Map(turns.map((turn) => [turn.id, turn]));
 
-    return thread;
+    // their message and attachments are theirs to show; only the reply ran under their permissions
+    return messages.map((message) => {
+      const turn = isDefined(message.turnId)
+        ? turnsById.get(message.turnId)
+        : undefined;
+      const messageWithAuthor = {
+        ...message,
+        isBuiltInAssistant: isBuiltInAssistantMessage({ message, turn }),
+      };
+
+      // the opener is stamped on the turn, so a run resumed in a new turn after a pause is still theirs
+      if (
+        !isDefined(turn) ||
+        message.role === AgentMessageRole.USER ||
+        !isAgentTurnOpenedByOtherMember({
+          createdBy: turn.createdBy,
+          workspaceMemberId,
+          applicationId,
+        })
+      ) {
+        return messageWithAuthor;
+      }
+
+      return {
+        ...messageWithAuthor,
+        parts: filterPartsOfTurnActedByOthers(message.parts ?? []),
+      };
+    });
   }
 
   async notifyThreadUsageUpdated({
@@ -325,7 +404,12 @@ export class AgentChatService {
       where: { id: threadId },
     });
 
-    if (!thread || thread.title || !messageContent) {
+    if (
+      !isDefined(thread) ||
+      isNonEmptyString(thread.title) ||
+      !isNonEmptyString(messageContent) ||
+      thread.conversationType === AgentChatThreadConversationType.DIRECT_MESSAGE
+    ) {
       return null;
     }
 

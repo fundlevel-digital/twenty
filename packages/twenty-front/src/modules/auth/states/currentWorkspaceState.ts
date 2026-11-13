@@ -18,6 +18,7 @@ export type CurrentWorkspace = Pick<
   | 'billingEntitlements'
   | 'billingCustomer'
   | 'currentBillingSubscription'
+  | 'isTrialAvailable'
   | 'workspaceMembersCount'
   | 'isPublicInviteLinkEnabled'
   | 'isCampaignClickTrackingEnabled'
@@ -30,6 +31,7 @@ export type CurrentWorkspace = Pick<
   | 'isPasswordAuthEnabled'
   | 'isPasswordAuthBypassEnabled'
   | 'isCustomDomainEnabled'
+  | 'iframeMediaPermissions'
   | 'hasValidSignedEnterpriseKey'
   | 'hasValidEnterpriseValidityToken'
   | 'subdomain'
@@ -39,18 +41,27 @@ export type CurrentWorkspace = Pick<
   | 'trashRetentionDays'
   | 'eventLogRetentionDays'
   | 'aiChatModelTier'
+  | 'aiChatAssistantProfile'
+  | 'aiChatDirectMessageAssistantMode'
+  | 'aiChatInboxAssistantMode'
   | 'aiAgentModelTier'
   | 'isAutoModelSelectionEnabled'
   | 'aiModelIdByTier'
   | 'aiAdditionalInstructions'
+  | 'aiDataPolicy'
   | 'editableProfileFields'
-  | 'isInternalMessagesImportEnabled'
+  | 'isInternalImportEnabled'
 > & {
   defaultRole?: Omit<Role, 'workspaceMembers' | 'agents' | 'apiKeys'> | null;
   workspaceCustomApplication: Pick<Application, 'id'> | null;
   installedApplications: Pick<
     Application,
-    'id' | 'name' | 'universalIdentifier' | 'logoUrl' | 'createdAt'
+    | 'id'
+    | 'name'
+    | 'description'
+    | 'universalIdentifier'
+    | 'logoUrl'
+    | 'createdAt'
   >[];
 };
 

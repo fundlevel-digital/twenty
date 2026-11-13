@@ -27,10 +27,10 @@ jest.mock(
 jest.mock('@/navigation/hooks/useNavigationDrawerModes');
 jest.mock('@/navigation/hooks/useSwitchNavigationDrawerMode');
 
-let mockIsAiChatInboxEnabled = true;
+let mockIsInboxEnabled = true;
 
 jest.mock('@/workspace/hooks/useIsFeatureEnabled', () => ({
-  useIsFeatureEnabled: () => mockIsAiChatInboxEnabled,
+  useIsFeatureEnabled: () => mockIsInboxEnabled,
 }));
 
 jest.mock('twenty-ui/utilities', () => ({
@@ -48,6 +48,7 @@ const buildOpenThreadsSummaryMock = (hasUnreadOpenThread: boolean) => ({
       agentChatOpenThreadsSummary: {
         __typename: 'AgentChatOpenThreadsSummary' as const,
         openThreadCount: 1,
+        unreadOpenThreadCount: hasUnreadOpenThread ? 1 : 0,
         needsInputThreadCount: 0,
         hasUnreadOpenThread,
         hasUnreadMentionThread: false,
@@ -96,7 +97,7 @@ const waitForOpenThreadsSummary = () =>
 describe('MainNavigationDrawerModeSwitcher', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsAiChatInboxEnabled = true;
+    mockIsInboxEnabled = true;
 
     jest.mocked(useNavigationDrawerModes).mockReturnValue([
       {
@@ -193,7 +194,7 @@ describe('MainNavigationDrawerModeSwitcher', () => {
     renderModeSwitcher({ hasUnreadOpenThread: true });
 
     expect(
-      await screen.findByRole('button', { name: 'AI, unread' }),
+      await screen.findByRole('button', { name: 'AI, 1 unread' }),
     ).toBeInTheDocument();
   });
 
@@ -205,7 +206,7 @@ describe('MainNavigationDrawerModeSwitcher', () => {
   });
 
   it('does not mark unread chats while the inbox feature flag is off', async () => {
-    mockIsAiChatInboxEnabled = false;
+    mockIsInboxEnabled = false;
     renderModeSwitcher({ hasUnreadOpenThread: true });
     await waitForOpenThreadsSummary();
 

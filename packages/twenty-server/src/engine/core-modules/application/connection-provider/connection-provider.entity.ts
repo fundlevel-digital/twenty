@@ -3,7 +3,9 @@ import {
   type ConnectionProviderScope,
   type ConnectionProviderType,
   DEFAULT_CONNECTION_PROVIDER_SCOPE,
+  type StoredCustomConnectionProviderConfig,
   type StoredOAuthConnectionProviderConfig,
+  type StoredOAuthDiscoveryConnectionProviderConfig,
 } from 'twenty-shared/application';
 import {
   Column,
@@ -15,6 +17,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { ADD_OAUTH_DISCOVERY_TO_CONNECTION_PROVIDER_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-59/add-oauth-discovery-to-connection-provider-upgrade-command-name.constant';
 import { WasIntroducedInUpgrade } from 'src/engine/core-modules/upgrade/decorators/was-introduced-in-upgrade.decorator';
 import { SyncableEntity } from 'src/engine/workspace-manager/types/syncable-entity.interface';
 
@@ -61,6 +64,20 @@ export class ConnectionProviderEntity
 
   @Column({ nullable: true, type: 'jsonb' })
   oauthConfig: StoredOAuthConnectionProviderConfig | null;
+
+  @Column({ nullable: true, type: 'jsonb' })
+  @WasIntroducedInUpgrade({
+    upgradeCommandName:
+      '2.52.0_AddCustomConfigToConnectionProviderFastInstanceCommand_1793032438836',
+  })
+  customConfig: StoredCustomConnectionProviderConfig | null;
+
+  @Column({ nullable: true, type: 'jsonb' })
+  @WasIntroducedInUpgrade({
+    upgradeCommandName:
+      ADD_OAUTH_DISCOVERY_TO_CONNECTION_PROVIDER_UPGRADE_COMMAND_NAME,
+  })
+  oauthDiscoveryConfig: StoredOAuthDiscoveryConnectionProviderConfig | null;
 
   @Column({ nullable: true, type: 'uuid' })
   @WasIntroducedInUpgrade({

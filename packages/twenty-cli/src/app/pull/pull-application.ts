@@ -1,3 +1,6 @@
+import { planPublicAssetWrites } from '@/app/pull/plan-public-asset-writes';
+import { FileFolder } from 'twenty-shared/types';
+import { planFrontComponentWrites } from '@/app/pull/plan-front-component-writes';
 import { join } from 'node:path';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -5,12 +8,14 @@ import { getToolingErrorContext } from '@/app/get-tooling-error-context';
 import { assertPullPaths } from '@/app/pull/assert-pull-paths';
 import { collectIdentifiers } from '@/app/pull/collect-identifiers';
 import { getOverwrittenLocalChanges } from '@/app/pull/get-overwritten-local-changes';
+import { findLocalCodeStepFiles } from '@/app/pull/find-local-code-step-files';
 import { prepareAppPull } from '@/app/pull/prepare-app-pull';
 import { preparePullEntities } from '@/app/pull/prepare-pull-entities';
 import { preserveNestedPullEntities } from '@/app/pull/preserve-nested-pull-entities';
 import { reconcilePullBaseManifest } from '@/app/pull/reconcile-pull-base-manifest';
 import { createPullBaseWrite } from '@/app/pull/create-pull-base-write';
 import { readTargetBoundPullBase } from '@/app/pull/read-target-bound-pull-base';
+import { resolveAppSystemPermissionFlag } from '@/app/project/resolve-app-system-permission-flag';
 import { type PullAppOptions, type PullAppResult } from '@/app/pull/types';
 import { type ToolingResult } from '@/app/types/tooling-result.type';
 import { CliError } from '@/output/cli-error';
@@ -19,6 +24,7 @@ import { assertPullSdkExports } from '@/app/pull/assert-pull-sdk-exports';
 import { applyPullWrites } from '@/app/pull/apply-pull-writes';
 import { buildManifestEntityLabelByUniversalIdentifier } from '@/app/pull/build-manifest-entity-label-by-universal-identifier';
 import { planPullWrites } from '@/app/pull/plan-pull-writes';
+import { planDependencyWrites } from '@/app/pull/plan-dependency-writes';
 import { planTranslationWrites } from '@/app/pull/plan-translation-writes';
 import { scanProjectSourceFiles } from '@/app/source/scan-project-source-files';
 import { updateSourceFingerprints } from '@/app/pull/update-source-fingerprints';
@@ -56,6 +62,7 @@ export const pullApplication = async (
       baseManifest,
       scannedFiles,
       unreconciledUniversalIdentifiers: unreconciledBaseIdentifiers,
+      systemPermissionFlag: resolveAppSystemPermissionFlag(appPath),
     });
 
     signal?.throwIfAborted();
@@ -63,12 +70,18 @@ export const pullApplication = async (
     const workspaceUniversalIdentifiers = new Set(
       applicationExport.coverage.map((entry) => entry.universalIdentifier),
     );
+    const localCodeStepFilesByWorkflowPath = await findLocalCodeStepFiles({
+      appPath,
+      scannedFiles,
+      baseEntities,
+    });
     const plan = planPullWrites({
       entities,
       baseEntities,
       scannedFiles,
       workspaceUniversalIdentifiers,
       unreconciledUniversalIdentifiers: unreconciledBaseIdentifiers,
+      localCodeStepFilesByWorkflowPath,
     });
     const protectedIdentifiers = new Set<string>();
 
@@ -92,15 +105,61 @@ export const pullApplication = async (
       baseEntities,
       protectedIdentifiers,
       writes: plan.writes,
-      deletions: plan.deletions.filter(
-        (deletion) =>
-          !protectedIdentifiers.has(deletion.universalIdentifier.toLowerCase()),
-      ),
+      deletions: [
+        ...plan.deletions.filter(
+          (deletion) =>
+            !protectedIdentifiers.has(
+              deletion.universalIdentifier.toLowerCase(),
+            ),
+        ),
+        ...plan.codeStepFileDeletions,
+      ],
       scannedFiles,
     });
-    const writes = [...safePlan.writes, ...translationPlan.writes];
+    const dependencyPlan = await planDependencyWrites({
+      appPath,
+      files: applicationExport.files.filter(
+        (file) => file.folder === FileFolder.Dependencies,
+      ),
+      sourceFingerprints: base.sourceFingerprints,
+      dependencyFingerprints: base.dependencyFingerprints,
+    });
+    const publicAssetPlan = await planPublicAssetWrites({
+      appPath,
+      files: applicationExport.files.filter(
+        ({ folder }) => folder === FileFolder.PublicAsset,
+      ),
+      sourceFingerprints: base.sourceFingerprints,
+      publicAssetFingerprints: base.publicAssetFingerprints,
+    });
+    const frontComponentPlan = await planFrontComponentWrites({
+      appPath,
+      manifest,
+      baseManifest,
+      files: applicationExport.files,
+      scannedFiles,
+      protectedIdentifiers,
+      remoteSourceFingerprints: base.remoteSourceFingerprints,
+      sourceFingerprints: base.sourceFingerprints,
+      reservedPaths: new Set(
+        [
+          ...safePlan.writes,
+          ...translationPlan.writes,
+          ...dependencyPlan.writes,
+          ...publicAssetPlan.writes,
+        ].map((write) => write.relativePath.toLowerCase()),
+      ),
+    });
+    const writes = [
+      ...safePlan.writes,
+      ...translationPlan.writes,
+      ...dependencyPlan.writes,
+      ...publicAssetPlan.writes,
+      ...frontComponentPlan.writes,
+    ];
     const deletions = [
       ...safePlan.deletions,
+      ...frontComponentPlan.deletions,
       ...translationPlan.deletions.filter(
         (deletion) =>
           isDefined(baseManifest?.translations) &&
@@ -120,8 +179,22 @@ export const pullApplication = async (
         protectedIdentifiers,
       }),
       unreconciledUniversalIdentifiers: [...unreconciledUniversalIdentifiers],
+      remoteSourceFingerprints: frontComponentPlan.fingerprints,
+      publicAssetFingerprints: {
+        ...base.publicAssetFingerprints,
+        ...publicAssetPlan.fingerprints,
+      },
+      dependencyFingerprints: {
+        ...base.dependencyFingerprints,
+        ...dependencyPlan.fingerprints,
+      },
       sourceFingerprints: updateSourceFingerprints({
-        sourceFingerprints: base.sourceFingerprints,
+        sourceFingerprints: {
+          ...base.sourceFingerprints,
+          ...dependencyPlan.unchangedSourceFingerprints,
+          ...publicAssetPlan.unchangedSourceFingerprints,
+          ...frontComponentPlan.unchangedSourceFingerprints,
+        },
         writes,
         deletions,
       }),
@@ -143,6 +216,7 @@ export const pullApplication = async (
       deletions,
       frontComponentSourcePaths,
       baseEntities,
+      localCodeStepFilesByWorkflowPath,
       sourceFingerprints: base.sourceFingerprints,
     });
     const entityLabelByUniversalIdentifier =
@@ -170,7 +244,11 @@ export const pullApplication = async (
         ),
         deletions,
         overwrittenLocalChanges,
-        unchangedCount: plan.unchanged.length,
+        unchangedCount:
+          plan.unchanged.length +
+          dependencyPlan.unchangedCount +
+          publicAssetPlan.unchangedCount +
+          frontComponentPlan.unchangedCount,
         localOnlyRelativePaths: plan.localOnlyRelativePaths,
         unreadableRelativePaths: scannedFiles
           .filter((file) => !file.isReadable)

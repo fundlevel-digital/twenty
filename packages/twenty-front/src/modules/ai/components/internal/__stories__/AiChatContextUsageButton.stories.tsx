@@ -7,13 +7,19 @@ import { ComponentDecorator } from 'twenty-ui/testing';
 import { AiChatContextUsageButton } from '@/ai/components/internal/AiChatContextUsageButton';
 import { AiChatContextUsageDetails } from '@/ai/components/internal/AiChatContextUsageDetails';
 import {
-  agentChatUsageFamilyState,
-  type AgentChatUsageState,
-} from '@/ai/states/agentChatUsageFamilyState';
+  aiChatUsageFamilyState,
+  type AiChatUsageState,
+} from '@/ai/states/aiChatUsageFamilyState';
 import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
-import { GetAiChatUsageDocument } from '~/generated-metadata/graphql';
+import { type AiChatUserCreditsUsage } from '@/ai/types/AiChatUserCreditsUsage';
+import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import {
+  GetAiChatUsageDocument,
+  UserCreditsFallback,
+} from '~/generated-metadata/graphql';
+import { mockCurrentWorkspace } from '~/testing/mock-data/users';
 
-const USAGE: AgentChatUsageState = {
+const USAGE: AiChatUsageState = {
   conversationSize: 200000,
   contextWindowTokens: 1000000,
   inputTokens: 200000,
@@ -34,22 +40,32 @@ const UsageStory = ({
   usage = null,
   limit = 1000,
   consumed = 800,
+  kind = 'workspaceAllowance',
   error = false,
   loading = false,
+  userCreditsUsage = null,
+  userCreditsFallback = UserCreditsFallback.WORKSPACE_CREDITS,
   children,
 }: {
-  usage?: AgentChatUsageState | null;
+  usage?: AiChatUsageState | null;
   limit?: number | null;
   consumed?: number | null;
+  kind?: string;
   error?: boolean;
   loading?: boolean;
+  userCreditsUsage?: AiChatUserCreditsUsage | null;
+  userCreditsFallback?: UserCreditsFallback;
   children?: ReactNode;
 }) => {
   const [store] = useState(() => {
     const storyStore = createStore();
     storyStore.set(currentAiChatThreadState.atom, 'story-thread');
+    storyStore.set(currentWorkspaceState.atom, {
+      ...mockCurrentWorkspace,
+      billingCustomer: { id: 'billing-customer', userCreditsFallback },
+    });
     storyStore.set(
-      agentChatUsageFamilyState.atomFamily({ threadId: 'story-thread' }),
+      aiChatUsageFamilyState.atomFamily({ threadId: 'story-thread' }),
       usage,
     );
     return storyStore;
@@ -74,8 +90,12 @@ const UsageStory = ({
                               limitValue: limit,
                               consumedValue: consumed,
                               periodEnd: null,
-                              kind: 'workspaceAllowance',
+                              kind,
                             },
+                      aiChatUserCreditsUsage: userCreditsUsage && {
+                        __typename: 'AiChatUserCreditsUsage',
+                        ...userCreditsUsage,
+                      },
                     },
                   },
                 }),
@@ -144,6 +164,112 @@ export const Expanded: Story = {
 };
 export const ReopenedConversation: Story = {
   render: () => <UsageStory usage={{ ...USAGE, lastMessage: null }} />,
+};
+const USER_CREDITS_PERIOD_END = new Date(
+  Date.now() + 3 * 86400000,
+).toISOString();
+
+export const WithUserCredits: Story = {
+  render: () => (
+    <UsageStory
+      userCreditsUsage={{
+        limitValue: 4160000,
+        consumedValue: 1160000,
+        periodEnd: USER_CREDITS_PERIOD_END,
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      canvas.getByRole('button', { name: /^Context and usage/ }),
+    );
+    await waitFor(() => expect(page.getByText('Personal usage')).toBeVisible());
+    await expect(
+      page.getByRole('progressbar', { name: 'Personal usage' }),
+    ).toHaveAttribute('aria-valuetext', 'Reset in 3 days (28%)');
+    await expect(page.queryByText('Usage')).not.toBeInTheDocument();
+    await userEvent.hover(page.getByText('Personal usage'));
+    await waitFor(() =>
+      expect(
+        page.getByText(
+          'Your own AI usage, separate from the workspace credits',
+        ),
+      ).toBeVisible(),
+    );
+  },
+};
+export const WithUserCreditsAndLimit: Story = {
+  render: () => (
+    <UsageStory
+      kind="limit"
+      userCreditsUsage={{
+        limitValue: 4160000,
+        consumedValue: 1160000,
+        periodEnd: USER_CREDITS_PERIOD_END,
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      canvas.getByRole('button', { name: /^Context and usage/ }),
+    );
+    await waitFor(() => expect(page.getByText('Personal usage')).toBeVisible());
+    await expect(page.getByText('Usage')).toBeVisible();
+  },
+};
+export const UserCreditsSpentWithFallback: Story = {
+  render: () => (
+    <UsageStory
+      userCreditsUsage={{
+        limitValue: 4160000,
+        consumedValue: 4160000,
+        periodEnd: USER_CREDITS_PERIOD_END,
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      canvas.getByRole('button', { name: /^Context and usage/ }),
+    );
+    await waitFor(() =>
+      expect(page.getByRole('progressbar', { name: 'Usage' })).toHaveAttribute(
+        'aria-valuetext',
+        '80%',
+      ),
+    );
+    await expect(page.queryByText('Personal usage')).not.toBeInTheDocument();
+  },
+};
+export const UserCreditsSpentWithoutFallback: Story = {
+  render: () => (
+    <UsageStory
+      userCreditsUsage={{
+        limitValue: 4160000,
+        consumedValue: 4160000,
+        periodEnd: USER_CREDITS_PERIOD_END,
+      }}
+      userCreditsFallback={UserCreditsFallback.STOP}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      canvas.getByRole('button', { name: /^Context and usage/ }),
+    );
+    await waitFor(() =>
+      expect(
+        page.getByRole('progressbar', { name: 'Personal usage' }),
+      ).toHaveAttribute('aria-valuetext', 'Reset in 3 days (100%)'),
+    );
+    await expect(page.queryByText('Usage')).not.toBeInTheDocument();
+  },
 };
 export const NoLimit: Story = { render: () => <UsageStory limit={null} /> };
 export const UnknownConsumption: Story = {

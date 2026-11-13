@@ -11,20 +11,22 @@ import { SettingsApplicationInstallPermissionValidationModal } from '@/marketpla
 import { useCopyMarketplaceAppLink } from '@/marketplace/hooks/useCopyMarketplaceAppLink';
 import { useInstallMarketplaceAppWithPermissionValidation } from '@/marketplace/hooks/useInstallMarketplaceAppWithPermissionValidation';
 import { getMarketplaceAppDefaultRoleManifest } from '@/marketplace/utils/getMarketplaceAppDefaultRoleManifest';
+import { useMarketplaceApplicationContentLink } from '@/settings/applications/hooks/useMarketplaceApplicationContentLink';
 import { SettingsApplicationActionButton } from '@/settings/applications/components/SettingsApplicationActionButton';
+import { SettingsMarketplaceAppConnectButton } from '@/settings/applications/components/SettingsMarketplaceAppConnectButton';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsSectionSkeletonLoader } from '@/settings/components/SettingsSectionSkeletonLoader';
 import { SettingsPageLayout } from '@/settings/components/layout/SettingsPageLayout';
 import { useHasPermissionFlag } from '@/settings/roles/hooks/useHasPermissionFlag';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { isNonEmptyString } from '@sniptt/guards';
 import { useQuery } from '@apollo/client/react';
-import { t } from '@lingui/core/macro';
 import { useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath, isDefined } from 'twenty-shared/utils';
 import { InlineBanner } from 'twenty-ui/components/feedback';
-import { IconAlertTriangle, IconEyeOff, IconShoppingBag } from 'twenty-ui/icon';
+import { IconEyeOff, IconShoppingBag } from 'twenty-ui/icon';
 import {
   ApplicationRegistrationSourceType,
   FindMarketplaceAppDetailDocument,
@@ -35,12 +37,14 @@ import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 import { SettingsApplicationDetailAbout } from '~/pages/settings/applications/components/SettingsApplicationDetailAbout';
 import { SettingsApplicationLoadErrorBanner } from '@/settings/applications/components/SettingsApplicationLoadErrorBanner';
 import { SettingsApplicationNotFound } from '~/pages/settings/applications/components/SettingsApplicationNotFound';
-import { CUSTOM_APPLICATION_ILLUSTRATIONS } from '~/pages/settings/applications/constants/CustomApplicationIllustrations';
-import { STANDARD_APPLICATION_ILLUSTRATIONS } from '~/pages/settings/applications/constants/StandardApplicationIllustrations';
+import { CUSTOM_APPLICATION_ILLUSTRATIONS } from '@/settings/applications/constants/CustomApplicationIllustrations';
+import { STANDARD_APPLICATION_ILLUSTRATIONS } from '@/settings/applications/constants/StandardApplicationIllustrations';
 import { getApplicationLookupStatus } from '~/pages/settings/applications/utils/getApplicationLookupStatus';
 import { isUuidFormat } from '~/pages/settings/applications/utils/isUuidFormat';
+import { useLingui } from '@lingui/react/macro';
 
 export const SettingsAvailableApplicationDetails = () => {
+  const { t } = useLingui();
   const { availableApplicationId = '' } = useParams<{
     availableApplicationId: string;
   }>();
@@ -89,6 +93,10 @@ export const SettingsAvailableApplicationDetails = () => {
   });
 
   const application = applicationData?.findOneApplication;
+
+  const contentLink = useMarketplaceApplicationContentLink(
+    isUuidFormat(availableApplicationId) ? availableApplicationId : undefined,
+  );
 
   const detail = detailData?.findMarketplaceAppDetail;
 
@@ -142,10 +150,9 @@ export const SettingsAvailableApplicationDetails = () => {
 
   const builtInApplicationContent = getBuiltInApplicationContent();
 
-  const isUnlisted = isDefined(detail) && !detail.isListed;
-  const isNotVetted =
+  const isUnlisted =
     isDefined(detail) &&
-    !detail.isVetted &&
+    !detail.isListed &&
     !isDefined(builtInApplicationContent);
 
   const defaultRole = getMarketplaceAppDefaultRoleManifest(detail);
@@ -210,7 +217,30 @@ export const SettingsAvailableApplicationDetails = () => {
           issueReportUrl: detail.issueReportUrl ?? undefined,
           sourcePackageUrl,
         }}
+        contentLink={contentLink}
         onShare={() => copyMarketplaceAppLink(detail.universalIdentifier)}
+      />
+    );
+  };
+
+  const renderActionButton = () => {
+    if (!isDefined(detail)) {
+      return undefined;
+    }
+
+    if (isNonEmptyString(detail.connectUrl)) {
+      return (
+        <SettingsMarketplaceAppConnectButton connectUrl={detail.connectUrl} />
+      );
+    }
+
+    return (
+      <SettingsApplicationActionButton
+        installedApplicationId={application?.id}
+        canInstallMarketplaceApps={canInstallMarketplaceApps}
+        onInstall={requestInstall}
+        isInstalling={isInstalling}
+        installProgress={installProgress}
       />
     );
   };
@@ -243,29 +273,14 @@ export const SettingsAvailableApplicationDetails = () => {
             />
           ) : undefined
         }
-        actionButton={
-          isDefined(detail) ? (
-            <SettingsApplicationActionButton
-              installedApplicationId={application?.id}
-              canInstallMarketplaceApps={canInstallMarketplaceApps}
-              onInstall={requestInstall}
-              isInstalling={isInstalling}
-              installProgress={installProgress}
-            />
-          ) : undefined
-        }
+        actionButton={renderActionButton()}
       >
         <SettingsPageContainer overflow="visible">
           {isUnlisted && (
             <InlineBanner
-              icon={<IconEyeOff aria-hidden="true" />}
-            >{t`Application not listed on the marketplace. It was shared via a direct link`}</InlineBanner>
-          )}
-          {isNotVetted && (
-            <InlineBanner
               status="warning"
-              icon={<IconAlertTriangle aria-hidden="true" />}
-            >{t`This application is not vetted by Twenty. Use at your own risk.`}</InlineBanner>
+              icon={<IconEyeOff aria-hidden="true" />}
+            >{t`This application is not listed on the marketplace and has not been reviewed by Twenty. Use at your own risk.`}</InlineBanner>
           )}
           {renderContent()}
         </SettingsPageContainer>
@@ -277,8 +292,11 @@ export const SettingsAvailableApplicationDetails = () => {
         defaultRole={defaultRole}
         appObjects={detail?.objects ?? undefined}
         requestedCapabilities={detail?.requestedCapabilities}
+        requestedIframeMediaPermissions={
+          detail?.requestedIframeMediaPermissions
+        }
         billsCredits={detail?.billsCredits}
-        isVetted={detail?.isVetted}
+        isListed={detail?.isListed}
         onAuthorize={install}
         isInstalling={isInstalling}
       />

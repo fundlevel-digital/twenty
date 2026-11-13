@@ -313,6 +313,7 @@ export class DemoteAndBackfillApplicationIndexViewCommand extends ProvisionedWor
             aggregateOperation: null,
             isActive: true,
             isSystemSideEffect: true,
+            isCanonical: true,
             universalOverrides: null,
             createdAt,
             updatedAt: createdAt,
@@ -394,6 +395,7 @@ export class DemoteAndBackfillApplicationIndexViewCommand extends ProvisionedWor
     const result =
       await this.workspaceMigrationValidateBuildAndRunService.validateBuildAndRunLegacyWorkspaceMigration(
         {
+          shouldDeferActions: false,
           isSystemBuild: true,
           workspaceId,
           applicationUniversalIdentifier,

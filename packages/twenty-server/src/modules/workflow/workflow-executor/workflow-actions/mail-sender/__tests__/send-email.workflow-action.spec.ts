@@ -73,16 +73,21 @@ describe('SendEmailWorkflowAction', () => {
         {
           provide: WorkflowExecutionContextService,
           useValue: {
-            getExecutionContext: jest
-              .fn()
-              .mockResolvedValue({ authContext: { type: 'application' } }),
+            getExecutionContext: jest.fn().mockResolvedValue({
+              authContext: { type: 'application' },
+              isActingOnBehalfOfUser: false,
+              workflowId: 'workflow-id',
+              workflowName: 'Churn win-back',
+            }),
           },
         },
         {
           provide: WorkspaceOrmManager,
           useValue: {
             executeInWorkspaceContext: jest.fn((callback) => callback()),
-            getRepository: jest.fn().mockReturnValue(workspaceMemberRepository),
+            getRepositoryWithoutPermissionChecks: jest
+              .fn()
+              .mockReturnValue(workspaceMemberRepository),
           },
         },
         {
@@ -444,6 +449,25 @@ describe('SendEmailWorkflowAction', () => {
       expect(mockSendEmailTool.execute).toHaveBeenCalledWith(
         expect.objectContaining({ connectedAccountId: WORKSPACE_MEMBER_ID }),
         expect.any(Object),
+      );
+    });
+
+    it('hands the workflow to the email tool as the acting actor', async () => {
+      workspaceMemberRepository.findOne.mockResolvedValue(null);
+
+      await executeWithSender(WORKSPACE_MEMBER_ID);
+
+      expect(mockSendEmailTool.execute).toHaveBeenCalledTimes(1);
+      expect(mockSendEmailTool.execute).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          actorMetadata: {
+            source: 'WORKFLOW',
+            name: 'Churn win-back',
+            workspaceMemberId: null,
+            context: { workflowId: 'workflow-id' },
+          },
+        }),
       );
     });
 

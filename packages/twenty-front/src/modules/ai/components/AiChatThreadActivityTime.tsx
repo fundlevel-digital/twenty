@@ -1,38 +1,41 @@
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
-import { themeCssVariables } from 'twenty-ui/theme';
+import { Text } from 'twenty-ui/primitives/typography';
 
-import { useFormatAgentChatThreadDate } from '@/ai/hooks/useFormatAgentChatThreadDate';
-import { agentChatThreadInboxStatusFamilySelector } from '@/ai/states/selectors/agentChatThreadInboxStatusFamilySelector';
-import { type AgentChatThreadRecord } from '@/ai/types/AgentChatThreadRecord';
-import { getAgentChatThreadLastActivityAt } from '@/ai/utils/getAgentChatThreadLastActivityAt';
+import { useIsAiChatThreadShownAsUnread } from '@/ai/hooks/useIsAiChatThreadShownAsUnread';
+import { useFormatAiChatThreadDate } from '@/ai/hooks/useFormatAiChatThreadDate';
+import { aiChatThreadMemberStateFamilySelector } from '@/ai/states/selectors/aiChatThreadMemberStateFamilySelector';
+import { type AiChatThreadRecord } from '@/ai/types/AiChatThreadRecord';
+import { type AiChatThreadRowVariant } from '@/ai/types/AiChatThreadRowVariant';
+import { getAiChatThreadLastActivityAt } from '@/ai/utils/getAiChatThreadLastActivityAt';
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
 import { beautifyPastDateRelativeToNowShort } from '~/utils/date-utils';
 
 const StyledActivityTime = styled.div`
-  color: ${themeCssVariables.font.color.tertiary};
   flex-shrink: 0;
-  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 type AiChatThreadActivityTimeProps = {
-  thread: AgentChatThreadRecord;
+  thread: AiChatThreadRecord;
+  variant?: AiChatThreadRowVariant;
 };
 
 export const AiChatThreadActivityTime = ({
   thread,
+  variant = 'default',
 }: AiChatThreadActivityTimeProps) => {
   const { t } = useLingui();
+  const isUnread = useIsAiChatThreadShownAsUnread(thread);
   const { event } = useAtomFamilySelectorValue(
-    agentChatThreadInboxStatusFamilySelector,
+    aiChatThreadMemberStateFamilySelector,
     thread.id,
   );
-  const { formatAgentChatThreadDay } = useFormatAgentChatThreadDate();
+  const { formatAiChatThreadDay } = useFormatAiChatThreadDate();
 
   const getActivityTimeLabel = () => {
     switch (event?.type) {
       case 'SNOOZED': {
-        const snoozedUntilDay = formatAgentChatThreadDay(new Date(event.at));
+        const snoozedUntilDay = formatAiChatThreadDay(new Date(event.at));
 
         return t`Until ${snoozedUntilDay}`;
       }
@@ -50,10 +53,21 @@ export const AiChatThreadActivityTime = ({
       }
       default:
         return beautifyPastDateRelativeToNowShort(
-          getAgentChatThreadLastActivityAt(thread),
+          getAiChatThreadLastActivityAt(thread),
         );
     }
   };
 
-  return <StyledActivityTime>{getActivityTimeLabel()}</StyledActivityTime>;
+  const readActivityTimeColor =
+    variant === 'compact' ? 'secondary' : 'tertiary';
+
+  return (
+    <Text
+      render={<StyledActivityTime />}
+      size={variant === 'compact' ? 'md' : 'sm'}
+      color={isUnread ? 'primary' : readActivityTimeColor}
+    >
+      {getActivityTimeLabel()}
+    </Text>
+  );
 };

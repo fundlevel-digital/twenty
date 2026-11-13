@@ -2,12 +2,13 @@ import { styled } from '@linaria/react';
 import { plural } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
 import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
+import { ReactionButton } from 'twenty-ui/components/input';
 import { themeCssVariables } from 'twenty-ui/theme';
 
-import { AGENT_CHAT_ASSISTANT_NAME } from '@/ai/constants/AgentChatAssistantName';
-import { useToggleAgentChatMessageReaction } from '@/ai/hooks/useToggleAgentChatMessageReaction';
-import { agentChatMessageReactionsFamilyState } from '@/ai/states/agentChatMessageReactionsFamilyState';
-import { getAgentChatSenderLabel } from '@/ai/utils/getAgentChatSenderLabel';
+import { useAiChatAssistantProfile } from '@/ai/hooks/useAiChatAssistantProfile';
+import { useToggleAiChatMessageReaction } from '@/ai/hooks/useToggleAiChatMessageReaction';
+import { aiChatMessageReactionsFamilyState } from '@/ai/states/aiChatMessageReactionsFamilyState';
+import { getAiChatSenderLabel } from '@/ai/utils/getAiChatSenderLabel';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersState';
 import { useAtomFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilyStateValue';
@@ -17,33 +18,6 @@ const StyledReactions = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${themeCssVariables.spacing[1]};
-  margin-top: ${themeCssVariables.spacing[2]};
-`;
-
-const StyledReaction = styled.button<{ isSelected: boolean }>`
-  align-items: center;
-  background: ${({ isSelected }) =>
-    isSelected
-      ? themeCssVariables.accent.tertiary
-      : themeCssVariables.background.transparent.lighter};
-  border: 1px solid
-    ${({ isSelected }) =>
-      isSelected
-        ? themeCssVariables.border.color.blue
-        : themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.pill};
-  color: ${themeCssVariables.font.color.secondary};
-  cursor: pointer;
-  display: flex;
-  font-family: inherit;
-  font-size: ${themeCssVariables.font.size.sm};
-  gap: ${themeCssVariables.spacing[1]};
-  height: ${themeCssVariables.spacing[6]};
-  padding: 0 ${themeCssVariables.spacing[2]};
-
-  &:hover {
-    background: ${themeCssVariables.background.transparent.light};
-  }
 `;
 
 type AiChatMessageReactionsProps = {
@@ -54,28 +28,28 @@ export const AiChatMessageReactions = ({
   messageId,
 }: AiChatMessageReactionsProps) => {
   const { t } = useLingui();
-  const agentChatMessageReactions = useAtomFamilyStateValue(
-    agentChatMessageReactionsFamilyState,
+  const { displayName: assistantName } = useAiChatAssistantProfile();
+  const aiChatMessageReactions = useAtomFamilyStateValue(
+    aiChatMessageReactionsFamilyState,
     { messageId },
   );
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const currentWorkspaceMembers = useAtomStateValue(
     currentWorkspaceMembersState,
   );
-  const { toggleAgentChatMessageReaction } =
-    useToggleAgentChatMessageReaction();
+  const { toggleAiChatMessageReaction } = useToggleAiChatMessageReaction();
 
-  if (agentChatMessageReactions.length === 0) {
+  if (!isNonEmptyArray(aiChatMessageReactions)) {
     return null;
   }
 
   return (
     <StyledReactions>
-      {agentChatMessageReactions.map(
+      {aiChatMessageReactions.map(
         ({ emoji, workspaceMemberIds, agentIds, hasAssistantReacted }) => {
           const reactorNameList = [
             ...workspaceMemberIds.map((workspaceMemberId) =>
-              getAgentChatSenderLabel({
+              getAiChatSenderLabel({
                 sender: currentWorkspaceMembers.find(
                   ({ id }) => id === workspaceMemberId,
                 ),
@@ -91,7 +65,7 @@ export const AiChatMessageReactions = ({
                   }),
                 ]
               : []),
-            ...(hasAssistantReacted ? [AGENT_CHAT_ASSISTANT_NAME] : []),
+            ...(hasAssistantReacted ? [assistantName] : []),
           ];
           const reactorNames = reactorNameList.join(', ');
           const isSelected =
@@ -103,20 +77,17 @@ export const AiChatMessageReactions = ({
             (hasAssistantReacted ? 1 : 0);
 
           return (
-            <StyledReaction
+            <ReactionButton
               key={emoji}
-              type="button"
-              isSelected={isSelected}
-              aria-pressed={isSelected}
+              emoji={emoji}
+              count={reactionCount}
+              pressed={isSelected}
               title={reactorNames}
               aria-label={t`${emoji} by ${reactorNames}`}
-              onClick={() =>
-                toggleAgentChatMessageReaction({ messageId, emoji })
+              onPressedChange={() =>
+                void toggleAiChatMessageReaction({ messageId, emoji })
               }
-            >
-              <span aria-hidden>{emoji}</span>
-              <span aria-hidden>{reactionCount}</span>
-            </StyledReaction>
+            />
           );
         },
       )}

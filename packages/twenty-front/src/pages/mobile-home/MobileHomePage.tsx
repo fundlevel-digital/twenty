@@ -1,4 +1,5 @@
-import { MobileHomeAiChatSection } from '@/ai/components/MobileHomeAiChatSection';
+import { GettingStartedSidebarCard } from '@/getting-started/components/GettingStartedSidebarCard';
+import { MobileHomeInboxSection } from '@/inbox/components/MobileHomeInboxSection';
 import { MainNavigationDrawerNavigationContent } from '@/navigation/components/MainNavigationDrawerNavigationContent';
 import { useDefaultHomePagePath } from '@/navigation/hooks/useDefaultHomePagePath';
 import { useHasPermissionFlag } from '@/settings/roles/hooks/useHasPermissionFlag';
@@ -47,7 +48,8 @@ export const MobileHomePage = () => {
       <NavigationDrawerScrollableContent>
         <StyledSections>
           <MainNavigationDrawerNavigationContent />
-          {hasAiPermission && <MobileHomeAiChatSection />}
+          <GettingStartedSidebarCard />
+          {hasAiPermission && <MobileHomeInboxSection />}
         </StyledSections>
       </NavigationDrawerScrollableContent>
     </StyledContainer>

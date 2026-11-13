@@ -1,3 +1,4 @@
+import { ASSETS_DIR } from 'twenty-shared/application';
 import { readFile } from 'node:fs/promises';
 import { relative, sep } from 'node:path';
 
@@ -13,15 +14,21 @@ import {
 export const collectSourceFingerprints = async (
   appPath: string,
 ): Promise<Record<string, string>> => {
-  const localeFilePaths = await glob(
-    [`${LOCALES_DIR}/*.json`, `${COMPILED_LOCALES_DIR}/*.json`],
+  const additionalFilePaths = await glob(
+    [
+      `${LOCALES_DIR}/*.json`,
+      `${COMPILED_LOCALES_DIR}/*.json`,
+      'package.json',
+      'yarn.lock',
+      `${ASSETS_DIR}/**/*`,
+    ],
     { cwd: appPath, absolute: true, onlyFiles: true },
   );
   const fingerprints: Record<string, string> = {};
 
   for (const filePath of [
     ...(await listApplicationSourceFiles(appPath)),
-    ...localeFilePaths.sort(),
+    ...additionalFilePaths.sort(),
   ]) {
     fingerprints[relative(appPath, filePath).split(sep).join('/')] =
       hashContent(await readFile(filePath));

@@ -7,18 +7,13 @@ import { IconHome } from 'twenty-ui/icon';
 
 import { AiChatCloseButton } from '@/ai/components/AiChatCloseButton';
 import { useDefaultHomePagePath } from '@/navigation/hooks/useDefaultHomePagePath';
-import { isWelcomeAnimationVisibleState } from '@/onboarding/states/isWelcomeAnimationVisibleState';
 import { SidePanelToggleButton } from '@/side-panel/components/SidePanelToggleButton';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { isAiChatInboxPath } from '~/utils/isAiChatInboxPath';
+import { isInboxPath } from '~/utils/isInboxPath';
 
 export const AiChatNewThreadPageActions = () => {
   const { t } = useLingui();
   const { pathname } = useLocation();
   const { defaultHomePagePath } = useDefaultHomePagePath();
-  const isWelcomeAnimationVisible = useAtomStateValue(
-    isWelcomeAnimationVisibleState,
-  );
 
   return (
     <>
@@ -26,7 +21,6 @@ export const AiChatNewThreadPageActions = () => {
         size="sm"
         variant="outline"
         aria-label={t`Home`}
-        disabled={isWelcomeAnimationVisible}
         nativeButton={false}
         render={<Link to={defaultHomePagePath} />}
       >
@@ -34,7 +28,7 @@ export const AiChatNewThreadPageActions = () => {
       </IconButton>
       <AiChatCloseButton
         destinationPath={
-          isAiChatInboxPath(pathname)
+          isInboxPath(pathname)
             ? getAppPath(AppPath.AiChatInbox, { threadId: null })
             : undefined
         }

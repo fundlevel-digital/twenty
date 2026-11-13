@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import {
-  type ProposeToolCallToolResult,
+  PUBLISH_FRONT_COMPONENT_TOOL_NAME,
   type ProposedToolCall,
   type ToolCallApprovalResponse,
 } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 
-import { useAnswerAgentChatToolCall } from '@/ai/hooks/useAnswerAgentChatToolCall';
+import { useRefreshFrontComponents } from '@/ai/hooks/useRefreshFrontComponents';
+import { useAnswerAiChatToolCall } from '@/ai/hooks/useAnswerAiChatToolCall';
+import { buildRejectedToolCallOutput } from '@/ai/utils/buildRejectedToolCallOutput';
 
 export const useAnswerToolCallApproval = ({
   toolCallId,
@@ -15,7 +17,8 @@ export const useAnswerToolCallApproval = ({
   toolCallId: string;
   proposal: ProposedToolCall;
 }) => {
-  const { answerAgentChatToolCall } = useAnswerAgentChatToolCall();
+  const { refreshFrontComponents } = useRefreshFrontComponents();
+  const { answerAiChatToolCall } = useAnswerAiChatToolCall();
   const [pendingResponse, setPendingResponse] =
     useState<ToolCallApprovalResponse | null>(null);
   const [isFeedbackShown, setIsFeedbackShown] = useState(false);
@@ -24,24 +27,26 @@ export const useAnswerToolCallApproval = ({
   const answerToolCallApproval = async (response: ToolCallApprovalResponse) => {
     setPendingResponse(response);
 
-    const isAnswered = await answerAgentChatToolCall({
+    const isAnswered = await answerAiChatToolCall({
       toolCallId,
       response,
       // Only a rejection is certain before the server answers: the approved call can still fail.
       optimisticToolOutput:
         response.decision === 'reject'
-          ? {
-              success: true,
-              result: {
-                status: 'rejected',
-                proposal,
-                ...(isDefined(response.feedback)
-                  ? { feedback: response.feedback }
-                  : {}),
-              } satisfies ProposeToolCallToolResult,
-            }
+          ? buildRejectedToolCallOutput({
+              proposal,
+              feedback: response.feedback,
+            })
           : undefined,
     });
+
+    if (
+      isAnswered &&
+      response.decision === 'approve' &&
+      proposal.toolName === PUBLISH_FRONT_COMPONENT_TOOL_NAME
+    ) {
+      await refreshFrontComponents();
+    }
 
     // The card goes once its call is closed, so it stays disabled until then.
     if (!isAnswered) {

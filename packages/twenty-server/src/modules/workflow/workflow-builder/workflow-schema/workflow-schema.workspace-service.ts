@@ -29,6 +29,7 @@ import {
 
 import { type DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
 import { checkStringIsDatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/utils/check-string-is-database-event-action';
+import { resolveEffectiveAgent } from 'src/engine/metadata-modules/flat-agent/utils/resolve-effective-agent.util';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { generateFakeValue } from 'src/engine/utils/generate-fake-value';
@@ -161,7 +162,8 @@ export class WorkflowSchemaWorkspaceService {
       }
       case WorkflowTriggerType.WEBHOOK:
       case WorkflowActionType.CODE:
-      case WorkflowActionType.HTTP_REQUEST: {
+      case WorkflowActionType.HTTP_REQUEST:
+      case WorkflowActionType.MCP_TOOL: {
         const expectedOutputSchema =
           'expectedOutputSchema' in step.settings
             ? step.settings.expectedOutputSchema
@@ -542,7 +544,13 @@ export class WorkflowSchemaWorkspaceService {
       flatEntityMaps: flatAgentMaps,
     });
 
-    return computeAiAgentOutputSchema(flatAgent?.responseFormat);
+    if (!isDefined(flatAgent)) {
+      return computeAiAgentOutputSchema();
+    }
+
+    return computeAiAgentOutputSchema(
+      resolveEffectiveAgent(flatAgent).responseFormat,
+    );
   }
 
   private async computeFormActionOutputSchema({
@@ -762,7 +770,8 @@ export class WorkflowSchemaWorkspaceService {
       }
       case WorkflowActionType.CODE:
       case WorkflowActionType.HTTP_REQUEST:
-      case WorkflowActionType.LOGIC_FUNCTION: {
+      case WorkflowActionType.LOGIC_FUNCTION:
+      case WorkflowActionType.MCP_TOOL: {
         const propertyPath = extractPropertyPathFromVariable(items);
         const outputSchema = this.getOutputSchemaWithExpectedFallback(
           step.settings,

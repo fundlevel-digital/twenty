@@ -1,5 +1,5 @@
 import { isNonEmptyString } from '@sniptt/guards';
-import { CoreObjectNameSingular } from 'twenty-shared/types';
+import { StandardObjectNameSingular } from 'twenty-shared/types';
 import {
   isDefined,
   parseCanonicalTipTapJsonDocument,
@@ -7,17 +7,18 @@ import {
   type TipTapNode,
 } from 'twenty-shared/utils';
 
-import { type AgentChatParticipantMention } from '@/ai/types/AgentChatParticipantMention';
+import { type AiChatParticipantMention } from '@/ai/types/AiChatParticipantMention';
 
 const getParticipantMentionsFromNode = (
   node: TipTapNode,
-): AgentChatParticipantMention[] => {
+): AiChatParticipantMention[] => {
   const workspaceMemberId = node.attrs?.recordId;
   const label = node.attrs?.label;
 
   const isParticipantMention =
     node.type === TIPTAP_NODE_TYPES.MENTION_TAG &&
-    node.attrs?.objectNameSingular === CoreObjectNameSingular.WorkspaceMember &&
+    node.attrs?.objectNameSingular ===
+      StandardObjectNameSingular.WorkspaceMember &&
     node.attrs?.shouldAddAsParticipant === true &&
     isNonEmptyString(workspaceMemberId);
 
@@ -31,7 +32,7 @@ const getParticipantMentionsFromNode = (
 
 export const getParticipantMentionsFromSerializedDocument = (
   serializedDocument: string,
-): AgentChatParticipantMention[] => {
+): AiChatParticipantMention[] => {
   const document = parseCanonicalTipTapJsonDocument(serializedDocument);
 
   if (!isDefined(document)) {

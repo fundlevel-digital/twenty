@@ -15,7 +15,10 @@ import { RecordTableUpdateContext } from '@/object-record/record-table/contexts/
 import { isRecordTableCellsNonEditableComponentState } from '@/object-record/record-table/states/isRecordTableCellsNonEditableComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useContext, type ReactNode } from 'react';
-import { isDefined } from 'twenty-shared/utils';
+import {
+  canAccessThroughAllRecordsOrRlsPermission,
+  isDefined,
+} from 'twenty-shared/utils';
 type RecordTableCellFieldContextGenericProps = {
   recordField: RecordField;
   children: ReactNode;
@@ -25,7 +28,8 @@ export const RecordTableCellFieldContextGeneric = ({
   recordField,
   children,
 }: RecordTableCellFieldContextGenericProps) => {
-  const { recordId, isRecordReadOnly } = useRecordTableRowContextOrThrow();
+  const { recordId, isRecordReadOnly, restrictedFieldNames } =
+    useRecordTableRowContextOrThrow();
 
   const isRecordTableCellsNonEditable = useAtomComponentStateValue(
     isRecordTableCellsNonEditableComponentState,
@@ -51,7 +55,10 @@ export const RecordTableCellFieldContextGeneric = ({
     return null;
   }
 
-  let hasObjectReadPermissions = objectPermissions.canReadObjectRecords;
+  let hasObjectReadPermissions = canAccessThroughAllRecordsOrRlsPermission({
+    objectRecordsPermissions: objectPermissions,
+    operationType: 'read',
+  });
   let isInvalidJunctionRelation = false;
 
   // todo @guillim : adjust this to handle morph relations permissions display
@@ -67,7 +74,10 @@ export const RecordTableCellFieldContextGeneric = ({
       relationObjectMetadataId,
     );
 
-    hasObjectReadPermissions = relationObjectPermissions.canReadObjectRecords;
+    hasObjectReadPermissions = canAccessThroughAllRecordsOrRlsPermission({
+      objectRecordsPermissions: relationObjectPermissions,
+      operationType: 'read',
+    });
 
     if (hasObjectReadPermissions) {
       const junctionConfig = resolveJunctionConfig({
@@ -91,17 +101,23 @@ export const RecordTableCellFieldContextGeneric = ({
         );
 
         if (targetObjectMetadataIds.length > 0) {
-          hasObjectReadPermissions = targetObjectMetadataIds.some(
-            (targetId) =>
-              getObjectPermissionsForObject(
+          hasObjectReadPermissions = targetObjectMetadataIds.some((targetId) =>
+            canAccessThroughAllRecordsOrRlsPermission({
+              objectRecordsPermissions: getObjectPermissionsForObject(
                 objectPermissionsByObjectMetadataId,
                 targetId,
-              ).canReadObjectRecords,
+              ),
+              operationType: 'read',
+            }),
           );
         }
       }
     }
   }
+
+  const isFieldRestricted = restrictedFieldNames.includes(
+    fieldDefinition.metadata.fieldName,
+  );
 
   return (
     <FieldContext.Provider
@@ -121,6 +137,7 @@ export const RecordTableCellFieldContextGeneric = ({
         isRecordFieldReadOnly:
           isRecordTableCellsNonEditable ||
           isInvalidJunctionRelation ||
+          isFieldRestricted ||
           isRecordFieldReadOnly({
             isRecordReadOnly: isRecordReadOnly ?? false,
             objectMetadataId: objectMetadataItem.id,
@@ -128,7 +145,7 @@ export const RecordTableCellFieldContextGeneric = ({
             fieldDefinition,
             objectPermissionsByObjectMetadataId,
           }),
-        isForbidden: !hasObjectReadPermissions,
+        isForbidden: !hasObjectReadPermissions || isFieldRestricted,
       }}
     >
       {children}

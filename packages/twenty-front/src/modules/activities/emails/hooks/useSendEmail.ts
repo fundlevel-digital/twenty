@@ -1,9 +1,10 @@
+import { TIMELINE_THREADS_REFETCH_QUERIES } from '@/activities/emails/constants/TimelineThreadsRefetchQueries';
 import { useMutation } from '@apollo/client/react';
 import { useCallback } from 'react';
 import { type EmailAttachment } from 'twenty-shared/types';
 
 import { SEND_EMAIL } from '@/activities/emails/graphql/mutations/sendEmail';
-import { getTimelineThreadsFromObjectRecord } from '@/activities/emails/graphql/queries/getTimelineThreadsFromObjectRecord';
+import { type EmailComposerContextRecord } from '@/activities/emails/recipients/types/EmailComposerContextRecord';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { t } from '@lingui/core/macro';
 import { useToast } from 'twenty-ui/components/feedback';
@@ -28,6 +29,7 @@ type SendEmailParams = {
   inReplyTo?: string;
   draftMessageId?: string;
   files?: EmailAttachment[];
+  targetRecord?: EmailComposerContextRecord;
 };
 
 export const useSendEmail = () => {
@@ -56,6 +58,7 @@ export const useSendEmail = () => {
               inReplyTo: params.inReplyTo,
               draftMessageId: params.draftMessageId,
               files: params.files,
+              targetRecord: params.targetRecord,
             },
           },
         });
@@ -68,7 +71,7 @@ export const useSendEmail = () => {
 
           await apolloCoreClient.refetchQueries({
             include: [
-              getTimelineThreadsFromObjectRecord,
+              ...TIMELINE_THREADS_REFETCH_QUERIES,
               'FindManyMessages',
               'FindManyMessageParticipants',
               'FindManyMessageChannelMessageAssociations',

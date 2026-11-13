@@ -1,10 +1,17 @@
 /* @license Enterprise */
 
 import { styled } from '@linaria/react';
-import { t } from '@lingui/core/macro';
 import { useContext, useMemo } from 'react';
-import { FieldMetadataType, CoreObjectNameSingular } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
+import {
+  FieldMetadataType,
+  RecordFilterOperand,
+  StandardObjectNameSingular,
+} from 'twenty-shared/types';
+import {
+  getFieldOrSubFieldType,
+  isDefined,
+  type RelativeDateFilter,
+} from 'twenty-shared/utils';
 import { IconEraser } from 'twenty-ui/icon';
 import { Tooltip } from 'twenty-ui/primitives/surfaces';
 import { type JsonValue } from 'type-fest';
@@ -17,18 +24,20 @@ import { useApplyObjectFilterDropdownFilterValue } from '@/object-record/object-
 import { useUpsertObjectFilterDropdownCurrentFilter } from '@/object-record/object-filter-dropdown/hooks/useUpsertObjectFilterDropdownCurrentFilter';
 import { configurableViewFilterOperands } from '@/object-record/object-filter-dropdown/utils/configurableViewFilterOperands';
 import { getCompositeSubFieldLabel } from '@/object-record/object-filter-dropdown/utils/getCompositeSubFieldLabel';
-import { getCompositeSubFieldType } from '@/object-record/object-filter-dropdown/utils/getCompositeSubFieldType';
 import { isCompositeFieldType } from '@/object-record/object-filter-dropdown/utils/isCompositeFieldType';
 import { FormFieldInput } from '@/object-record/record-field/ui/components/FormFieldInput';
+import { FormRelativeDatePicker } from '@/object-record/record-field/ui/form-types/components/FormRelativeDatePicker';
 import { FormMultiSelectFieldInput } from '@/object-record/record-field/ui/form-types/components/FormMultiSelectFieldInput';
 import { currentRecordFiltersComponentState } from '@/object-record/record-filter/states/currentRecordFiltersComponentState';
 import { type RLSDynamicValue } from '@/object-record/record-filter/types/RecordFilter';
 import { isValidSubFieldName } from '@/settings/data-model/utils/isValidSubFieldName';
 import { SettingsRolePermissionsObjectLevelRecordLevelPermissionVariablePicker } from '@/settings/roles/role-permissions/object-level-permissions/record-level-permissions/components/SettingsRolePermissionsObjectLevelRecordLevelPermissionVariablePicker';
 import { RecordLevelPermissionVariablePickerContext } from '@/settings/roles/role-permissions/object-level-permissions/record-level-permissions/contexts/RecordLevelPermissionVariablePickerContext';
+import { stringifyRelativeDateFilter } from '@/views/view-filter-value/utils/stringifyRelativeDateFilter';
 import { TooltipDelay } from '@/ui/layout/tooltip/constants/TooltipDelay';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useTheme, themeCssVariables } from 'twenty-ui/theme';
+import { useLingui } from '@lingui/react/macro';
 
 const StyledContainer = styled.div`
   align-items: stretch;
@@ -93,6 +102,14 @@ const StyledFormFieldInputWrapper = styled.div`
   overflow: visible;
 `;
 
+const StyledRelativeDateContainer = styled.div`
+  display: flex;
+  flex: 3;
+  flex-direction: column;
+  max-width: 100%;
+  min-width: 0;
+`;
+
 type SettingsRolePermissionsObjectLevelRecordLevelPermissionValueInputProps = {
   recordFilterId: string;
 };
@@ -101,6 +118,7 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionValueInput =
   ({
     recordFilterId,
   }: SettingsRolePermissionsObjectLevelRecordLevelPermissionValueInputProps) => {
+    const { t } = useLingui();
     const theme = useTheme();
     const { objectMetadataItem } = useContext(AdvancedFilterContext);
 
@@ -118,7 +136,7 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionValueInput =
 
     const { objectMetadataItem: workspaceMemberMetadataItem } =
       useObjectMetadataItem({
-        objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
+        objectNameSingular: StandardObjectNameSingular.WorkspaceMember,
       });
 
     const { upsertObjectFilterDropdownCurrentFilter } =
@@ -256,6 +274,29 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionValueInput =
       applyObjectFilterDropdownFilterValue(valueToUpsert);
     };
 
+    const isDateFilter =
+      recordFilter.type === FieldMetadataType.DATE ||
+      recordFilter.type === FieldMetadataType.DATE_TIME;
+
+    if (
+      isDateFilter &&
+      recordFilter.operand === RecordFilterOperand.IS_RELATIVE
+    ) {
+      return (
+        <StyledRelativeDateContainer>
+          <FormRelativeDatePicker
+            defaultValue={recordFilter.value}
+            onChange={(relativeDateFilter: RelativeDateFilter) =>
+              applyObjectFilterDropdownFilterValue(
+                stringifyRelativeDateFilter(relativeDateFilter),
+              )
+            }
+            isDateTimeField={recordFilter.type === FieldMetadataType.DATE_TIME}
+          />
+        </StyledRelativeDateContainer>
+      );
+    }
+
     let fieldDefinition = formatFieldMetadataItemAsFieldDefinition({
       field: {
         ...fieldMetadataItem,
@@ -267,17 +308,21 @@ export const SettingsRolePermissionsObjectLevelRecordLevelPermissionValueInput =
     const isComposite = isCompositeFieldType(recordFilter.type);
 
     if (isComposite && isDefined(recordFilter.subFieldName)) {
-      const subFieldType = getCompositeSubFieldType(
-        fieldMetadataItem,
-        recordFilter.subFieldName,
-      );
+      fieldDefinition = {
+        ...fieldDefinition,
+        type: getFieldOrSubFieldType({
+          fieldType: fieldMetadataItem.type,
+          subFieldName: recordFilter.subFieldName,
+        }),
+      };
+    }
 
-      if (isDefined(subFieldType)) {
-        fieldDefinition = {
-          ...fieldDefinition,
-          type: subFieldType,
-        };
-      }
+    // "Is" on a date and time field compares a whole day, so its value is a plain date
+    if (
+      recordFilter.type === FieldMetadataType.DATE_TIME &&
+      recordFilter.operand === RecordFilterOperand.IS
+    ) {
+      fieldDefinition = { ...fieldDefinition, type: FieldMetadataType.DATE };
     }
 
     const isFilterableByMultiSelectValue =

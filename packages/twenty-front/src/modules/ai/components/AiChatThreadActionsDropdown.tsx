@@ -1,15 +1,17 @@
 import { useLingui } from '@lingui/react/macro';
 import { type MouseEvent } from 'react';
-import { CoreObjectNameSingular } from 'twenty-shared/types';
+import { AgentChatThreadConversationType } from 'twenty-shared/ai';
+import { StandardObjectNameSingular } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { LightIconButton } from 'twenty-ui/components/input';
 import { Dropdown } from 'twenty-ui/components/navigation';
 import { IconDotsVertical, IconPencil, IconUnlink } from 'twenty-ui/icon';
 
+import { InboxThreadRowTriage } from '@/inbox/components/InboxThreadRowTriage';
 import { AiChatThreadCommandMenuItems } from '@/ai/components/AiChatThreadCommandMenuItems';
-import { useRefreshAgentChatThreadPermissions } from '@/ai/hooks/useRefreshAgentChatThreadPermissions';
+import { useRefreshAiChatThreadPermissions } from '@/ai/hooks/useRefreshAiChatThreadPermissions';
 import { useTargetAiChatThreadsInContextStore } from '@/ai/hooks/useTargetAiChatThreadsInContextStore';
-import { agentChatThreadPermissionsFamilySelector } from '@/ai/states/selectors/agentChatThreadPermissionsFamilySelector';
+import { aiChatThreadPermissionsFamilySelector } from '@/ai/states/selectors/aiChatThreadPermissionsFamilySelector';
 import { CommandMenuContextProvider } from '@/command-menu-item/contexts/CommandMenuContextProvider';
 import { CommandMenuItemContainerType } from '@/command-menu-item/types/CommandMenuItemContainerType';
 import { getCommandMenuDropdownIdFromCommandMenuId } from '@/command-menu-item/utils/getCommandMenuDropdownIdFromCommandMenuId';
@@ -20,17 +22,21 @@ import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useU
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { DropdownRoot } from '@/ui/layout/dropdown/components/DropdownRoot';
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
+import { type AiChatThreadRecord } from '@/ai/types/AiChatThreadRecord';
 
 type AiChatThreadActionsDropdownProps = {
   thread: {
     id: string;
     title?: string | null;
+    conversationType?: AiChatThreadRecord['conversationType'];
     deletedAt?: string | null;
     lastActivityAt?: string | null;
   };
   instanceId: string;
-  onRenameRequested: () => void;
+  onRenameRequested?: () => void;
   onDetach?: () => void;
+  shouldShowTriageActions?: boolean;
+  shouldShowMore?: boolean;
 };
 
 export const AiChatThreadActionsDropdown = ({
@@ -38,22 +44,24 @@ export const AiChatThreadActionsDropdown = ({
   instanceId,
   onRenameRequested,
   onDetach,
+  shouldShowTriageActions = false,
+  shouldShowMore = true,
 }: AiChatThreadActionsDropdownProps) => {
   const { t } = useLingui();
   const { upsertRecordsInStore } = useUpsertRecordsInStore();
   const { targetAiChatThreadsInContextStore } =
     useTargetAiChatThreadsInContextStore();
-  const { refreshAgentChatThreadPermissions } =
-    useRefreshAgentChatThreadPermissions();
+  const { refreshAiChatThreadPermissions } =
+    useRefreshAiChatThreadPermissions();
   const chatObjectMetadataItem = useAtomFamilySelectorValue(
     objectMetadataItemFamilySelector,
     {
-      objectName: CoreObjectNameSingular.AgentChatThread,
+      objectName: StandardObjectNameSingular.AgentChatThread,
       objectNameType: 'singular',
     },
   );
   const permissions = useAtomFamilySelectorValue(
-    agentChatThreadPermissionsFamilySelector,
+    aiChatThreadPermissionsFamilySelector,
     thread.id,
   );
   if (!isDefined(chatObjectMetadataItem)) {
@@ -62,10 +70,15 @@ export const AiChatThreadActionsDropdown = ({
 
   const canUpdate = isDefined(permissions) && permissions.canUpdate;
   const isDeleted = isDefined(thread.deletedAt);
+  const canRename =
+    isDefined(onRenameRequested) &&
+    canUpdate &&
+    !isDeleted &&
+    thread.conversationType !== AgentChatThreadConversationType.DIRECT_MESSAGE;
 
   const handleRename = (event: MouseEvent) => {
     event.stopPropagation();
-    onRenameRequested();
+    onRenameRequested?.();
   };
 
   const handleDetach = (event: MouseEvent) => {
@@ -76,66 +89,71 @@ export const AiChatThreadActionsDropdown = ({
   return (
     <ContextStoreComponentInstanceContext.Provider value={{ instanceId }}>
       <CommandMenuComponentInstanceContext.Provider value={{ instanceId }}>
-        <DropdownRoot
-          dropdownId={getCommandMenuDropdownIdFromCommandMenuId(instanceId)}
-          type="menu"
-          onOpenChange={(isOpen) => {
-            if (isOpen) {
-              targetAiChatThreadsInContextStore({
-                contextStoreInstanceId: instanceId,
-                threadIds: [thread.id],
-              });
-              upsertRecordsInStore({
-                partialRecords: [
-                  {
-                    __typename: 'AgentChatThread',
-                    id: thread.id,
-                    title: thread.title ?? null,
-                    deletedAt: thread.deletedAt ?? null,
-                    ...(isDefined(thread.lastActivityAt)
-                      ? { lastActivityAt: thread.lastActivityAt }
-                      : {}),
-                  },
-                ],
-              });
-              void refreshAgentChatThreadPermissions([thread.id]);
-            }
-          }}
-        >
-          <Dropdown.Trigger
-            render={
-              <LightIconButton aria-label={t`Chat actions`} emphasis="subtle">
-                <IconDotsVertical />
-              </LightIconButton>
-            }
-          />
-          <DropdownContent align="end" aria-label={t`Chat actions`}>
-            <Dropdown.Section>
-              {isDefined(onDetach) && canUpdate && (
-                <Dropdown.ActionItem
-                  startIcon={<IconUnlink />}
-                  onClick={handleDetach}
+        {shouldShowTriageActions && !isDeleted && (
+          <InboxThreadRowTriage threadId={thread.id} />
+        )}
+        {shouldShowMore && (
+          <DropdownRoot
+            dropdownId={getCommandMenuDropdownIdFromCommandMenuId(instanceId)}
+            type="menu"
+            onOpenChange={(isOpen) => {
+              if (isOpen) {
+                targetAiChatThreadsInContextStore({
+                  contextStoreInstanceId: instanceId,
+                  threadIds: [thread.id],
+                });
+                upsertRecordsInStore({
+                  partialRecords: [
+                    {
+                      __typename: 'AgentChatThread',
+                      id: thread.id,
+                      title: thread.title ?? null,
+                      deletedAt: thread.deletedAt ?? null,
+                      ...(isDefined(thread.lastActivityAt)
+                        ? { lastActivityAt: thread.lastActivityAt }
+                        : {}),
+                    },
+                  ],
+                });
+                void refreshAiChatThreadPermissions([thread.id]);
+              }
+            }}
+          >
+            <Dropdown.Trigger
+              render={
+                <LightIconButton aria-label={t`Chat actions`} emphasis="subtle">
+                  <IconDotsVertical />
+                </LightIconButton>
+              }
+            />
+            <DropdownContent align="end" aria-label={t`Chat actions`}>
+              <Dropdown.Section>
+                {isDefined(onDetach) && canUpdate && (
+                  <Dropdown.ActionItem
+                    startIcon={<IconUnlink />}
+                    onClick={handleDetach}
+                  >
+                    {t`Detach`}
+                  </Dropdown.ActionItem>
+                )}
+                {canRename && (
+                  <Dropdown.ActionItem
+                    startIcon={<IconPencil />}
+                    onClick={handleRename}
+                  >
+                    {t`Rename`}
+                  </Dropdown.ActionItem>
+                )}
+                <CommandMenuContextProvider
+                  displayType="dropdownItem"
+                  containerType={CommandMenuItemContainerType.IndexPageDropdown}
                 >
-                  {t`Detach`}
-                </Dropdown.ActionItem>
-              )}
-              {canUpdate && !isDeleted && (
-                <Dropdown.ActionItem
-                  startIcon={<IconPencil />}
-                  onClick={handleRename}
-                >
-                  {t`Rename`}
-                </Dropdown.ActionItem>
-              )}
-              <CommandMenuContextProvider
-                displayType="dropdownItem"
-                containerType={CommandMenuItemContainerType.IndexPageDropdown}
-              >
-                <AiChatThreadCommandMenuItems />
-              </CommandMenuContextProvider>
-            </Dropdown.Section>
-          </DropdownContent>
-        </DropdownRoot>
+                  <AiChatThreadCommandMenuItems />
+                </CommandMenuContextProvider>
+              </Dropdown.Section>
+            </DropdownContent>
+          </DropdownRoot>
+        )}
       </CommandMenuComponentInstanceContext.Provider>
     </ContextStoreComponentInstanceContext.Provider>
   );

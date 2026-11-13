@@ -43,8 +43,18 @@ const getConnectionProviderExceptionUserFriendlyMessage = (
       return msg`We could not identify the account you authorized. Please try again.`;
     case ConnectionProviderExceptionCode.RECONNECT_ACCOUNT_MISMATCH:
       return msg`You authorized a different account than the one this connection belongs to.`;
-    case ConnectionProviderExceptionCode.CONNECTION_SCOPE_NOT_ALLOWED:
-      return msg`This connection provider does not support this kind of connection.`;
+    case ConnectionProviderExceptionCode.AUTHORIZE_LOGIC_FUNCTION_NOT_FOUND:
+      return msg`The logic function that starts the connection was not found.`;
+    case ConnectionProviderExceptionCode.AUTHORIZE_LOGIC_FUNCTION_FAILED:
+      return msg`We could not start the connection. Please try again.`;
+    case ConnectionProviderExceptionCode.CALLBACK_LOGIC_FUNCTION_NOT_FOUND:
+      return msg`The logic function that completes the connection was not found.`;
+    case ConnectionProviderExceptionCode.CALLBACK_LOGIC_FUNCTION_FAILED:
+      return msg`We could not complete the connection. Please try again.`;
+    case ConnectionProviderExceptionCode.API_KEY_NOT_VERIFIED:
+      return msg`We could not verify this key. Check it, or try again later if the service is down.`;
+    case ConnectionProviderExceptionCode.API_KEY_MISSING:
+      return msg`Enter an API key.`;
     default:
       assertUnreachable(code);
   }

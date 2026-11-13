@@ -1,8 +1,12 @@
 import { NavigationMenuItemType } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
+import {
+  canAccessThroughAllRecordsOrRlsPermission,
+  isDefined,
+} from 'twenty-shared/utils';
 import { type NavigationMenuItem } from '~/generated-metadata/graphql';
 
 import { FOLDER_ICON_DEFAULT } from '@/navigation-menu-item/common/constants/FolderIconDefault';
+import { isAutomationNavigationMenuItemType } from '@/navigation-menu-item/common/utils/isAutomationNavigationMenuItemType';
 import { isNavigationMenuItemFolder } from '@/navigation-menu-item/common/utils/isNavigationMenuItemFolder';
 import { getObjectMetadataForNavigationMenuItem } from '@/navigation-menu-item/display/object/utils/getObjectMetadataForNavigationMenuItem';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
@@ -51,7 +55,9 @@ export const getWorkspaceSidebarOrphanItemsInDisplayOrder = ({
 
       if (
         rowSource.type === NavigationMenuItemType.LINK ||
-        rowSource.type === NavigationMenuItemType.PAGE_LAYOUT
+        rowSource.type === NavigationMenuItemType.PAGE_LAYOUT ||
+        rowSource.type === NavigationMenuItemType.NATIVE_PAGE ||
+        isAutomationNavigationMenuItemType(rowSource.type)
       ) {
         acc.push(rowSource);
         return acc;
@@ -73,10 +79,13 @@ export const getWorkspaceSidebarOrphanItemsInDisplayOrder = ({
       }
 
       if (
-        getObjectPermissionsForObject(
-          objectPermissionsByObjectMetadataId,
-          objectMetadataItem.id,
-        ).canReadObjectRecords
+        canAccessThroughAllRecordsOrRlsPermission({
+          objectRecordsPermissions: getObjectPermissionsForObject(
+            objectPermissionsByObjectMetadataId,
+            objectMetadataItem.id,
+          ),
+          operationType: 'read',
+        })
       ) {
         acc.push(rowSource);
       }

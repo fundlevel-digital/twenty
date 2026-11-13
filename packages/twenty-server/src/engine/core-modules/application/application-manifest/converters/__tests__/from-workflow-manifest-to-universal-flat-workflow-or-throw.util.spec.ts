@@ -78,12 +78,22 @@ describe('application workflow definitions', () => {
     });
   });
 
+  it('keeps the isSystem flag of the definition', () => {
+    const { workflow } = convert({
+      ...options,
+      manifest: { ...manifest, isSystem: true },
+    });
+
+    expect(workflow.isSystem).toBe(true);
+  });
+
   it('updates the same version and keeps graph identity across updates', () => {
     const before = convert(options);
     const existingWorkflow: FlatWorkflow = {
       ...before.workflow,
       workspaceId: APPLICATION_ID,
       applicationId: APPLICATION_ID,
+      navigationMenuItemIds: [],
     };
     const existingVersion: FlatWorkflowVersion = {
       ...before.version,

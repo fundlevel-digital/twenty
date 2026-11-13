@@ -12,6 +12,7 @@ import { type ApplicationInput } from 'src/engine/core-modules/application/appli
 import { type DevelopmentApplicationDTO } from 'src/engine/core-modules/application/application-development/dtos/development-application.dto';
 import { type WorkspaceMigrationDTO } from 'src/engine/core-modules/application/application-development/dtos/workspace-migration.dto';
 import { ApplicationManifestApplyService } from 'src/engine/core-modules/application/application-manifest/application-manifest-apply.service';
+import { annotateCascadedDeletions } from 'src/engine/core-modules/application/application-manifest/utils/annotate-cascaded-deletions.util';
 import { ApplicationSyncService } from 'src/engine/core-modules/application/application-manifest/application-sync.service';
 import { ApplicationManifestExportService } from 'src/engine/core-modules/application/application-manifest/services/application-manifest-export.service';
 import { type ApplicationExport } from 'src/engine/core-modules/application/application-manifest/types/application-export.type';
@@ -103,13 +104,22 @@ export class ApplicationDevelopmentService {
   async exportApplication({
     universalIdentifier,
     workspaceId,
+    shouldIncludeDependencies,
+    shouldIncludeSourceFiles,
+    shouldIncludePublicAssets,
   }: {
     universalIdentifier: string;
     workspaceId: string;
+    shouldIncludeDependencies?: boolean;
+    shouldIncludeSourceFiles?: boolean;
+    shouldIncludePublicAssets?: boolean;
   }): Promise<ApplicationExport> {
     return this.applicationManifestExportService.exportApplication({
       workspaceId,
       applicationUniversalIdentifier: universalIdentifier,
+      shouldIncludeDependencies,
+      shouldIncludeSourceFiles,
+      shouldIncludePublicAssets,
     });
   }
 
@@ -118,15 +128,14 @@ export class ApplicationDevelopmentService {
     dryRun,
     inferDeletionFromMissingEntities,
     workspaceId,
+    workspaceCustomApplicationId,
   }: {
     manifest: ApplicationInput['manifest'];
     dryRun?: boolean;
     inferDeletionFromMissingEntities?: boolean | null;
     workspaceId: string;
+    workspaceCustomApplicationId: string;
   }): Promise<WorkspaceMigrationDTO> {
-    const shouldInferDeletionFromMissingEntities =
-      inferDeletionFromMissingEntities !== false;
-
     await this.throttlePerApplication(
       manifest.application.universalIdentifier,
       workspaceId,
@@ -155,8 +164,17 @@ export class ApplicationDevelopmentService {
       },
     );
 
+    const shouldInferDeletionFromMissingEntities =
+      await this.resolveDeletionInference({
+        applicationUniversalIdentifier:
+          manifest.application.universalIdentifier,
+        inferDeletionFromMissingEntities,
+        workspaceId,
+        workspaceCustomApplicationId,
+      });
+
     if (dryRun === true) {
-      const { workspaceMigration } =
+      const { workspaceMigration, cascadeDeletionParentByUniversalIdentifier } =
         await this.applicationSyncService.synchronizeFromManifest({
           workspaceId,
           manifest,
@@ -168,7 +186,10 @@ export class ApplicationDevelopmentService {
       return {
         applicationUniversalIdentifier:
           workspaceMigration.applicationUniversalIdentifier,
-        actions: workspaceMigration.actions,
+        actions: annotateCascadedDeletions({
+          actions: workspaceMigration.actions,
+          cascadeDeletionParentByUniversalIdentifier,
+        }),
       };
     }
 
@@ -271,7 +292,7 @@ export class ApplicationDevelopmentService {
       );
     }
 
-    const { workspaceMigration } =
+    const { workspaceMigration, cascadeDeletionParentByUniversalIdentifier } =
       await this.applicationManifestApplyService.applyManifestToWorkspace({
         workspaceId,
         manifest,
@@ -289,8 +310,37 @@ export class ApplicationDevelopmentService {
     return {
       applicationUniversalIdentifier:
         workspaceMigration.applicationUniversalIdentifier,
-      actions: workspaceMigration.actions,
+      actions: annotateCascadedDeletions({
+        actions: workspaceMigration.actions,
+        cascadeDeletionParentByUniversalIdentifier,
+      }),
     };
+  }
+
+  // Pull cannot export everything the workspace custom application owns yet,
+  // so applying a pulled project must only delete what is missing on request.
+  private async resolveDeletionInference({
+    applicationUniversalIdentifier,
+    inferDeletionFromMissingEntities,
+    workspaceId,
+    workspaceCustomApplicationId,
+  }: {
+    applicationUniversalIdentifier: string;
+    inferDeletionFromMissingEntities?: boolean | null;
+    workspaceId: string;
+    workspaceCustomApplicationId: string;
+  }): Promise<boolean> {
+    if (isDefined(inferDeletionFromMissingEntities)) {
+      return inferDeletionFromMissingEntities;
+    }
+
+    const application =
+      await this.applicationLookupService.findByUniversalIdentifier({
+        universalIdentifier: applicationUniversalIdentifier,
+        workspaceId,
+      });
+
+    return application?.id !== workspaceCustomApplicationId;
   }
 
   private async throttlePerApplication(

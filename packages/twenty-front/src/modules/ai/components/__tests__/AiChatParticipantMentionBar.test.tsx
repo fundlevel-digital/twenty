@@ -7,11 +7,11 @@ import { Document } from '@tiptap/extension-document';
 import { Paragraph } from '@tiptap/extension-paragraph';
 import { Text } from '@tiptap/extension-text';
 import { type Editor as ReactEditor } from '@tiptap/react';
-import { CoreObjectNameSingular } from 'twenty-shared/types';
+import { StandardObjectNameSingular } from 'twenty-shared/types';
 
 import { serializeAdvancedTextEditorDocument } from '@/advanced-text-editor/utils/serializeAdvancedTextEditorDocument';
 import { AiChatParticipantMentionBar } from '@/ai/components/AiChatParticipantMentionBar';
-import { agentChatDraftsByThreadIdState } from '@/ai/states/agentChatDraftsByThreadIdState';
+import { aiChatDraftsByThreadIdState } from '@/ai/states/aiChatDraftsByThreadIdState';
 import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
 import { MentionTag } from '@/mention/extensions/MentionTag';
 import { getMentionTagContent } from '@/mention/utils/getMentionTagContent';
@@ -49,7 +49,7 @@ describe('AiChatParticipantMentionBar', () => {
     editor = new Editor({
       extensions: [Document, Paragraph, Text, MentionTag],
       onUpdate: ({ editor: updatedEditor }) => {
-        jotaiStore.set(agentChatDraftsByThreadIdState.atom, {
+        jotaiStore.set(aiChatDraftsByThreadIdState.atom, {
           [THREAD_ID]: serializeAdvancedTextEditorDocument(updatedEditor),
         });
       },
@@ -69,7 +69,7 @@ describe('AiChatParticipantMentionBar', () => {
       editor.commands.insertContent(
         getMentionTagContent({
           recordId: GRACE_ID,
-          objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
+          objectNameSingular: StandardObjectNameSingular.WorkspaceMember,
           label: 'Grace Hopper',
           imageUrl: '',
           shouldAddAsParticipant: true,

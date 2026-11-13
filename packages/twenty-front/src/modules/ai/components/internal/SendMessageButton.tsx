@@ -1,16 +1,17 @@
-import { AGENT_CHAT_SEND_MESSAGE_EVENT_NAME } from '@/ai/constants/AgentChatSendMessageEventName';
-import { AGENT_CHAT_STOP_EVENT_NAME } from '@/ai/constants/AgentChatStopEventName';
-import { agentChatIsAwaitingFirstChunkFamilyState } from '@/ai/states/agentChatIsAwaitingFirstChunkFamilyState';
-import { agentChatIsLoadingSelector } from '@/ai/states/selectors/agentChatIsLoadingSelector';
-import { agentChatIsStreamingFamilyState } from '@/ai/states/agentChatIsStreamingFamilyState';
+import { AI_CHAT_SEND_MESSAGE_EVENT_NAME } from '@/ai/constants/AiChatSendMessageEventName';
+import { AI_CHAT_STOP_EVENT_NAME } from '@/ai/constants/AiChatStopEventName';
+import { aiChatIsLoadingSelector } from '@/ai/states/selectors/aiChatIsLoadingSelector';
+import { aiChatIsStreamingFamilyState } from '@/ai/states/aiChatIsStreamingFamilyState';
 import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
-import { agentChatInputIsEmptySelector } from '@/ai/states/selectors/agentChatInputIsEmptySelector';
+import { aiChatInputIsEmptySelector } from '@/ai/states/selectors/aiChatInputIsEmptySelector';
+import { aiChatIsAssistantReplyPendingFamilySelector } from '@/ai/states/selectors/aiChatIsAssistantReplyPendingFamilySelector';
 import { dispatchBrowserEvent } from '@/browser-event/utils/dispatchBrowserEvent';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { t } from '@lingui/core/macro';
 import { IconButton } from 'twenty-ui/components/input';
 import { IconArrowUp, IconPlayerStop } from 'twenty-ui/icon';
+import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
 import { useAtomFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilyStateValue';
+import { useLingui } from '@lingui/react/macro';
 
 type SendMessageButtonProps = {
   isDisabled?: boolean;
@@ -19,31 +20,30 @@ type SendMessageButtonProps = {
 export const SendMessageButton = ({
   isDisabled = false,
 }: SendMessageButtonProps) => {
-  const agentChatInputIsEmpty = useAtomStateValue(
-    agentChatInputIsEmptySelector,
-  );
+  const { t } = useLingui();
+  const aiChatInputIsEmpty = useAtomStateValue(aiChatInputIsEmptySelector);
 
-  const agentChatIsLoading = useAtomStateValue(agentChatIsLoadingSelector);
+  const aiChatIsLoading = useAtomStateValue(aiChatIsLoadingSelector);
 
   const currentAiChatThread = useAtomStateValue(currentAiChatThreadState);
-  const agentChatIsStreaming = useAtomFamilyStateValue(
-    agentChatIsStreamingFamilyState,
+  const aiChatIsStreaming = useAtomFamilyStateValue(
+    aiChatIsStreamingFamilyState,
     { threadId: currentAiChatThread },
   );
-  const agentChatIsAwaitingFirstChunk = useAtomFamilyStateValue(
-    agentChatIsAwaitingFirstChunkFamilyState,
-    { threadId: currentAiChatThread },
+  const aiChatIsAssistantReplyPending = useAtomFamilySelectorValue(
+    aiChatIsAssistantReplyPendingFamilySelector,
+    currentAiChatThread,
   );
 
   const handleSendClick = () => {
-    dispatchBrowserEvent(AGENT_CHAT_SEND_MESSAGE_EVENT_NAME);
+    dispatchBrowserEvent(AI_CHAT_SEND_MESSAGE_EVENT_NAME);
   };
 
   const handleStopClick = () => {
-    dispatchBrowserEvent(AGENT_CHAT_STOP_EVENT_NAME);
+    dispatchBrowserEvent(AI_CHAT_STOP_EVENT_NAME);
   };
 
-  if (agentChatIsStreaming || agentChatIsAwaitingFirstChunk) {
+  if (aiChatIsStreaming || aiChatIsAssistantReplyPending) {
     return (
       <IconButton
         variant="solid"
@@ -66,7 +66,7 @@ export const SendMessageButton = ({
       aria-label={t`Send message`}
       size="sm"
       onClick={handleSendClick}
-      disabled={isDisabled || agentChatInputIsEmpty || agentChatIsLoading}
+      disabled={isDisabled || aiChatInputIsEmpty || aiChatIsLoading}
     >
       <IconArrowUp />
     </IconButton>

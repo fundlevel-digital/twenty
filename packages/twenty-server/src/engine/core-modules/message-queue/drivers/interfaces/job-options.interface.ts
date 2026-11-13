@@ -1,3 +1,5 @@
+import { type MessageQueueLimiter } from 'src/engine/core-modules/message-queue/types/message-queue-limiter.type';
+
 export type QueueJobBackoffOptions = {
   strategy: 'fixed' | 'exponential';
   initialDelayMilliseconds: number;
@@ -14,7 +16,35 @@ export type QueueJobRecipient = {
   userWorkspaceId?: string;
 };
 
-export interface QueueJobOptions {
+export type SystemQueueJobScope = {
+  isSystemJob: true;
+  isWorkspaceJob?: never;
+  workspaceId?: never;
+  applicationUniversalIdentifier?: never;
+};
+
+export type WorkspaceQueueJobScope = {
+  isSystemJob?: never;
+  isWorkspaceJob: true;
+  workspaceId: string;
+  applicationUniversalIdentifier?: never;
+};
+
+export type ApplicationQueueJobScope = {
+  isSystemJob?: never;
+  isWorkspaceJob?: never;
+  workspaceId: string;
+  applicationUniversalIdentifier: string;
+};
+
+export type QueueJobScope =
+  | SystemQueueJobScope
+  | WorkspaceQueueJobScope
+  | ApplicationQueueJobScope;
+
+export type QueueJobLimiter = { key: string } & MessageQueueLimiter;
+
+export type QueueJobSettings = {
   id?: string;
   doNotCheckDuplicatesBasedOnPrefix?: boolean;
   priority?: number;
@@ -23,12 +53,17 @@ export interface QueueJobOptions {
   delay?: number;
   deduplication?: QueueJobDeduplicationOptions;
   broadcastTo?: QueueJobRecipient;
-}
+  groupKeys?: string[];
+  limiter?: QueueJobLimiter;
+};
 
-export interface QueueCronJobOptions extends QueueJobOptions {
+export type QueueJobOptions = QueueJobSettings & QueueJobScope;
+
+export type QueueCronJobOptions = Pick<QueueJobSettings, 'priority'> & {
   repeat: {
     every?: number;
     pattern?: string;
+    tz?: string;
     limit?: number;
   };
-}
+};
