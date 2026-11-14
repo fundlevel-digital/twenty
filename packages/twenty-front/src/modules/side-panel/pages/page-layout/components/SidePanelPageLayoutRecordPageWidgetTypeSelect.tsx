@@ -10,6 +10,7 @@ import { widgetCreationTargetTabIdComponentState } from '@/page-layout/states/wi
 import { widgetInsertionContextComponentState } from '@/page-layout/states/widgetInsertionContextComponentState';
 import { type PageLayoutWidget } from '@/page-layout/types/PageLayoutWidget';
 import { addWidgetToTab } from '@/page-layout/utils/addWidgetToTab';
+import { createDefaultEmailsWidget } from '@/page-layout/utils/createDefaultEmailsWidget';
 import { createDefaultFieldWidget } from '@/page-layout/utils/createDefaultFieldWidget';
 import { createDefaultFieldsWidget } from '@/page-layout/utils/createDefaultFieldsWidget';
 import { isVerticalListPosition } from '@/page-layout/utils/isVerticalListPosition';
@@ -39,6 +40,7 @@ import {
   IconApps,
   IconListDetails,
   IconListSearch,
+  IconMail,
   IconNotes,
 } from 'twenty-ui/icon';
 import { v4 as uuidv4 } from 'uuid';
@@ -297,6 +299,35 @@ export const SidePanelPageLayoutRecordPageWidgetTypeSelect = () => {
     insertCreatedWidgetAtContext({ newWidgetId: newWidget.id });
   };
 
+  const handleCreateEmailsWidget = () => {
+    const replacePositionIndex = getExistingWidgetPositionIndex();
+    removeExistingWidgetIfReplacing();
+
+    const updatedPageLayout = store.get(pageLayoutDraftState);
+    const activeTab = updatedPageLayout.tabs.find((tab) => tab.id === tabId);
+    const positionIndex =
+      replacePositionIndex ?? activeTab?.widgets.length ?? 0;
+    const widgetId = uuidv4();
+
+    const newWidget = createDefaultEmailsWidget({
+      id: widgetId,
+      pageLayoutTabId: tabId,
+      title: t`Emails`,
+      objectMetadataId: objectMetadataItem.id,
+      positionIndex,
+    });
+
+    store.set(pageLayoutDraftState, (prev) => ({
+      ...prev,
+      tabs: addWidgetToTab(prev.tabs, tabId, newWidget),
+    }));
+
+    setPageLayoutEditingWidgetId(widgetId);
+    insertCreatedWidgetAtContext({ newWidgetId: widgetId });
+
+    closeSidePanelMenu();
+  };
+
   const handleCreateFrontComponentWidget = useCallback(
     (frontComponent: FrontComponent) => {
       const replacePositionIndex = getExistingWidgetPositionIndex();
@@ -360,6 +391,7 @@ export const SidePanelPageLayoutRecordPageWidgetTypeSelect = () => {
     'fields',
     'field',
     'note',
+    'emails',
     ...frontComponentsWithSelectItemId.map(({ selectItemId }) => selectItemId),
   ];
 
@@ -389,6 +421,14 @@ export const SidePanelPageLayoutRecordPageWidgetTypeSelect = () => {
             description={t`Static text shared across all record pages`}
             id="note"
             onClick={handleCreateNoteWidget}
+          />
+        </SelectableListItem>
+        <SelectableListItem itemId="emails" onEnter={handleCreateEmailsWidget}>
+          <CommandMenuItem
+            Icon={IconMail}
+            label={t`Emails`}
+            id="emails"
+            onClick={handleCreateEmailsWidget}
           />
         </SelectableListItem>
       </SidePanelGroup>

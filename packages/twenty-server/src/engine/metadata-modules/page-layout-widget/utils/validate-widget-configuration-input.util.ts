@@ -3,6 +3,7 @@ import { isNotEmptyObject, type ValidationError } from 'class-validator';
 import { AggregateChartConfigurationDTO } from 'src/engine/metadata-modules/page-layout-widget/dtos/aggregate-chart-configuration.dto';
 import { BarChartConfigurationDTO } from 'src/engine/metadata-modules/page-layout-widget/dtos/bar-chart-configuration.dto';
 import { CallRecordingSummaryConfigurationDTO } from 'src/engine/metadata-modules/page-layout-widget/dtos/call-recording-summary-configuration.dto';
+import { EmailsConfigurationDTO } from 'src/engine/metadata-modules/page-layout-widget/dtos/emails-configuration.dto';
 import { CallRecordingTranscriptConfigurationDTO } from 'src/engine/metadata-modules/page-layout-widget/dtos/call-recording-transcript-configuration.dto';
 import { ChatConfigurationDTO } from 'src/engine/metadata-modules/page-layout-widget/dtos/chat-configuration.dto';
 import { ChatThreadsConfigurationDTO } from 'src/engine/metadata-modules/page-layout-widget/dtos/chat-threads-configuration.dto';
@@ -214,10 +215,11 @@ export const validateWidgetConfigurationInput = ({
         PageLayoutWidgetExceptionCode.INVALID_PAGE_LAYOUT_WIDGET_DATA,
       );
     case WidgetConfigurationType.EMAILS:
-      throw new PageLayoutWidgetException(
-        'Emails configuration is not supported yet',
-        PageLayoutWidgetExceptionCode.INVALID_PAGE_LAYOUT_WIDGET_DATA,
+      errors = validateWidgetConfigurationByDto(
+        EmailsConfigurationDTO,
+        configuration,
       );
+      break;
     case WidgetConfigurationType.CALENDAR:
       throw new PageLayoutWidgetException(
         'Calendar configuration is not supported yet',
