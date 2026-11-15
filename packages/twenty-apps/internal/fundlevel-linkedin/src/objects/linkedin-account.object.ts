@@ -1,0 +1,177 @@
+import { defineObject, FieldType } from 'twenty-sdk/define';
+
+import { ACCOUNT_FIELD, OBJECT, OPTION } from 'src/constants/universal-identifiers';
+
+export default defineObject({
+  universalIdentifier: OBJECT.ACCOUNT,
+  nameSingular: 'linkedinAccount',
+  namePlural: 'linkedinAccounts',
+  labelSingular: 'LinkedIn Account',
+  labelPlural: 'LinkedIn Accounts',
+  description: 'A LinkedIn account we sync from, connected through Unipile.',
+  icon: 'IconBrandLinkedin',
+  labelIdentifierFieldMetadataUniversalIdentifier: ACCOUNT_FIELD.NAME,
+  fields: [
+    {
+      universalIdentifier: ACCOUNT_FIELD.NAME,
+      type: FieldType.TEXT,
+      name: 'name',
+      label: 'Name',
+      icon: 'IconAbc',
+      description: 'Display name of the LinkedIn account, as reported by Unipile.',
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.UNIPILE_ACCOUNT_ID,
+      type: FieldType.TEXT,
+      name: 'unipileAccountId',
+      label: 'Unipile Account ID',
+      icon: 'IconKey',
+      isUnique: true,
+      description:
+        "Unipile's ID for this connected account (acc_...). Changes if the account is removed and re-linked in Unipile.",
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.LINKEDIN_USER_ID,
+      type: FieldType.TEXT,
+      name: 'linkedinUserId',
+      label: 'LinkedIn User ID',
+      icon: 'IconKey',
+      isUnique: true,
+      description:
+        "LinkedIn's classic member ID for this account (ACoA...). Stable across re-links, so records are matched on it.",
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.SALES_NAVIGATOR_ID,
+      type: FieldType.TEXT,
+      name: 'salesNavigatorId',
+      label: 'Sales Navigator ID',
+      icon: 'IconKey',
+      description:
+        "This account's own Sales Navigator member ID (ACwA...). Differs from the classic LinkedIn User ID.",
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.STATUS,
+      type: FieldType.SELECT,
+      name: 'status',
+      label: 'Status',
+      icon: 'IconPlugConnected',
+      description:
+        'Connection health reported by Unipile: Running, Degraded (one product down), Disconnected, Errored or Removed.',
+      options: [
+        { id: OPTION.ACCOUNT_STATUS_RUNNING, value: 'RUNNING', label: 'Running', position: 0, color: 'green' },
+        { id: OPTION.ACCOUNT_STATUS_DEGRADED, value: 'DEGRADED', label: 'Degraded', position: 1, color: 'orange' },
+        { id: OPTION.ACCOUNT_STATUS_DISCONNECTED, value: 'DISCONNECTED', label: 'Disconnected', position: 2, color: 'red' },
+        { id: OPTION.ACCOUNT_STATUS_ERRORED, value: 'ERRORED', label: 'Errored', position: 3, color: 'red' },
+        { id: OPTION.ACCOUNT_STATUS_REMOVED, value: 'REMOVED', label: 'Removed', position: 4, color: 'gray' },
+      ],
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.PRODUCTS,
+      type: FieldType.MULTI_SELECT,
+      name: 'products',
+      label: 'Products',
+      icon: 'IconApps',
+      description: 'LinkedIn products currently connected and running on this account.',
+      options: [
+        { id: OPTION.ACCOUNT_PRODUCT_CLASSIC, value: 'CLASSIC', label: 'Classic', position: 0, color: 'blue' },
+        { id: OPTION.ACCOUNT_PRODUCT_SALES_NAVIGATOR, value: 'SALES_NAVIGATOR', label: 'Sales Navigator', position: 1, color: 'sky' },
+        { id: OPTION.ACCOUNT_PRODUCT_RECRUITER, value: 'RECRUITER', label: 'Recruiter', position: 2, color: 'purple' },
+        { id: OPTION.ACCOUNT_PRODUCT_COMPANY_PAGES, value: 'COMPANY_PAGES', label: 'Company Pages', position: 3, color: 'gray' },
+      ],
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.LAST_SYNCED_AT,
+      type: FieldType.DATE_TIME,
+      name: 'lastSyncedAt',
+      label: 'Last Synced At',
+      icon: 'IconRefresh',
+      description: 'When the sync last finished a step for this account.',
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.PROFILE_LINK,
+      type: FieldType.LINKS,
+      name: 'profileLink',
+      label: 'Profile Link',
+      icon: 'IconLink',
+      description: 'Public LinkedIn profile URL of this account.',
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.PROFILE_PICTURE_URL,
+      type: FieldType.TEXT,
+      name: 'profilePictureUrl',
+      label: 'Profile Picture URL',
+      icon: 'IconPhoto',
+      description:
+        "URL of this account's LinkedIn profile picture. LinkedIn picture URLs expire, so this is rewritten once a day.",
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.PROXY_HOST,
+      type: FieldType.TEXT,
+      name: 'proxyHost',
+      label: 'Proxy Host',
+      icon: 'IconServer',
+      description:
+        "Host of the custom proxy Unipile uses for this account. Empty when Unipile's automatic proxy is used.",
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.PROXY_PORT,
+      type: FieldType.TEXT,
+      name: 'proxyPort',
+      label: 'Proxy Port',
+      icon: 'IconNumber',
+      description: 'Port of the custom proxy Unipile uses for this account.',
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.PROXY_AUTO,
+      type: FieldType.BOOLEAN,
+      name: 'proxyAuto',
+      label: 'Auto Proxy',
+      icon: 'IconRobot',
+      defaultValue: false,
+      description: "True when Unipile's automatic proxy is used instead of a custom proxy.",
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.PROXY_USERNAME,
+      type: FieldType.TEXT,
+      name: 'proxyUsername',
+      label: 'Proxy Username',
+      icon: 'IconUser',
+      description: 'Username for the custom proxy. The password is never stored here.',
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.SYNC_STAGE,
+      type: FieldType.SELECT,
+      name: 'syncStage',
+      label: 'Sync Stage',
+      icon: 'IconProgress',
+      description:
+        'Where the full sync of this account stands. Set it to Queued to start (or restart) a full sync of connections, chats and messages; set it to Paused to stop it. New and reconnected accounts are queued automatically.',
+      options: [
+        { id: OPTION.ACCOUNT_SYNC_STAGE_QUEUED, value: 'QUEUED', label: 'Queued', position: 0, color: 'gray' },
+        { id: OPTION.ACCOUNT_SYNC_STAGE_CONNECTIONS, value: 'CONNECTIONS', label: 'Syncing Connections', position: 1, color: 'blue' },
+        { id: OPTION.ACCOUNT_SYNC_STAGE_CHATS, value: 'CHATS', label: 'Mapping Chats', position: 2, color: 'blue' },
+        { id: OPTION.ACCOUNT_SYNC_STAGE_MESSAGES, value: 'MESSAGES', label: 'Syncing Messages', position: 3, color: 'blue' },
+        { id: OPTION.ACCOUNT_SYNC_STAGE_COMPLETE, value: 'COMPLETE', label: 'Complete', position: 4, color: 'green' },
+        { id: OPTION.ACCOUNT_SYNC_STAGE_PAUSED, value: 'PAUSED', label: 'Paused', position: 5, color: 'yellow' },
+        { id: OPTION.ACCOUNT_SYNC_STAGE_FAILED, value: 'FAILED', label: 'Failed', position: 6, color: 'red' },
+      ],
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.SYNC_STATE,
+      type: FieldType.RAW_JSON,
+      name: 'syncState',
+      label: 'Sync State',
+      icon: 'IconCode',
+      description:
+        'Resume position and counters of the full sync (cursors per list and inbox). Managed by the app; clear it with the stage set to Queued to start from scratch.',
+    },
+    {
+      universalIdentifier: ACCOUNT_FIELD.SYNC_ERROR,
+      type: FieldType.TEXT,
+      name: 'syncError',
+      label: 'Sync Error',
+      icon: 'IconAlertTriangle',
+      description: 'Last error the sync hit on this account. Cleared when a step succeeds.',
+    },
+  ],
+});
