@@ -11,6 +11,7 @@ import { widgetInsertionContextComponentState } from '@/page-layout/states/widge
 import { type PageLayoutWidget } from '@/page-layout/types/PageLayoutWidget';
 import { addWidgetToTab } from '@/page-layout/utils/addWidgetToTab';
 import { createDefaultEmailsWidget } from '@/page-layout/utils/createDefaultEmailsWidget';
+import { stackEmailsWidgetsInTab } from '@/page-layout/widgets/messages/utils/stackEmailsWidgetsInTab';
 import { createDefaultFieldWidget } from '@/page-layout/utils/createDefaultFieldWidget';
 import { createDefaultFieldsWidget } from '@/page-layout/utils/createDefaultFieldsWidget';
 import { isVerticalListPosition } from '@/page-layout/utils/isVerticalListPosition';
@@ -319,7 +320,10 @@ export const SidePanelPageLayoutRecordPageWidgetTypeSelect = () => {
 
     store.set(pageLayoutDraftState, (prev) => ({
       ...prev,
-      tabs: addWidgetToTab(prev.tabs, tabId, newWidget),
+      tabs: stackEmailsWidgetsInTab(
+        addWidgetToTab(prev.tabs, tabId, newWidget),
+        tabId,
+      ),
     }));
 
     setPageLayoutEditingWidgetId(widgetId);
