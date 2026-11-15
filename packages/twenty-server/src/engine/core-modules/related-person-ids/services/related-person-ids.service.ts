@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
 import { In, type FindOptionsWhere } from 'typeorm';
 
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
+import { buildRelationPathsToPersonFromFieldMetadataIdPaths } from 'src/engine/core-modules/related-person-ids/utils/build-relation-paths-to-person-from-field-metadata-id-paths.util';
 import {
   findRelationPathsToPerson,
   type RelationPathToPerson,
@@ -27,12 +28,17 @@ export class RelatedPersonIdsService {
     workspaceId,
     objectNameSingular,
     recordId,
+    sourceFieldMetadataIdPaths,
   }: {
     workspaceId: string;
     objectNameSingular: string;
     recordId: string;
+    sourceFieldMetadataIdPaths?: string[][] | null;
   }): Promise<string[]> {
-    if (objectNameSingular === PERSON_OBJECT_NAME_SINGULAR) {
+    if (
+      objectNameSingular === PERSON_OBJECT_NAME_SINGULAR &&
+      !isNonEmptyArray(sourceFieldMetadataIdPaths)
+    ) {
       return [recordId];
     }
 
@@ -42,11 +48,18 @@ export class RelatedPersonIdsService {
         'flatFieldMetadataMaps',
       ]);
 
-    const relationPaths = findRelationPathsToPerson({
-      rootObjectNameSingular: objectNameSingular,
-      flatObjectMetadataMaps,
-      flatFieldMetadataMaps,
-    });
+    const relationPaths = isNonEmptyArray(sourceFieldMetadataIdPaths)
+      ? buildRelationPathsToPersonFromFieldMetadataIdPaths({
+          rootObjectNameSingular: objectNameSingular,
+          fieldMetadataIdPaths: sourceFieldMetadataIdPaths,
+          flatObjectMetadataMaps,
+          flatFieldMetadataMaps,
+        })
+      : findRelationPathsToPerson({
+          rootObjectNameSingular: objectNameSingular,
+          flatObjectMetadataMaps,
+          flatFieldMetadataMaps,
+        });
 
     if (relationPaths.length === 0) {
       return [];

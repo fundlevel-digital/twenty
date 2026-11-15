@@ -156,6 +156,8 @@ export const PAGE_LAYOUT_WIDGET_FRAGMENT = gql`
       }
       ... on EmailsConfiguration {
         configurationType
+        sourceFieldMetadataIdPaths
+        targetRecordId
       }
       ... on EmailThreadConfiguration {
         configurationType

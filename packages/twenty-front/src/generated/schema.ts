@@ -772,6 +772,7 @@ export type QueryGetTimelineCalendarEventsFromPersonIdArgs = {
 export type QueryGetTimelineThreadChannelsFromObjectRecordArgs = {
   objectNameSingular: Scalars['String']['input'];
   recordId: Scalars['UUID']['input'];
+  sourceFieldMetadataIdPaths?: InputMaybe<Array<Array<Scalars['UUID']['input']>>>;
 };
 
 
@@ -788,6 +789,7 @@ export type QueryGetTimelineThreadsFromObjectRecordArgs = {
   page: Scalars['Int']['input'];
   pageSize: Scalars['Int']['input'];
   recordId: Scalars['UUID']['input'];
+  sourceFieldMetadataIdPaths?: InputMaybe<Array<Array<Scalars['UUID']['input']>>>;
 };
 
 
@@ -826,6 +828,7 @@ export type QuerySearchTimelineThreadsArgs = {
   objectNameSingular: Scalars['String']['input'];
   recordId: Scalars['UUID']['input'];
   searchInput?: InputMaybe<Scalars['String']['input']>;
+  sourceFieldMetadataIdPaths?: InputMaybe<Array<Array<Scalars['UUID']['input']>>>;
 };
 
 

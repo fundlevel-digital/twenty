@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
 
 import { TIMELINE_THREADS_DEFAULT_PAGE_SIZE } from 'src/engine/core-modules/messaging/constants/messaging.constants';
 import { type TimelineThreadChannelFilterInput } from 'src/engine/core-modules/messaging/dtos/timeline-thread-channel-filter.input';
@@ -83,12 +83,14 @@ export class GetMessagesService {
     recordId,
     workspaceId,
     searchInput,
+    sourceFieldMetadataIdPaths,
   }: {
     userWorkspaceId: string;
     objectNameSingular: string;
     recordId: string;
     workspaceId: string;
     searchInput?: string;
+    sourceFieldMetadataIdPaths?: string[][] | null;
   }): Promise<TimelineThreadSearchResultDTO> {
     if (!isNonEmptyString(searchInput?.trim())) {
       const { timelineThreads } = await this.getMessagesFromObjectRecord({
@@ -96,6 +98,7 @@ export class GetMessagesService {
         objectNameSingular,
         recordId,
         workspaceId,
+        sourceFieldMetadataIdPaths,
       });
 
       return {
@@ -105,19 +108,14 @@ export class GetMessagesService {
     }
 
     const [
-      personIds,
-      targetFilter,
+      { personIds, targetFilter },
       { ownedMessageChannelIds, subjectVisibleMessageChannelIds },
     ] = await Promise.all([
-      this.relatedPersonIdsService.getRelatedPersonIds({
+      this.resolveRecordFilter({
         workspaceId,
         objectNameSingular,
         recordId,
-      }),
-      this.messageCalendarTargetReadinessService.resolveTargetFilter({
-        objectNameSingular,
-        recordId,
-        workspaceId,
+        sourceFieldMetadataIdPaths,
       }),
       this.timelineMessagingService.getSearchableMessageChannelIds({
         userWorkspaceId,
@@ -161,6 +159,37 @@ export class GetMessagesService {
         ({ id }) => !recordMessageThreadIds.has(id),
       ),
     };
+  }
+
+  // Picked sources replace the record's linked threads, so only their people count
+  private async resolveRecordFilter({
+    workspaceId,
+    objectNameSingular,
+    recordId,
+    sourceFieldMetadataIdPaths,
+  }: {
+    workspaceId: string;
+    objectNameSingular: string;
+    recordId: string;
+    sourceFieldMetadataIdPaths?: string[][] | null;
+  }): Promise<{ personIds: string[]; targetFilter?: TargetFilter }> {
+    const [personIds, targetFilter] = await Promise.all([
+      this.relatedPersonIdsService.getRelatedPersonIds({
+        workspaceId,
+        objectNameSingular,
+        recordId,
+        sourceFieldMetadataIdPaths,
+      }),
+      isNonEmptyArray(sourceFieldMetadataIdPaths)
+        ? undefined
+        : this.messageCalendarTargetReadinessService.resolveTargetFilter({
+            objectNameSingular,
+            recordId,
+            workspaceId,
+          }),
+    ]);
+
+    return { personIds, targetFilter };
   }
 
   private async formatTimelineThreads({
@@ -211,6 +240,7 @@ export class GetMessagesService {
     page = 1,
     pageSize = TIMELINE_THREADS_DEFAULT_PAGE_SIZE,
     channel,
+    sourceFieldMetadataIdPaths,
   }: {
     userWorkspaceId: string;
     objectNameSingular: string;
@@ -219,18 +249,14 @@ export class GetMessagesService {
     page?: number;
     pageSize?: number;
     channel?: TimelineThreadChannelFilterInput;
+    sourceFieldMetadataIdPaths?: string[][] | null;
   }): Promise<TimelineThreadsWithTotalDTO> {
-    const personIds = await this.relatedPersonIdsService.getRelatedPersonIds({
+    const { personIds, targetFilter } = await this.resolveRecordFilter({
       workspaceId,
       objectNameSingular,
       recordId,
+      sourceFieldMetadataIdPaths,
     });
-    const targetFilter =
-      await this.messageCalendarTargetReadinessService.resolveTargetFilter({
-        objectNameSingular,
-        recordId,
-        workspaceId,
-      });
 
     if (!isDefined(targetFilter) && personIds.length === 0) {
       return {
@@ -255,23 +281,19 @@ export class GetMessagesService {
     objectNameSingular,
     recordId,
     workspaceId,
+    sourceFieldMetadataIdPaths,
   }: {
     objectNameSingular: string;
     recordId: string;
     workspaceId: string;
+    sourceFieldMetadataIdPaths?: string[][] | null;
   }): Promise<TimelineThreadChannelDTO[]> {
-    const [personIds, targetFilter] = await Promise.all([
-      this.relatedPersonIdsService.getRelatedPersonIds({
-        workspaceId,
-        objectNameSingular,
-        recordId,
-      }),
-      this.messageCalendarTargetReadinessService.resolveTargetFilter({
-        objectNameSingular,
-        recordId,
-        workspaceId,
-      }),
-    ]);
+    const { personIds, targetFilter } = await this.resolveRecordFilter({
+      workspaceId,
+      objectNameSingular,
+      recordId,
+      sourceFieldMetadataIdPaths,
+    });
 
     if (!isDefined(targetFilter) && personIds.length === 0) {
       return [];

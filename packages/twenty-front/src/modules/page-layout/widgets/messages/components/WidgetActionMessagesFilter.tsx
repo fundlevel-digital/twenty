@@ -14,11 +14,20 @@ import { isDefined } from 'twenty-shared/utils';
 import { Dropdown } from 'twenty-ui/components/navigation';
 import { IconFilter, IconMessage } from 'twenty-ui/icon';
 
-export const WidgetActionMessagesFilter = () => {
+type WidgetActionMessagesFilterProps = {
+  sourceFieldMetadataIdPaths?: string[][] | null;
+};
+
+export const WidgetActionMessagesFilter = ({
+  sourceFieldMetadataIdPaths,
+}: WidgetActionMessagesFilterProps) => {
   const { t } = useLingui();
   const targetRecord = useTargetRecord();
   const { getMessageChannelLabel } = useMessageChannelLabel();
-  const { timelineThreadChannels } = useTimelineThreadChannels(targetRecord);
+  const { timelineThreadChannels } = useTimelineThreadChannels(
+    targetRecord,
+    sourceFieldMetadataIdPaths,
+  );
   const [timelineThreadChannelFilter, setTimelineThreadChannelFilter] =
     useAtomFamilyState(timelineThreadChannelFilterFamilyState, targetRecord.id);
 

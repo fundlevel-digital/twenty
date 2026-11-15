@@ -8,6 +8,7 @@ export const getTimelineThreadsFromObjectRecord = gql`
     $page: Int!
     $pageSize: Int!
     $channel: TimelineThreadChannelFilterInput
+    $sourceFieldMetadataIdPaths: [[UUID!]!]
   ) {
     getTimelineThreadsFromObjectRecord(
       objectNameSingular: $objectNameSingular
@@ -15,6 +16,7 @@ export const getTimelineThreadsFromObjectRecord = gql`
       page: $page
       pageSize: $pageSize
       channel: $channel
+      sourceFieldMetadataIdPaths: $sourceFieldMetadataIdPaths
     ) {
       ...TimelineThreadsWithTotalFragment
     }

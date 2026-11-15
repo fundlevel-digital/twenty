@@ -49,6 +49,7 @@ export type GetMessageThreadChannelQuery = { getMessageThreadChannel: { __typena
 export type GetTimelineThreadChannelsFromObjectRecordQueryVariables = Exact<{
   objectNameSingular: string;
   recordId: any;
+  sourceFieldMetadataIdPaths?: Array<Array<any>> | null | undefined;
 }>;
 
 
@@ -60,6 +61,7 @@ export type GetTimelineThreadsFromObjectRecordQueryVariables = Exact<{
   page: number;
   pageSize: number;
   channel?: Types.TimelineThreadChannelFilterInput | null | undefined;
+  sourceFieldMetadataIdPaths?: Array<Array<any>> | null | undefined;
 }>;
 
 
@@ -69,6 +71,7 @@ export type SearchTimelineThreadsQueryVariables = Exact<{
   objectNameSingular: string;
   recordId: any;
   searchInput?: string | null | undefined;
+  sourceFieldMetadataIdPaths?: Array<Array<any>> | null | undefined;
 }>;
 
 

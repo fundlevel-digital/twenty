@@ -15,7 +15,11 @@ import { useTargetRecord } from '@/ui/layout/contexts/useTargetRecord';
 import { useAtomFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilyStateValue';
 import { type TimelineThreadsWithTotal } from '~/generated/graphql';
 
-export const EmailsCard = () => {
+type EmailsCardProps = {
+  sourceFieldMetadataIdPaths?: string[][] | null;
+};
+
+export const EmailsCard = ({ sourceFieldMetadataIdPaths }: EmailsCardProps) => {
   const targetRecord = useTargetRecord();
   const apolloCoreClient = useApolloCoreClient();
   const timelineThreadChannelFilter = useAtomFamilyStateValue(
@@ -36,7 +40,10 @@ export const EmailsCard = () => {
     objectName: 'timelineThreads',
     activityTargetableObject: targetRecord,
     pageSize: TIMELINE_THREADS_DEFAULT_PAGE_SIZE,
-    variables: { channel: timelineThreadChannelFilter },
+    variables: {
+      channel: timelineThreadChannelFilter,
+      sourceFieldMetadataIdPaths,
+    },
   });
 
   useSubscribeTimelineToParticipantChanges({

@@ -13,6 +13,7 @@ export const useTimelineThreadChannels = (
     ActivityTargetableObject,
     'id' | 'targetObjectNameSingular'
   >,
+  sourceFieldMetadataIdPaths?: string[][] | null,
 ) => {
   const apolloCoreClient = useApolloCoreClient();
 
@@ -24,6 +25,7 @@ export const useTimelineThreadChannels = (
     variables: {
       objectNameSingular: targetRecord.targetObjectNameSingular,
       recordId: targetRecord.id,
+      sourceFieldMetadataIdPaths,
     },
   });
 

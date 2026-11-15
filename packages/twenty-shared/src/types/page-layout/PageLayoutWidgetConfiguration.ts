@@ -161,6 +161,8 @@ export type FilesConfiguration = {
 
 export type EmailsConfiguration = {
   configurationType: 'EMAILS';
+  sourceFieldMetadataIdPaths?: string[][] | null;
+  targetRecordId?: string | null;
 };
 
 export type EmailThreadConfiguration = {

@@ -1,14 +1,12 @@
-import { FieldMetadataType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
-import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
-import { computeMorphOrRelationFieldJoinColumnName } from 'src/engine/metadata-modules/field-metadata/utils/compute-morph-or-relation-field-join-column-name.util';
+import {
+  resolveRelationHop,
+  type RelationHopToPerson,
+} from 'src/engine/core-modules/related-person-ids/utils/resolve-relation-hop.util';
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
-import { findFlatEntityByIdInFlatEntityMapsOrThrow } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps-or-throw.util';
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
-import { isFlatFieldMetadataOfType } from 'src/engine/metadata-modules/flat-field-metadata/utils/is-flat-field-metadata-of-type.util';
-import { isMorphOrRelationFlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/utils/is-morph-or-relation-flat-field-metadata.util';
 import { getFlatFieldsFromFlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/utils/get-flat-fields-for-flat-object-metadata.util';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
 import { buildObjectIdByNameMaps } from 'src/engine/metadata-modules/flat-object-metadata/utils/build-object-id-by-name-maps.util';
@@ -18,12 +16,6 @@ const DEFAULT_MAX_RELATION_DEPTH_TO_PERSON = 3;
 
 const isSystemObjectMetadata = (objectMetadata: { isSystem?: boolean }) =>
   objectMetadata.isSystem === true;
-
-export type RelationHopToPerson = {
-  direction: RelationType;
-  queryObjectNameSingular: string;
-  joinColumnName: string;
-};
 
 export type RelationPathToPerson = RelationHopToPerson[];
 
@@ -71,40 +63,19 @@ export const findRelationPathsToPerson = ({
         sourceObject,
         flatFieldMetadataMaps,
       )) {
-        if (!isFlatFieldMetadataOfType(field, FieldMetadataType.RELATION)) {
-          continue;
-        }
-
-        const targetFlatFieldMetadata =
-          findFlatEntityByIdInFlatEntityMapsOrThrow({
-            flatEntityId: field.relationTargetFieldMetadataId,
-            flatEntityMaps: flatFieldMetadataMaps,
-          });
-
-        if (!isMorphOrRelationFlatFieldMetadata(targetFlatFieldMetadata)) {
-          continue;
-        }
-
-        const targetObjectMetadata = findFlatEntityByIdInFlatEntityMapsOrThrow({
-          flatEntityId: targetFlatFieldMetadata.objectMetadataId,
-          flatEntityMaps: flatObjectMetadataMaps,
+        const resolvedHop = resolveRelationHop({
+          sourceObject,
+          field,
+          flatObjectMetadataMaps,
+          flatFieldMetadataMaps,
         });
 
-        const isManyToOne =
-          field.settings.relationType === RelationType.MANY_TO_ONE;
+        if (!isDefined(resolvedHop)) {
+          continue;
+        }
 
-        const nextPath: RelationPathToPerson = [
-          ...path,
-          {
-            direction: field.settings.relationType,
-            queryObjectNameSingular: isManyToOne
-              ? sourceObject.nameSingular
-              : targetObjectMetadata.nameSingular,
-            joinColumnName: computeMorphOrRelationFieldJoinColumnName({
-              name: isManyToOne ? field.name : targetFlatFieldMetadata.name,
-            }),
-          },
-        ];
+        const { hop, targetObjectMetadata } = resolvedHop;
+        const nextPath: RelationPathToPerson = [...path, hop];
 
         if (targetObjectMetadata.nameSingular === PERSON_OBJECT_NAME_SINGULAR) {
           pathsToPerson.push(nextPath);

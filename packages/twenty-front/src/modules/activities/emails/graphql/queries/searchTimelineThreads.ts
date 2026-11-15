@@ -6,11 +6,13 @@ export const searchTimelineThreads = gql`
     $objectNameSingular: String!
     $recordId: UUID!
     $searchInput: String
+    $sourceFieldMetadataIdPaths: [[UUID!]!]
   ) {
     searchTimelineThreads(
       objectNameSingular: $objectNameSingular
       recordId: $recordId
       searchInput: $searchInput
+      sourceFieldMetadataIdPaths: $sourceFieldMetadataIdPaths
     ) {
       recordTimelineThreads {
         ...TimelineThreadFragment

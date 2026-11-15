@@ -2,7 +2,14 @@ import { UseGuards, UseFilters } from '@nestjs/common';
 import { Args, ArgsType, Field, Int, Mutation, Query } from '@nestjs/graphql';
 
 import { Type } from 'class-transformer';
-import { IsOptional, Max, MaxLength, ValidateNested } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsOptional,
+  Max,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { PermissionFlagType } from 'twenty-shared/constants';
 import { StandardObjectNameSingular } from 'twenty-shared/types';
 
@@ -10,6 +17,7 @@ import { CoreResolver } from 'src/engine/api/graphql/graphql-config/decorators/c
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
 import {
   TIMELINE_THREADS_MAX_PAGE_SIZE,
+  TIMELINE_THREADS_MAX_SOURCE_PATHS,
   TIMELINE_THREADS_SEARCH_INPUT_MAX_LENGTH,
 } from 'src/engine/core-modules/messaging/constants/messaging.constants';
 import { DismissReconnectAccountBannerInput } from 'src/engine/core-modules/messaging/dtos/dismiss-reconnect-account-banner.input';
@@ -65,6 +73,12 @@ class GetTimelineThreadsFromObjectRecordArgs {
   @ValidateNested()
   @Type(() => TimelineThreadChannelFilterInput)
   channel?: TimelineThreadChannelFilterInput;
+
+  @Field(() => [[UUIDScalarType]], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(TIMELINE_THREADS_MAX_SOURCE_PATHS)
+  sourceFieldMetadataIdPaths?: string[][] | null;
 }
 
 @ArgsType()
@@ -74,6 +88,12 @@ class GetTimelineThreadChannelsFromObjectRecordArgs {
 
   @Field(() => UUIDScalarType)
   recordId: string;
+
+  @Field(() => [[UUIDScalarType]], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(TIMELINE_THREADS_MAX_SOURCE_PATHS)
+  sourceFieldMetadataIdPaths?: string[][] | null;
 }
 
 @ArgsType()
@@ -93,6 +113,12 @@ class SearchTimelineThreadsArgs {
   @Field(() => String, { nullable: true })
   @MaxLength(TIMELINE_THREADS_SEARCH_INPUT_MAX_LENGTH)
   searchInput?: string;
+
+  @Field(() => [[UUIDScalarType]], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(TIMELINE_THREADS_MAX_SOURCE_PATHS)
+  sourceFieldMetadataIdPaths?: string[][] | null;
 }
 
 @ArgsType()
@@ -158,6 +184,7 @@ export class TimelineMessagingResolver {
       page,
       pageSize,
       channel,
+      sourceFieldMetadataIdPaths,
     }: GetTimelineThreadsFromObjectRecordArgs,
   ) {
     return this.getMessagesFromPersonIdsService.getMessagesFromObjectRecord({
@@ -168,6 +195,7 @@ export class TimelineMessagingResolver {
       page,
       pageSize,
       channel,
+      sourceFieldMetadataIdPaths,
     });
   }
 
@@ -182,12 +210,14 @@ export class TimelineMessagingResolver {
     {
       objectNameSingular,
       recordId,
+      sourceFieldMetadataIdPaths,
     }: GetTimelineThreadChannelsFromObjectRecordArgs,
   ): Promise<TimelineThreadChannelDTO[]> {
     return this.getMessagesFromPersonIdsService.getChannelsFromObjectRecord({
       objectNameSingular,
       recordId,
       workspaceId: workspace.id,
+      sourceFieldMetadataIdPaths,
     });
   }
 
@@ -217,7 +247,12 @@ export class TimelineMessagingResolver {
     @AuthUserWorkspaceId() userWorkspaceId: string,
     @AuthWorkspace() workspace: WorkspaceEntity,
     @Args()
-    { objectNameSingular, recordId, searchInput }: SearchTimelineThreadsArgs,
+    {
+      objectNameSingular,
+      recordId,
+      searchInput,
+      sourceFieldMetadataIdPaths,
+    }: SearchTimelineThreadsArgs,
   ) {
     return this.getMessagesFromPersonIdsService.searchMessagesFromObjectRecord({
       userWorkspaceId,
@@ -225,6 +260,7 @@ export class TimelineMessagingResolver {
       recordId,
       workspaceId: workspace.id,
       searchInput,
+      sourceFieldMetadataIdPaths,
     });
   }
 

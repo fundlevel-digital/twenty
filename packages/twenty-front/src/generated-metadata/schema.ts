@@ -2396,6 +2396,8 @@ export enum EmailingDomainTenantStatus {
 export type EmailsConfiguration = {
   __typename?: 'EmailsConfiguration';
   configurationType: WidgetConfigurationType;
+  sourceFieldMetadataIdPaths?: Maybe<Array<Array<Scalars['String']['output']>>>;
+  targetRecordId?: Maybe<Scalars['String']['output']>;
 };
 
 export enum EngineComponentKey {

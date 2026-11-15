@@ -33,6 +33,7 @@ import {
   IconApps,
   IconChartPie,
   IconFrame,
+  IconMail,
   IconTable,
 } from 'twenty-ui/icon';
 import {
@@ -232,6 +233,36 @@ export const SidePanelPageLayoutDashboardWidgetTypeSelect = () => {
     });
   };
 
+  const handleNavigateToEmailsSettings = () => {
+    if (
+      isExistingWidgetMissingOrDifferentType(
+        existingWidget?.type,
+        WidgetType.EMAILS,
+      )
+    ) {
+      if (isDefined(pageLayoutEditingWidgetId)) {
+        removePageLayoutWidgetAndPreservePosition(pageLayoutEditingWidgetId);
+      }
+
+      const newWidget = createPageLayoutWidget({
+        type: WidgetType.EMAILS,
+        title: t`Emails`,
+        configuration: {
+          __typename: 'EmailsConfiguration',
+          configurationType: WidgetConfigurationType.EMAILS,
+          sourceFieldMetadataIdPaths: null,
+          targetRecordId: null,
+        },
+      });
+      setPageLayoutEditingWidgetId(newWidget.id);
+    }
+
+    navigatePageLayoutSidePanel({
+      sidePanelPage: SidePanelPages.PageLayoutWidgetSettings,
+      focusTitleInput: true,
+    });
+  };
+
   const handleCreateFrontComponentWidget = (frontComponent: FrontComponent) => {
     if (
       isExistingWidgetMissingOrDifferentType(
@@ -263,6 +294,7 @@ export const SidePanelPageLayoutDashboardWidgetTypeSelect = () => {
     'record-table',
     'iframe',
     'rich-text',
+    'emails',
     ...frontComponentsWithSelectItemId.map(({ selectItemId }) => selectItemId),
   ];
 
@@ -312,6 +344,17 @@ export const SidePanelPageLayoutDashboardWidgetTypeSelect = () => {
             label={t`Rich Text`}
             id="rich-text"
             onClick={handleNavigateToRichTextSettings}
+          />
+        </SelectableListItem>
+        <SelectableListItem
+          itemId="emails"
+          onEnter={handleNavigateToEmailsSettings}
+        >
+          <CommandMenuItem
+            Icon={IconMail}
+            label={t`Emails`}
+            id="emails"
+            onClick={handleNavigateToEmailsSettings}
           />
         </SelectableListItem>
       </SidePanelGroup>

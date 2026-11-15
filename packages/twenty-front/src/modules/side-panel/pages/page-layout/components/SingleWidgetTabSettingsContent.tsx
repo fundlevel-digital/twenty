@@ -1,6 +1,7 @@
 import { CommandMenuItem } from '@/command-menu/components/CommandMenuItem';
 import { CommandMenuItemDropdownTrigger } from '@/command-menu/components/CommandMenuItemDropdownTrigger';
 import { type PageLayoutWidget } from '@/page-layout/types/PageLayoutWidget';
+import { EmailsWidgetSettingsSections } from '@/page-layout/widgets/messages/components/EmailsWidgetSettingsSections';
 import { SidePanelGroup } from '@/side-panel/components/SidePanelGroup';
 import { SidePanelList } from '@/side-panel/components/SidePanelList';
 import { TabSettingsPlacementSection } from '@/side-panel/pages/page-layout/components/TabSettingsPlacementSection';
@@ -93,6 +94,10 @@ export const SingleWidgetTabSettingsContent = ({
   return (
     <>
       <SidePanelList selectableItemIds={selectableItemIds}>
+        <EmailsWidgetSettingsSections
+          pageLayoutId={pageLayoutId}
+          widget={singleWidget}
+        />
         <TabSettingsPlacementSection items={placementItems} />
         <SidePanelGroup heading={t`Manage`}>
           <SelectableListItem

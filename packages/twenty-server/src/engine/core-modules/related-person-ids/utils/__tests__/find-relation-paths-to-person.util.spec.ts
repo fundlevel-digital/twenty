@@ -7,6 +7,7 @@ import { getFlatFieldMetadataMock } from 'src/engine/metadata-modules/flat-field
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
 import { getFlatObjectMetadataMock } from 'src/engine/metadata-modules/flat-object-metadata/__mocks__/get-flat-object-metadata.mock';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
+import { buildRelationPathsToPersonFromFieldMetadataIdPaths } from 'src/engine/core-modules/related-person-ids/utils/build-relation-paths-to-person-from-field-metadata-id-paths.util';
 import { findRelationPathsToPerson } from 'src/engine/core-modules/related-person-ids/utils/find-relation-paths-to-person.util';
 
 type RelationSpec = {
@@ -421,6 +422,105 @@ describe('findRelationPathsToPerson', () => {
     expect(
       findRelationPathsToPerson({
         rootObjectNameSingular: 'rocket',
+        flatObjectMetadataMaps,
+        flatFieldMetadataMaps,
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe('buildRelationPathsToPersonFromFieldMetadataIdPaths', () => {
+  const buildDealGraph = () =>
+    buildGraphFixtures({
+      deal: [
+        {
+          fieldName: 'productions',
+          relationType: RelationType.ONE_TO_MANY,
+          targetObjectNameSingular: 'production',
+          inverseFieldName: 'deal',
+        },
+      ],
+      production: [
+        {
+          fieldName: 'influencer',
+          relationType: RelationType.MANY_TO_ONE,
+          targetObjectNameSingular: 'influencer',
+          inverseFieldName: 'productions',
+        },
+      ],
+      influencer: [
+        {
+          fieldName: 'contactLinks',
+          relationType: RelationType.ONE_TO_MANY,
+          targetObjectNameSingular: 'influencerContact',
+          inverseFieldName: 'influencer',
+        },
+      ],
+      influencerContact: [
+        {
+          fieldName: 'person',
+          relationType: RelationType.MANY_TO_ONE,
+          targetObjectNameSingular: 'person',
+          inverseFieldName: 'influencerContacts',
+        },
+      ],
+      person: [],
+    });
+
+  it('builds a path longer than the automatic depth limit', () => {
+    const { flatObjectMetadataMaps, flatFieldMetadataMaps } = buildDealGraph();
+
+    expect(
+      buildRelationPathsToPersonFromFieldMetadataIdPaths({
+        rootObjectNameSingular: 'deal',
+        fieldMetadataIdPaths: [
+          [
+            'deal.productions',
+            'production.influencer',
+            'influencer.contactLinks',
+            'influencerContact.person',
+          ],
+        ],
+        flatObjectMetadataMaps,
+        flatFieldMetadataMaps,
+      }),
+    ).toEqual([
+      [
+        {
+          direction: RelationType.ONE_TO_MANY,
+          queryObjectNameSingular: 'production',
+          joinColumnName: 'dealId',
+        },
+        {
+          direction: RelationType.MANY_TO_ONE,
+          queryObjectNameSingular: 'production',
+          joinColumnName: 'influencerId',
+        },
+        {
+          direction: RelationType.ONE_TO_MANY,
+          queryObjectNameSingular: 'influencerContact',
+          joinColumnName: 'influencerId',
+        },
+        {
+          direction: RelationType.MANY_TO_ONE,
+          queryObjectNameSingular: 'influencerContact',
+          joinColumnName: 'personId',
+        },
+      ],
+    ]);
+  });
+
+  it('drops paths that do not chain from the root object to person', () => {
+    const { flatObjectMetadataMaps, flatFieldMetadataMaps } = buildDealGraph();
+
+    expect(
+      buildRelationPathsToPersonFromFieldMetadataIdPaths({
+        rootObjectNameSingular: 'deal',
+        fieldMetadataIdPaths: [
+          ['deal.productions', 'production.influencer'],
+          ['influencer.contactLinks', 'influencerContact.person'],
+          ['deal.productions', 'missing.field'],
+        ],
         flatObjectMetadataMaps,
         flatFieldMetadataMaps,
       }),

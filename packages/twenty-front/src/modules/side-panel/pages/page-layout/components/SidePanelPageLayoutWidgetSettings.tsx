@@ -1,3 +1,4 @@
+import { EmailsWidgetSettingsSections } from '@/page-layout/widgets/messages/components/EmailsWidgetSettingsSections';
 import { SidePanelList } from '@/side-panel/components/SidePanelList';
 import { WidgetSettingsManageSection } from '@/side-panel/pages/page-layout/components/WidgetSettingsManageSection';
 import { WidgetSettingsPlacementSection } from '@/side-panel/pages/page-layout/components/WidgetSettingsPlacementSection';
@@ -28,6 +29,10 @@ export const SidePanelPageLayoutWidgetSettings = () => {
 
   return (
     <SidePanelList selectableItemIds={selectableItemIds}>
+      <EmailsWidgetSettingsSections
+        pageLayoutId={pageLayoutId}
+        widget={widgetInEditMode}
+      />
       <WidgetSettingsManageSection pageLayoutId={pageLayoutId} />
       <WidgetSettingsPlacementSection
         pageLayoutId={pageLayoutId}
