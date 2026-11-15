@@ -1,3 +1,4 @@
+import { archive } from 'src/lib/archive';
 import { accountEventStatus, accountSnapshot, parseJson, type ChatState } from 'src/lib/mappers';
 import { findAll } from 'src/lib/twenty';
 import type { Unipile } from 'src/lib/unipile';
@@ -33,10 +34,14 @@ const handleAccountEvent = async (unipile: Unipile, event: any, type: string) =>
   let snapshot = accountSnapshot(event.payload?.account);
   if (!snapshot && status !== 'REMOVED') {
     try {
-      snapshot = accountSnapshot(await unipile.get(`/accounts/${encodeURIComponent(unipileAccountId)}`));
+      const fetched = await unipile.get(`/accounts/${encodeURIComponent(unipileAccountId)}`);
+      await archive('account', unipileAccountId, [fetched]);
+      snapshot = accountSnapshot(fetched);
     } catch {
       snapshot = null;
     }
+  } else if (event.payload?.account?.id) {
+    await archive('account', unipileAccountId, [event.payload.account]);
   }
   if (!snapshot) {
     const existing = await findAccountByUnipileId(unipileAccountId);
@@ -67,6 +72,7 @@ const handleChatEvent = async (unipile: Unipile, event: any, type: string) => {
   if (!chatId) return { skipped: `No chat ID on ${type}` };
 
   const chat = await unipile.get(`/${account.unipileAccountId}/chats/${encodeURIComponent(chatId)}`);
+  await archive('chat', account.unipileAccountId, [chat]);
   if (chat?.type && chat.type !== '1to1' && chat.type !== 'ONE_TO_ONE') return { skipped: 'Group chat' };
 
   const known = await findAll<MessageConnection & { messageSyncState: Record<string, ChatState> | string | null }>(

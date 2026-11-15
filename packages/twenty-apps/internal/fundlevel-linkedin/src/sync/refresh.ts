@@ -1,3 +1,4 @@
+import { archive } from 'src/lib/archive';
 import { accountSnapshot } from 'src/lib/mappers';
 import { withCursor, type Unipile, type UnipilePage } from 'src/lib/unipile';
 import { profileFields, updateAccount, upsertAccountSnapshot } from 'src/sync/accounts';
@@ -18,6 +19,9 @@ export const refreshAccounts = async (unipile: Unipile, { withProfiles = new Dat
   }
 
   const results: { name: string; id?: string; profile?: string }[] = [];
+  for (const account of raw) {
+    if (account?.id) await archive('account', account.id, [account]);
+  }
   for (const snapshot of raw.map(accountSnapshot)) {
     if (!snapshot) continue;
     const id = await upsertAccountSnapshot(snapshot);
@@ -25,11 +29,13 @@ export const refreshAccounts = async (unipile: Unipile, { withProfiles = new Dat
     if (withProfiles && (snapshot.status === 'RUNNING' || snapshot.status === 'DEGRADED')) {
       try {
         const me = await unipile.get(`/${snapshot.unipileAccountId}/users/me`);
+        await archive('profile', snapshot.unipileAccountId, [me], () => snapshot.unipileAccountId);
         let salesNavigatorId = '';
         if (snapshot.products.includes('SALES_NAVIGATOR')) {
           const sales = await unipile.get(
             `/${snapshot.unipileAccountId}/users/${encodeURIComponent(snapshot.linkedinUserId)}?variant=linkedin_sales_navigator`,
           );
+          await archive('sales_navigator_profile', snapshot.unipileAccountId, [sales], () => snapshot.unipileAccountId);
           salesNavigatorId = sales?.id ?? '';
         }
         await updateAccount(

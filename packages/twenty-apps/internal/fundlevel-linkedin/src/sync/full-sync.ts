@@ -1,3 +1,4 @@
+import { archive, type ArchiveKind } from 'src/lib/archive';
 import { INBOXES, parseJson } from 'src/lib/mappers';
 import { findAll, updateEach } from 'src/lib/twenty';
 import { OutOfTimeError, UnipileError, withCursor, type Unipile, type UnipilePage } from 'src/lib/unipile';
@@ -9,6 +10,7 @@ import { MESSAGE_CONNECTION_SELECTION, syncConnectionMessages, type MessageConne
 export const ACTIVE_STAGES = ['QUEUED', 'CONNECTIONS', 'CHATS', 'MESSAGES'];
 
 const RELATION_PHASES: RelationKind[] = ['connected', 'sent', 'received'];
+const ARCHIVE_KIND: Record<RelationKind, ArchiveKind> = { connected: 'relation', sent: 'sent_request', received: 'received_request' };
 const MESSAGE_BATCH = 25;
 const MAX_CONSECUTIVE_ERRORS = 5;
 const STEP_MARGIN_MS = 25000;
@@ -61,6 +63,7 @@ export const advanceAccountSync = async (unipile: Unipile, account: AccountRow) 
           if (!(phase !== 'connected' && isMissing(error))) throw error;
         }
         const list = body.data ?? [];
+        await archive(ARCHIVE_KIND[phase], account.unipileAccountId, list, (entry) => entry?.id ?? entry?.user?.id);
         const result = await upsertRelations(account, list.map((entry) => ({ kind: phase, entry })));
         count(phase, result.written);
         count('linkedPeople', result.linked);
@@ -91,6 +94,7 @@ export const advanceAccountSync = async (unipile: Unipile, account: AccountRow) 
             if (!isMissing(error)) throw error;
           }
           const list = body.data ?? [];
+          await archive('chat', account.unipileAccountId, list);
           const result = await indexChats(account, list.map((chat) => ({ chat, channel })));
           count('chats', list.length);
           count('notConnected', result.created);

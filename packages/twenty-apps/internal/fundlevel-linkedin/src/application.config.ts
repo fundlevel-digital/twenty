@@ -27,5 +27,20 @@ export default defineApplication({
       isSecret: true,
       isRequired: true,
     },
+    ARCHIVE_URL: {
+      universalIdentifier: APP.VAR_ARCHIVE_URL,
+      label: 'Unipile archive URL',
+      description:
+        'Base URL of the Unipile archive Worker (D1) that keeps every raw Unipile object the app reads. Leave empty to skip archiving.',
+      isSecret: false,
+      isRequired: false,
+    },
+    ARCHIVE_TOKEN: {
+      universalIdentifier: APP.VAR_ARCHIVE_TOKEN,
+      label: 'Unipile archive token',
+      description: "Bearer token for the archive Worker's /objects endpoint (its INGEST_TOKEN secret).",
+      isSecret: true,
+      isRequired: false,
+    },
   },
 });

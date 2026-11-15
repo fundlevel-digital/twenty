@@ -1,3 +1,4 @@
+import { archive } from 'src/lib/archive';
 import { earlier, later, messageRecord, parseJson, type ChatState } from 'src/lib/mappers';
 import { updateEach, upsertMany } from 'src/lib/twenty';
 import { OutOfTimeError, withCursor, type Unipile, type UnipilePage } from 'src/lib/unipile';
@@ -33,6 +34,7 @@ export const syncConnectionMessages = async (
   let lastSent = connection.lastMessageSentAt;
   let lastReply = connection.lastReplyAt;
   const records: ReturnType<typeof messageRecord>[] = [];
+  const raw: any[] = [];
   const seen = new Set<string>();
   let outOfTime = false;
   let newInbound = false;
@@ -43,8 +45,10 @@ export const syncConnectionMessages = async (
     const base = `/${account.unipileAccountId}/chats/${encodeURIComponent(chatId)}/messages?limit=50`;
     const take = (list: any[]) => {
       for (const message of list) {
-        if (!message?.id || message.is_event || seen.has(message.id)) continue;
+        if (!message?.id || seen.has(message.id)) continue;
         seen.add(message.id);
+        raw.push(message); // archived as returned, including LinkedIn event messages
+        if (message.is_event) continue;
         if (!message.is_sender && message.timestamp && (!connection.lastReplyAt || message.timestamp > connection.lastReplyAt)) {
           newInbound = true;
         }
@@ -89,6 +93,7 @@ export const syncConnectionMessages = async (
   }
 
   if (records.length > 0) await upsertMany('linkedinMessage', 'linkedinMessages', records);
+  await archive('message', account.unipileAccountId, raw);
 
   let newest: string | null = null;
   for (const chatId of chatIds) newest = later(newest, state[chatId]?.newest);

@@ -1,0 +1,17 @@
+{
+  "name": "fundlevel-unipile-archive",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stores every raw Unipile object and webhook event for the LinkedIn Sync app in D1, and forwards webhooks to Twenty.",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "migrate": "wrangler d1 migrations apply unipile-archive --remote",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261114.1",
+    "typescript": "^5.9.3",
+    "wrangler": "4.145.0"
+  }
+}
