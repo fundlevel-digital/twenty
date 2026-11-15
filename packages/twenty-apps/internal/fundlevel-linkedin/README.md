@@ -29,13 +29,29 @@ The **LinkedIn conversation** widget, for People record pages, shows the chat bu
 
 **Full sync of an account.** Set **Sync Stage** to **Queued**. Set it to **Paused** to stop. After 5 consecutive errors it moves to **Failed**, and **Sync Error** holds the last error. A chat that fails 3 times is skipped, and its error is kept in the connection's **Message Sync State**.
 
+## Raw data archive (`worker/`)
+
+Every raw Unipile payload is kept in Cloudflare D1 by the `fundlevel-unipile-archive` Worker:
+
+- **Webhooks.** Unipile's webhook endpoint is the Worker's `POST /unipile/webhook`. The Worker checks the signature, stores the event in `unipile_event`, then forwards the original request to the app's route. If Twenty does not accept an event (unreachable or a 5xx), the Worker's 10-minute cron re-sends it, re-signed, up to 5 times within a day.
+- **Objects.** After every Unipile read, the app sends the raw objects to `POST /objects`. That covers accounts, profiles, relations, requests, chats and messages, including LinkedIn event messages. `unipile_object` keeps the latest version per kind and Unipile ID.
+- **Archiving is at-least-once.** A failed archive call is retried, then fails the sync step, so the page or conversation is re-read on the next run instead of leaving a gap.
+- **Reading it back.** `GET /events?type=&account_id=&before_id=&limit=` and `GET /objects/<kind>/<unipile id>`, both with the bearer token. Or run `wrangler d1 execute unipile-archive --remote --command "<sql>"`.
+
+Worker secrets, set with `wrangler secret put`:
+- `UNIPILE_WEBHOOK_SECRET`: the Unipile endpoint's signing secret, also set in the app.
+- `INGEST_TOKEN`: also set in the app as `ARCHIVE_TOKEN`.
+
+Run `npm run migrate` after adding a file to `worker/migrations`.
+
 ## Setup
 
 1. `yarn install`, then deploy with the `twenty` CLI to the workspace.
 2. In the app's settings, set:
    - `UNIPILE_API_KEY`: a Unipile v2 key
    - `UNIPILE_WEBHOOK_SECRET`: the signing secret of the webhook endpoint created in step 3
-3. In Unipile, add a webhook endpoint at `https://<twenty-server>/s/linkedin/unipile-webhook` for the account, message, receipt, reaction and relation events.
+   - `ARCHIVE_URL` and `ARCHIVE_TOKEN`: the Worker's URL and its `INGEST_TOKEN`
+3. Deploy the Worker (`cd worker && npm run migrate && npm run deploy`, then set its secrets). In Unipile, add a webhook endpoint at `https://fundlevel-unipile-archive.fundlevel.workers.dev/unipile/webhook` for the account, message, receipt, reaction and relation events. The Worker forwards events to `https://<twenty-workspace>/s/linkedin/unipile-webhook`.
 4. Queue a full sync per account by setting its **Sync Stage** to **Queued**.
 
 ## Development
