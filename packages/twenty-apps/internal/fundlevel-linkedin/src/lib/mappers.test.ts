@@ -4,12 +4,72 @@ import { test } from 'node:test';
 import {
   accountEventStatus,
   accountSnapshot,
+  chatRecord,
+  memberDetails,
   memberIdFromUrl,
   memberRef,
   messageRecord,
   slugFromUrl,
   syncKey,
 } from './mappers.ts';
+
+test('accountSnapshot keeps only the account details the payload carries', () => {
+  const full = accountSnapshot({
+    id: 'acc_1',
+    provider: 'linkedin',
+    user_id: 'ACoA1',
+    created_at: '2026-01-01T00:00:00.000Z',
+    is_locked: false,
+    metadata: { allow_country_fallback: true, connection_method: 'cookie' },
+    proxy: { protocol: 'http', country: null },
+  });
+  assert.deepEqual(full?.details, {
+    proxyProtocol: 'http',
+    proxyCountry: '',
+    allowCountryFallback: true,
+    connectionMethod: 'cookie',
+    isLocked: false,
+    unipileCreatedAt: '2026-01-01T00:00:00.000Z',
+  });
+  assert.deepEqual(accountSnapshot({ id: 'acc_1', provider: 'linkedin', user_id: 'ACoA1' })?.details, {});
+});
+
+test('memberDetails skips missing fields so they never blank stored values', () => {
+  assert.deepEqual(memberDetails({ description: 'Founder', public_picture_url: 'https://x/p.jpg', type: 'PERSON' }), {
+    headline: 'Founder',
+    profilePictureUrl: 'https://x/p.jpg',
+    memberType: 'PERSON',
+  });
+  assert.deepEqual(memberDetails({}), {});
+});
+
+test('chatRecord maps the chat flags and last message', () => {
+  const record = chatRecord(
+    {
+      id: 'chat_1',
+      unread_count: 2,
+      is_archived: true,
+      muted_until: false,
+      folders: ['INBOX'],
+      restrictions: [],
+      created_at: '2026-01-01T00:00:00.000Z',
+      creator_id: 'ACoA2',
+      last_message: { text: 'Hello\n  there', timestamp: '2026-02-01T00:00:00.000Z' },
+    },
+    'SALES_NAVIGATOR',
+    'account-id',
+    'connection-id',
+    'Jane Doe',
+  );
+  assert.equal(record.name, 'Jane Doe');
+  assert.equal(record.channel, 'SALES_NAVIGATOR');
+  assert.equal(record.unreadCount, 2);
+  assert.equal(record.isArchived, true);
+  assert.equal(record.isMuted, false);
+  assert.deepEqual(record.folders, ['INBOX']);
+  assert.equal(record.lastMessagePreview, 'Hello there');
+  assert.equal(record.lastMessageAt, '2026-02-01T00:00:00.000Z');
+});
 
 test('slugFromUrl normalises profile URLs and ignores member-ID URLs', () => {
   assert.equal(slugFromUrl('https://www.linkedin.com/in/Jane-Doe/'), 'jane-doe');

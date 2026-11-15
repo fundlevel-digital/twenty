@@ -1,4 +1,4 @@
-import { later, links, memberRef, parseJson, syncKey, type ChatState, type MemberRef } from 'src/lib/mappers';
+import { chatRecord, later, links, memberDetails, memberRef, parseJson, syncKey, type ChatState, type MemberRef } from 'src/lib/mappers';
 import { findAll, upsertMany } from 'src/lib/twenty';
 import type { AccountRow } from 'src/sync/accounts';
 import { fillPersonIds, matchPeople } from 'src/sync/people';
@@ -62,14 +62,21 @@ export const indexChats = async (account: AccountRow, chats: { chat: any; channe
   const refs = chats.map(({ chat }) => memberRef(chat.user ?? chat.attendee ?? {}));
   const keys = await resolveKeys(account, refs);
 
-  type Group = { ref: MemberRef; channels: Record<string, string>; lastSent: string | null; lastReply: string | null };
+  type Group = {
+    ref: MemberRef;
+    channels: Record<string, string>;
+    lastSent: string | null;
+    lastReply: string | null;
+    details: Record<string, unknown>;
+  };
   const groups = new Map<string, Group>();
   chats.forEach(({ chat, channel }, index) => {
     const ref = refs[index];
     const key = keys.get(ref);
     if (!key || !chat.id) return;
-    const group = groups.get(key) ?? { ref, channels: {}, lastSent: null, lastReply: null };
+    const group = groups.get(key) ?? { ref, channels: {}, lastSent: null, lastReply: null, details: {} };
     group.channels[chat.id] = channel;
+    Object.assign(group.details, memberDetails(chat.user ?? chat.attendee ?? {}));
     if (!group.ref.salesNavigatorUserId && ref.salesNavigatorUserId) group.ref.salesNavigatorUserId = ref.salesNavigatorUserId;
     if (!group.ref.publicIdentifier && ref.publicIdentifier) group.ref = { ...group.ref, publicIdentifier: ref.publicIdentifier, profileUrl: ref.profileUrl };
     const last = chat.last_message ?? {};
@@ -114,6 +121,7 @@ export const indexChats = async (account: AccountRow, chats: { chat: any; channe
       lastMessageSentAt: later(current?.lastMessageSentAt, group.lastSent),
       lastReplyAt: later(current?.lastReplyAt, group.lastReply),
       messageHistoryComplete: Boolean(current?.messageHistoryComplete) && !hasNewChat,
+      ...group.details,
     };
     if (!current) {
       created++;
@@ -135,7 +143,15 @@ export const indexChats = async (account: AccountRow, chats: { chat: any; channe
     return record;
   });
 
-  await upsertMany('linkedinConnection', 'linkedinConnections', records);
+  const connectionIds = await upsertMany('linkedinConnection', 'linkedinConnections', records);
+  const connectionIdByKey = new Map(allKeys.map((key, index) => [key, connectionIds[index]]));
+  const chatRecords = chats.flatMap(({ chat, channel }, index) => {
+    const key = keys.get(refs[index]);
+    const connectionId = key ? connectionIdByKey.get(key) : undefined;
+    if (!chat.id || !connectionId) return [];
+    return [chatRecord(chat, channel, account.id, connectionId, groups.get(key as string)?.ref.name ?? '')];
+  });
+  await upsertMany('linkedinChat', 'linkedinChats', chatRecords);
   await fillPersonIds([...people].map(([ref, person]) => ({ ref, person })));
   return { written: records.length, created, keys: allKeys };
 };

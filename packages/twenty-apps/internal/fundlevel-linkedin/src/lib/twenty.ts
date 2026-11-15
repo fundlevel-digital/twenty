@@ -128,6 +128,7 @@ const SINGULAR: Record<string, string> = {
   linkedinAccounts: 'linkedinAccount',
   linkedinConnections: 'linkedinConnection',
   linkedinMessages: 'linkedinMessage',
+  linkedinChats: 'linkedinChat',
   people: 'person',
 };
 

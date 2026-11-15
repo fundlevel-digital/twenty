@@ -71,6 +71,20 @@ export type AccountSnapshot = {
   proxyPort: string;
   proxyAuto: boolean;
   proxyUsername: string;
+  details: Record<string, unknown>;
+};
+
+// Account event payloads can be partial, so only fields the payload actually carries are written.
+const accountDetails = (account: any) => {
+  const details: Record<string, unknown> = {};
+  const proxy = account.proxy ?? {};
+  if (typeof proxy.protocol === 'string') details.proxyProtocol = proxy.protocol;
+  if (proxy.country !== undefined) details.proxyCountry = proxy.country ? String(proxy.country) : '';
+  if (typeof account.metadata?.allow_country_fallback === 'boolean') details.allowCountryFallback = account.metadata.allow_country_fallback;
+  if (typeof account.metadata?.connection_method === 'string') details.connectionMethod = account.metadata.connection_method;
+  if (typeof account.is_locked === 'boolean') details.isLocked = account.is_locked;
+  if (account.created_at) details.unipileCreatedAt = account.created_at;
+  return details;
 };
 
 export const accountSnapshot = (account: any): AccountSnapshot | null => {
@@ -90,6 +104,41 @@ export const accountSnapshot = (account: any): AccountSnapshot | null => {
     proxyPort: proxy.port === undefined || proxy.port === null ? '' : String(proxy.port),
     proxyAuto: Boolean(proxy.auto_proxy),
     proxyUsername: proxy.username || '',
+    details: accountDetails(account),
+  };
+};
+
+// Profile details of a member (relation, request or chat partner) that change over time. Only
+// fields present are returned, so a payload without them never blanks what is stored.
+export const memberDetails = (user: any) => {
+  const details: Record<string, unknown> = {};
+  const headline = user?.description || user?.headline;
+  if (headline) details.headline = String(headline);
+  if (user?.public_picture_url) details.profilePictureUrl = String(user.public_picture_url);
+  if (user?.type) details.memberType = String(user.type);
+  return details;
+};
+
+export const chatRecord = (chat: any, channel: string, accountId: string, connectionId: string, name: string) => {
+  const last = chat.last_message ?? {};
+  const preview = String(last.text || '').replace(/\s+/g, ' ').slice(0, 200);
+  return {
+    unipileChatId: chat.id,
+    name: name || chat.name || chat.id,
+    accountId,
+    connectionId,
+    channel: channel === 'INMAIL' || channel === 'SALES_NAVIGATOR' ? channel : 'CLASSIC',
+    unreadCount: typeof chat.unread_count === 'number' ? chat.unread_count : null,
+    isArchived: Boolean(chat.is_archived),
+    isPinned: Boolean(chat.is_pinned),
+    isReadOnly: Boolean(chat.is_readonly),
+    isMuted: Boolean(chat.muted_until),
+    folders: Array.isArray(chat.folders) ? chat.folders.map(String) : [],
+    restrictions: Array.isArray(chat.restrictions) ? chat.restrictions.map(String) : [],
+    startedAt: chat.created_at || null,
+    creatorMemberId: chat.creator_id ? String(chat.creator_id) : '',
+    lastMessageAt: last.timestamp || chat.last_message_timestamp || null,
+    lastMessagePreview: preview,
   };
 };
 
@@ -173,6 +222,14 @@ export const messageRecord = (message: any, chatId: string, chatState: ChatState
     senderMemberId: sender.id || message.sender_id || '',
     senderProfileLink: links(sender.profile_url),
     senderHeadline: sender.description || sender.headline || '',
+    senderPictureUrl: sender.public_picture_url || '',
+    senderType: sender.type || '',
+    senderIsFollowing: Boolean(sender.specifics?.is_following),
+    isPinned: Boolean(message.is_pinned),
+    messageType: type,
+    hyperlinks: Array.isArray(message.hyperlinks) ? message.hyperlinks : [],
+    mentions: Array.isArray(message.mentions) ? message.mentions : [],
+    reactions: Array.isArray(message.reactions_counter) ? message.reactions_counter : [],
     attachmentDetails: attachments.map((attachment) => {
       const out: Record<string, unknown> = {
         id: attachment.id,

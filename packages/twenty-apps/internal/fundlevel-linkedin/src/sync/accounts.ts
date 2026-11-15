@@ -33,6 +33,7 @@ export const upsertAccountSnapshot = async (snapshot: AccountSnapshot, extra: Re
       proxyPort: snapshot.proxyPort,
       proxyAuto: snapshot.proxyAuto,
       proxyUsername: snapshot.proxyUsername,
+      ...snapshot.details,
       ...extra,
     },
   ]);

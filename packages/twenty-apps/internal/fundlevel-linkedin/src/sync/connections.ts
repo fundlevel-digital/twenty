@@ -1,4 +1,4 @@
-import { links, memberRef, syncKey, type MemberRef } from 'src/lib/mappers';
+import { links, memberDetails, memberRef, syncKey, type MemberRef } from 'src/lib/mappers';
 import { findAll, upsertMany } from 'src/lib/twenty';
 import { fillPersonIds, matchPeople } from 'src/sync/people';
 import type { AccountRow } from 'src/sync/accounts';
@@ -52,6 +52,7 @@ export const upsertRelations = async (account: AccountRow, entries: { kind: Rela
       publicIdentifier: ref.publicIdentifier,
       profileLink: links(ref.profileUrl),
       accountId: account.id,
+      ...memberDetails(entry.user ?? entry),
     };
     if (ref.salesNavigatorUserId) record.salesNavigatorUserId = ref.salesNavigatorUserId;
     if (!current) record.messageHistoryComplete = true; // no chats known yet; chat mapping reopens it
@@ -63,6 +64,7 @@ export const upsertRelations = async (account: AccountRow, entries: { kind: Rela
     if (kind === 'connected') {
       record.status = 'CONNECTED';
       if (entry.created_at) record.connectedAt = entry.created_at;
+      if (entry.id && entry.user) record.unipileRelationId = String(entry.id);
       if (!current?.direction) record.direction = 'UNKNOWN';
     } else if (kind === 'sent') {
       if (!keepConnected) record.status = 'REQUEST_SENT';

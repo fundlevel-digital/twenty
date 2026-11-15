@@ -38,9 +38,10 @@ Every raw Unipile payload is kept in Cloudflare D1 by the `fundlevel-unipile-arc
 - **Archiving is at-least-once.** A failed archive call is retried, then fails the sync step, so the page or conversation is re-read on the next run instead of leaving a gap.
 - **Reading it back.** `GET /events?type=&account_id=&before_id=&limit=` and `GET /objects/<kind>/<unipile id>`, both with the bearer token. Or run `wrangler d1 execute unipile-archive --remote --command "<sql>"`.
 
-Worker secrets, set with `wrangler secret put`:
-- `UNIPILE_WEBHOOK_SECRET`: the Unipile endpoint's signing secret, also set in the app.
-- `INGEST_TOKEN`: also set in the app as `ARCHIVE_TOKEN`.
+Secrets live in Infisical (project `fundlevel`, `prod`):
+- `/shared/unipile` holds the two values both sides use: `UNIPILE_WEBHOOK_SECRET` (the Unipile endpoint's signing secret) and `UNIPILE_ARCHIVE_INGEST_TOKEN`.
+- `/apps/unipile-archive` is the Worker's contract: `UNIPILE_WEBHOOK_SECRET` and `INGEST_TOKEN`, both references to `/shared/unipile`. `npm run secrets` in `worker/` copies them to Cloudflare. Run it after any rotation; Cloudflare keeps its own copy.
+- `/apps/twenty-linkedin-sync` is the app's contract: `UNIPILE_API_KEY`, `ARCHIVE_URL`, and references for `UNIPILE_WEBHOOK_SECRET` and `ARCHIVE_TOKEN`. Copy them into the app's settings after a rotation.
 
 Run `npm run migrate` after adding a file to `worker/migrations`.
 

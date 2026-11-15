@@ -6,6 +6,7 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "migrate": "wrangler d1 migrations apply unipile-archive --remote",
+    "secrets": "node scripts/push-secrets.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "tail": "wrangler tail"
   },
