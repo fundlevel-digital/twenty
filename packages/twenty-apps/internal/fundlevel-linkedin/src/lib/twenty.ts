@@ -99,33 +99,26 @@ export const upsertMany = async (
   return ids;
 };
 
-// Updates many records by id, several per request. Returns the ids that failed, with reasons,
-// so one bad record (for example a unique conflict) does not block the rest.
+// Updates many existing records by id. Twenty rejects several update mutations of the same object
+// in one request ("Duplicate root resolver"), so this is a bulk upsert keyed on id, which only
+// changes the fields given. A failing batch is retried record by record, so one bad record (for
+// example a unique conflict) does not block the rest; the failures are returned.
 export const updateEach = async (
   nameSingular: string,
   updates: { id: string; data: Record<string, unknown> }[],
 ): Promise<{ id: string; error: string }[]> => {
   const failures: { id: string; error: string }[] = [];
+  const namePlural = pluralOf(nameSingular);
+  const mutation = `mutation UpdateEach($data: [${pascal(nameSingular)}CreateInput!]!) {
+    create${pascal(namePlural)}(data: $data, upsert: true) { id }
+  }`;
   for (let index = 0; index < updates.length; index += UPDATE_CHUNK) {
-    const chunk = updates.slice(index, index + UPDATE_CHUNK);
-    const declarations = chunk
-      .map((_, position) => `$i${position}: UUID!, $d${position}: ${pascal(nameSingular)}UpdateInput!`)
-      .join(', ');
-    const fields = chunk
-      .map((_, position) => `u${position}: update${pascal(nameSingular)}(id: $i${position}, data: $d${position}) { id }`)
-      .join('\n');
-    const variables = Object.fromEntries(
-      chunk.flatMap((update, position) => [
-        [`i${position}`, update.id],
-        [`d${position}`, update.data],
-      ]),
-    );
-    const { errors } = await graphql(`mutation UpdateEach(${declarations}) {\n${fields}\n}`, variables, { allowPartial: true });
-    for (const error of errors) {
-      const alias = String(error.path?.[0] ?? '');
-      const position = Number(alias.slice(1));
-      const failed = Number.isInteger(position) ? chunk[position] : undefined;
-      failures.push({ id: failed?.id ?? 'unknown', error: error.message });
+    const chunk = updates.slice(index, index + UPDATE_CHUNK).map((update) => ({ ...update.data, id: update.id }));
+    const { errors } = await graphql(mutation, { data: chunk }, { allowPartial: true });
+    if (errors.length === 0) continue;
+    for (const record of chunk) {
+      const single = await graphql(mutation, { data: [record] }, { allowPartial: true });
+      if (single.errors.length > 0) failures.push({ id: record.id, error: single.errors[0].message });
     }
   }
   return failures;
@@ -139,3 +132,6 @@ const SINGULAR: Record<string, string> = {
 };
 
 const singularOf = (namePlural: string) => SINGULAR[namePlural] ?? namePlural.replace(/s$/, '');
+
+const pluralOf = (nameSingular: string) =>
+  Object.keys(SINGULAR).find((plural) => SINGULAR[plural] === nameSingular) ?? `${nameSingular}s`;

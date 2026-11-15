@@ -55,9 +55,14 @@ const handleAccountEvent = async (unipile: Unipile, event: any, type: string) =>
   return { upserted: id, status, queued: queue };
 };
 
+// Live message and connection sync only applies to accounts that have had a full sync queued
+// (any Sync Stage set). Until then the account's conversations are left alone.
+const isSyncEnabled = (account: AccountRow) => Boolean(account.syncStage);
+
 const handleChatEvent = async (unipile: Unipile, event: any, type: string) => {
   const account = await findAccountByUnipileId(eventAccountId(event));
   if (!account) return { skipped: 'Account not in the CRM' };
+  if (!isSyncEnabled(account)) return { skipped: 'Sync not enabled for this account (Sync Stage is empty)' };
   const chatId = eventChatId(event);
   if (!chatId) return { skipped: `No chat ID on ${type}` };
 
@@ -87,6 +92,7 @@ const handleChatEvent = async (unipile: Unipile, event: any, type: string) => {
 const handleRelationEvent = async (event: any) => {
   const account = await findAccountByUnipileId(eventAccountId(event));
   if (!account) return { skipped: 'Account not in the CRM' };
+  if (!isSyncEnabled(account)) return { skipped: 'Sync not enabled for this account (Sync Stage is empty)' };
   const entry = event.payload?.relation ?? event.payload ?? {};
   const result = await upsertRelations(account, [{ kind: 'connected', entry }]);
   return result;
