@@ -11,6 +11,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  IsUUID,
   Max,
   ValidateIf,
   type ValidationError,
@@ -610,6 +611,18 @@ export class ConfigVariables {
   @IsOptional()
   @IsEnum(DpaRegion)
   DPA_DEPLOYMENT_REGION: DpaRegion = DpaRegion.EU;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.SERVER_CONFIG,
+    description:
+      'Id of the only workspace server admin privileges (admin panel, server-level impersonation) can be used from. Leave unset to allow them from any workspace.',
+    type: ConfigVariableType.STRING,
+    // Env-only: the admin panel must not be able to lift its own restriction.
+    isEnvOnly: true,
+  })
+  @IsOptional()
+  @IsUUID()
+  SERVER_ADMIN_WORKSPACE_ID: string | undefined;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.STORAGE_CONFIG,
@@ -2228,6 +2241,15 @@ export class ConfigVariables {
   })
   @IsOptional()
   AI_PROVIDERS: AiProvidersConfig = {};
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.LLM,
+    description:
+      'Send AI providers a signed link to files when this server is public. Turn off when the server URL looks public but providers cannot reach it, for example behind a VPN, or when file links must not leave this server. Files are then sent as bytes.',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  AI_SIGNED_FILE_URLS_ENABLED = true;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.LLM,
