@@ -80,6 +80,42 @@ export class ConnectionProviderFlowRedirectService {
     return res.redirect(url.toString());
   }
 
+  // The provider returns to SERVER_URL, but the flow cookie lives on the workspace host that started the sign-in
+  async findWorkspaceHostCallbackUrl({
+    state,
+    requestHost,
+    requestOriginalUrl,
+  }: {
+    state: string;
+    requestHost: string | undefined;
+    requestOriginalUrl: string;
+  }): Promise<string | null> {
+    const target =
+      await this.authorizationStateService.findErrorRedirectTarget(state);
+
+    if (!isDefined(target)) {
+      return null;
+    }
+
+    const workspace = await this.workspaceRepository.findOneBy({
+      id: target.workspaceId,
+    });
+
+    if (!isDefined(workspace)) {
+      return null;
+    }
+
+    const workspaceUrl = this.workspaceDomainsService.buildWorkspaceURL({
+      workspace,
+    });
+
+    if (workspaceUrl.host === requestHost) {
+      return null;
+    }
+
+    return new URL(requestOriginalUrl, workspaceUrl.origin).toString();
+  }
+
   async redirectToErrorFromState({
     res,
     state,
