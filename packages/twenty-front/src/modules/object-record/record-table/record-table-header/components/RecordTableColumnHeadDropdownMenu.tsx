@@ -1,10 +1,10 @@
 import { Dropdown } from 'twenty-ui/components/navigation';
 
-import { isFieldMetadataItemFilterableAndSortableSelector } from '@/object-metadata/states/isFieldMetadataItemFilterableAndSortableSelector';
 import { isFieldMetadataItemLabelIdentifierSelector } from '@/object-metadata/states/isFieldMetadataItemLabelIdentifierSelector';
 import { useChangeRecordFieldVisibility } from '@/object-record/record-field/hooks/useChangeRecordFieldVisibility';
 import { type RecordField } from '@/object-record/record-field/types/RecordField';
 import { isCanonicalRecordField } from '@/object-record/record-field/utils/isCanonicalRecordField';
+import { useRecordIndexContextOrThrow } from '@/object-record/record-index/contexts/RecordIndexContext';
 import { useHandleToggleColumnSort } from '@/object-record/record-index/hooks/useHandleToggleColumnSort';
 import { useRecordTableContextOrThrow } from '@/object-record/record-table/contexts/RecordTableContext';
 import { useDeleteRecordTableColumn } from '@/object-record/record-table/hooks/useDeleteRecordTableColumn';
@@ -34,6 +34,7 @@ export const RecordTableColumnHeadDropdownMenu = ({
   const { t } = useLingui();
 
   const { visibleRecordFields } = useRecordTableContextOrThrow();
+  const { columnDescriptorByRecordFieldId } = useRecordIndexContextOrThrow();
 
   const isLabelIdentifier = useAtomFamilySelectorValue(
     isFieldMetadataItemLabelIdentifierSelector,
@@ -98,10 +99,9 @@ export const RecordTableColumnHeadDropdownMenu = ({
     openRecordFilterChipFromTableHeader(recordField.fieldMetadataItemId);
   };
 
-  const { isFilterable, isSortable } = useAtomFamilySelectorValue(
-    isFieldMetadataItemFilterableAndSortableSelector,
-    { fieldMetadataItemId: recordField.fieldMetadataItemId },
-  );
+  const columnDescriptor = columnDescriptorByRecordFieldId[recordField.id];
+  const isFilterable = columnDescriptor?.isFilterable === true;
+  const isSortable = columnDescriptor?.isSortable === true;
 
   const { canPersistChanges } = useCanPersistViewChanges();
   const isCanonical = isCanonicalRecordField(recordField);

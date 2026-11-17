@@ -8,7 +8,7 @@ import {
   NO_RECORD_GROUP_FAMILY_KEY,
   recordIndexAllRecordIdsComponentSelector,
 } from '@/object-record/record-index/states/selectors/recordIndexAllRecordIdsComponentSelector';
-import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useUpsertRecordsInStore';
+import { useUpsertRecordTableRecordsInStore } from '@/object-record/record-table/hooks/internal/useUpsertRecordTableRecordsInStore';
 import { RECORD_TABLE_HORIZONTAL_SCROLL_SHADOW_VISIBILITY_CSS_VARIABLE_NAME } from '@/object-record/record-table/constants/RecordTableHorizontalScrollShadowVisibilityCssVariableName';
 import { RECORD_TABLE_VERTICAL_SCROLL_SHADOW_VISIBILITY_CSS_VARIABLE_NAME } from '@/object-record/record-table/constants/RecordTableVerticalScrollShadowVisibilityCssVariableName';
 import { useRecordTableContextOrThrow } from '@/object-record/record-table/contexts/RecordTableContext';
@@ -83,7 +83,8 @@ export const useTriggerInitialRecordTableDataLoad = () => {
   const { allocateRowSlots } = useAllocateRowSlots();
 
   const { resetTableFocuses } = useResetTableFocuses(recordTableId);
-  const { upsertRecordsInStore } = useUpsertRecordsInStore();
+  const { upsertRecordTableRecordsInStore } =
+    useUpsertRecordTableRecordsInStore();
 
   const { loadRecordsAtRowIndexes } = useLoadRecordsAtRowIndexes();
 
@@ -157,7 +158,7 @@ export const useTriggerInitialRecordTableDataLoad = () => {
         );
 
         if (isDefined(records)) {
-          upsertRecordsInStore({ partialRecords: records });
+          upsertRecordTableRecordsInStore(records);
 
           loadRecordsAtRowIndexes({
             records,
@@ -202,7 +203,7 @@ export const useTriggerInitialRecordTableDataLoad = () => {
       scrollTableToPosition,
       findManyRecordsLazy,
       totalNumberOfRowsCallbackState,
-      upsertRecordsInStore,
+      upsertRecordTableRecordsInStore,
       loadRecordsAtRowIndexes,
       reapplyRowSelection,
       recordTableId,

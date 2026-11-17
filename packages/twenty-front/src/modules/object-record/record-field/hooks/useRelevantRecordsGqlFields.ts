@@ -4,6 +4,7 @@ import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/Enriche
 import { getImageIdentifierFieldMetadataItem } from '@/object-metadata/utils/getImageIdentifierFieldMetadataItem';
 import { getLabelIdentifierFieldMetadataItem } from '@/object-metadata/utils/getLabelIdentifierFieldMetadataItem';
 import { hasObjectMetadataItemPositionField } from '@/object-metadata/utils/hasObjectMetadataItemPositionField';
+import { addLookupTargetsToRecordGqlFields } from '@/object-record/record-column-lookup/utils/addLookupTargetsToRecordGqlFields';
 import { generateDepthRecordGqlFieldsFromFields } from '@/object-record/graphql/record-gql-fields/utils/generateDepthRecordGqlFieldsFromFields';
 import { visibleRecordFieldsComponentSelector } from '@/object-record/record-field/states/visibleRecordFieldsComponentSelector';
 import { CoreRecordReferenceFieldsContext } from '@/object-record/record-field/ui/contexts/CoreRecordReferenceFieldsContext';
@@ -33,8 +34,10 @@ export const useRelevantRecordsGqlFields = ({
     currentRecordFiltersComponentState,
   );
 
-  const { fieldMetadataItemByFieldMetadataItemId } =
-    useRecordIndexContextOrThrow();
+  const {
+    fieldMetadataItemByFieldMetadataItemId,
+    columnDescriptorByRecordFieldId,
+  } = useRecordIndexContextOrThrow();
 
   const { objectMetadataItems } = useObjectMetadataItems();
 
@@ -71,11 +74,16 @@ export const useRelevantRecordsGqlFields = ({
     ...additionalFieldMetadataItems,
   ].filter(filterDuplicatesById);
 
-  const allDepthOneGqlFields = generateDepthRecordGqlFieldsFromFields({
-    objectMetadataItems,
-    sourceObjectMetadataItem: objectMetadataItem,
-    fields: fieldMetadataItemsToUse,
-    depth: 1,
+  const allDepthOneGqlFields = addLookupTargetsToRecordGqlFields({
+    recordGqlFields: generateDepthRecordGqlFieldsFromFields({
+      objectMetadataItems,
+      sourceObjectMetadataItem: objectMetadataItem,
+      fields: fieldMetadataItemsToUse,
+      depth: 1,
+    }),
+    lookupTargets: visibleRecordFields
+      .map(({ id }) => columnDescriptorByRecordFieldId[id]?.lookupTarget)
+      .filter(isDefined),
   });
 
   const coreRecordReferenceFieldsRecordGqlFields =

@@ -5,11 +5,12 @@ import { currentRecordSortsComponentState } from '@/object-record/record-sort/st
 import { type ObjectRecordOperationUpdateInput } from '@/object-record/types/ObjectRecordOperationUpdateInput';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { FieldMetadataType } from 'twenty-shared/types';
-import { mapById } from 'twenty-shared/utils';
+import { isDefined, mapById } from 'twenty-shared/utils';
 import { doNotTranslate } from 'twenty-shared/i18n';
 
 export const useGetShouldResetTableVirtualizationForUpdateInputs = () => {
-  const { objectMetadataItem } = useRecordIndexContextOrThrow();
+  const { objectMetadataItem, columnDescriptorByRecordFieldId } =
+    useRecordIndexContextOrThrow();
 
   const { activeFieldMetadataItems } = useActiveFieldMetadataItems({
     objectMetadataItem,
@@ -23,6 +24,12 @@ export const useGetShouldResetTableVirtualizationForUpdateInputs = () => {
     currentRecordFiltersComponentState,
   );
 
+  const lookupRelationFieldNames = Object.values(
+    columnDescriptorByRecordFieldId,
+  )
+    .map(({ lookupTarget }) => lookupTarget?.relationFieldName)
+    .filter(isDefined);
+
   const getShouldResetTableVirtualizationForUpdateInputs = (
     updateInputs: ObjectRecordOperationUpdateInput[],
   ) => {
@@ -30,6 +37,7 @@ export const useGetShouldResetTableVirtualizationForUpdateInputs = () => {
 
     let thereIsAnUpdateOnAFilteredField = false;
     let thereIsAnUpdateOnASortedField = false;
+    let thereIsAnUpdateOnALookupRelation = false;
 
     for (const updateInput of updateInputs) {
       const fieldNamesForUpdateInput = updateInput.updatedFields.flatMap(
@@ -67,13 +75,26 @@ export const useGetShouldResetTableVirtualizationForUpdateInputs = () => {
       if (updateOnASortedField) {
         thereIsAnUpdateOnASortedField = true;
       }
+
+      // The update returns the new related record without its looked-up field
+      if (
+        updatedFieldMetadataItems.some(({ name }) =>
+          lookupRelationFieldNames.includes(name),
+        )
+      ) {
+        thereIsAnUpdateOnALookupRelation = true;
+      }
     }
 
     if (updatedFieldNames.has('position')) {
       return true;
     }
 
-    return thereIsAnUpdateOnAFilteredField || thereIsAnUpdateOnASortedField;
+    return (
+      thereIsAnUpdateOnAFilteredField ||
+      thereIsAnUpdateOnASortedField ||
+      thereIsAnUpdateOnALookupRelation
+    );
   };
 
   return {
