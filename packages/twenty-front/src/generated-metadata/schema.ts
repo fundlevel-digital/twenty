@@ -1854,6 +1854,7 @@ export type CreateEmailingDomainInput = {
 };
 
 export type CreateFieldInput = {
+  computation?: InputMaybe<Scalars['JSON']['input']>;
   defaultValue?: InputMaybe<Scalars['JSON']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   icon?: InputMaybe<Scalars['String']['input']>;
@@ -2646,6 +2647,7 @@ export enum FeatureFlagKey {
   IS_CALENDAR_EVENT_SHARED_ACROSS_CHANNELS_ENABLED = 'IS_CALENDAR_EVENT_SHARED_ACROSS_CHANNELS_ENABLED',
   IS_CALENDAR_INTERNAL_EVENTS_FILTER_ENABLED = 'IS_CALENDAR_INTERNAL_EVENTS_FILTER_ENABLED',
   IS_CALENDAR_RECURRING_EVENT_HORIZON_ENABLED = 'IS_CALENDAR_RECURRING_EVENT_HORIZON_ENABLED',
+  IS_COMPUTED_FIELDS_ENABLED = 'IS_COMPUTED_FIELDS_ENABLED',
   IS_CONFIGURABLE_SEARCH_FIELDS_ENABLED = 'IS_CONFIGURABLE_SEARCH_FIELDS_ENABLED',
   IS_CREATE_RECORDS_PERMISSION_ENABLED = 'IS_CREATE_RECORDS_PERMISSION_ENABLED',
   IS_GETTING_STARTED_ENABLED = 'IS_GETTING_STARTED_ENABLED',
@@ -2665,6 +2667,7 @@ export enum FeatureFlagKey {
 export type Field = {
   __typename?: 'Field';
   applicationId: Scalars['UUID']['output'];
+  computation?: Maybe<Scalars['JSON']['output']>;
   createdAt: Scalars['DateTime']['output'];
   defaultValue?: Maybe<Scalars['JSON']['output']>;
   description?: Maybe<Scalars['String']['output']>;
@@ -7876,6 +7879,7 @@ export type UpdateEmailGroupChannelInput = {
 };
 
 export type UpdateFieldInput = {
+  computation?: InputMaybe<Scalars['JSON']['input']>;
   defaultValue?: InputMaybe<Scalars['JSON']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   icon?: InputMaybe<Scalars['String']['input']>;

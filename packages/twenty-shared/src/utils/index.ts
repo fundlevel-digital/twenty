@@ -23,6 +23,10 @@ export { upsertIntoArrayOfObjectsComparingId } from './array/upsertIntoArrayOfOb
 export { upsertPropertiesOfItemIntoArrayOfObjectsComparingId } from './array/upsertPropertiesOfItemIntoArrayOfObjectsComparingId';
 export { assertUnreachable } from './assertUnreachable';
 export { base64UrlEncode } from './base64UrlEncode';
+export { evictLeastRecentlyUsed } from './cache/evictLeastRecentlyUsed';
+export { memoizeLeastRecentlyUsed } from './cache/memoizeLeastRecentlyUsed';
+export { readLruEntry } from './cache/readLruEntry';
+export { writeLruEntry } from './cache/writeLruEntry';
 export { isCallRecordingTranscriptStatusMarker } from './callRecording/isCallRecordingTranscriptStatusMarker';
 export { parseCallRecordingTranscriptEntries } from './callRecording/parseCallRecordingTranscriptEntries';
 export { canAccessThroughAllRecordsOrRlsPermission } from './canAccessThroughAllRecordsOrRlsPermission';
@@ -35,6 +39,10 @@ export { isCommandMenuCoreObjectName } from './command-menu-items/isCommandMenuC
 export { resolveObjectMetadataLabel } from './command-menu-items/resolveObjectMetadataLabel';
 export { safeGetNestedProperty } from './command-menu-items/safeGetNestedProperty';
 export { computeDiffBetweenObjects } from './compute-diff-between-objects';
+export { ComputedFieldExpressionError } from './computed-field/ComputedFieldExpressionError';
+export { getComputedFieldExpressionFieldPaths } from './computed-field/getComputedFieldExpressionFieldPaths';
+export { parseComputedFieldExpressionOrThrow } from './computed-field/parseComputedFieldExpressionOrThrow';
+export { typeCheckComputedFieldExpressionOrThrow } from './computed-field/typeCheckComputedFieldExpressionOrThrow';
 export { buildRecordExportColumns } from './csv/buildRecordExportColumns';
 export { expandRecordExportMorphFields } from './csv/expandRecordExportMorphFields';
 export { formatRecordExportHeader } from './csv/formatRecordExportHeader';
@@ -78,7 +86,9 @@ export {
   computeRelationGqlFieldJoinColumnName,
   computeMorphRelationGqlFieldJoinColumnName,
 } from './fieldMetadata/compute-relation-gql-field-join-column-name';
+export { hasStoredColumn } from './fieldMetadata/hasStoredColumn';
 export { isCompositePropertySupportedInGroupBy } from './fieldMetadata/isCompositePropertySupportedInGroupBy';
+export { isComputedField } from './fieldMetadata/isComputedField';
 export { isFieldMetadataArrayKind } from './fieldMetadata/isFieldMetadataArrayKind';
 export { isFieldMetadataDateKind } from './fieldMetadata/isFieldMetadataDateKind';
 export { isFieldMetadataEligibleForFieldsWidget } from './fieldMetadata/isFieldMetadataEligibleForFieldsWidget';

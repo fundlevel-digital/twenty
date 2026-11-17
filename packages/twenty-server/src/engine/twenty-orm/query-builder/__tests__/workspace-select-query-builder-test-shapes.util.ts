@@ -32,7 +32,8 @@ export const companyTableShape: WorkspaceTableShape = {
     name: buildColumn('name'),
     deletedAt: buildColumn('deletedAt'),
   },
-  columnNames: ['id', 'name', 'deletedAt'],
+  storedColumnNames: ['id', 'name', 'deletedAt'],
+  computedColumnNames: [],
   relationShapeByFieldName: {
     person: {
       fieldName: 'person',
@@ -58,13 +59,14 @@ export const personTableShape: WorkspaceTableShape = {
     companyId: buildColumn('companyId'),
     deletedAt: buildColumn('deletedAt'),
   },
-  columnNames: [
+  storedColumnNames: [
     'id',
     'nameFirstName',
     'nameLastName',
     'companyId',
     'deletedAt',
   ],
+  computedColumnNames: [],
   relationShapeByFieldName: {
     company: {
       fieldName: 'company',

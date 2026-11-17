@@ -1,3 +1,4 @@
+import { getStoredColumnNames } from 'src/engine/twenty-orm/table-shape/utils/get-stored-column-names.util';
 import { isDefined } from 'twenty-shared/utils';
 
 import {
@@ -82,7 +83,10 @@ export class WorkspaceMutationQueryBuilder {
   }
 
   returning(columns: string[]): this {
-    this.returningColumns = columns;
+    this.returningColumns = getStoredColumnNames({
+      tableShape: this.tableShape,
+      columnNames: columns,
+    });
 
     return this;
   }

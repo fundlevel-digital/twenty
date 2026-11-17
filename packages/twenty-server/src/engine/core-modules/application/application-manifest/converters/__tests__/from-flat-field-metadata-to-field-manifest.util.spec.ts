@@ -83,6 +83,7 @@ const TEXT_FIELD_MANIFEST: Required<
   isNullable: false,
   isUIEditable: false,
   disabledFieldPermissionActions: ['canUpdateFieldValue'],
+  computation: { kind: 'FORMULA', expression: 'UPPER(title)' },
   isUnique: true,
   isSearchable: true,
   isAuditLogged: false,
@@ -102,8 +103,13 @@ const RELATION_FIELD_MANIFEST: Required<
   options: null,
   defaultValue: null,
   isNullable: true,
-  isUIEditable: true,
+  isUIEditable: false,
   disabledFieldPermissionActions: [],
+  computation: {
+    kind: 'ROLLUP',
+    relationFieldName: 'projects',
+    operation: 'COUNT',
+  },
   isUnique: false,
   isSearchable: false,
   isAuditLogged: true,
@@ -193,6 +199,26 @@ describe('fromFlatFieldMetadataToFieldManifest', () => {
     });
 
     expect(roundTripFlatFieldMetadata(flatFieldMetadata)).toBeUndefined();
+  });
+
+  it('should export a computation without the bindings the server fills on sync', () => {
+    const flatFieldMetadata = getFlatFieldMetadataMock({
+      universalIdentifier: FIELD_UID,
+      objectMetadataId: 'object-metadata-id',
+      type: FieldMetadataType.NUMBER,
+      computation: {
+        kind: 'FORMULA',
+        expression: 'budget * 2',
+        bindings: { budget: TARGET_FIELD_UID },
+      },
+    });
+
+    expect(
+      fromFlatFieldMetadataToFieldManifest({
+        flatFieldMetadata,
+        flatFieldMetadataOptionMaps: createEmptyFlatEntityMaps(),
+      }).computation,
+    ).toEqual({ kind: 'FORMULA', expression: 'budget * 2' });
   });
 
   it('should export the base values of an option a workspace overrides', () => {

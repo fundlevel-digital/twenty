@@ -73,6 +73,13 @@ export {
   richTextValueSchema,
 } from './composite-types/rich-text.composite-type';
 export type { CompositeFieldSubFieldName } from './CompositeFieldSubFieldNameType';
+export type { ComputedFieldExpressionBinaryOperator } from './ComputedFieldExpressionBinaryOperator';
+export type { ComputedFieldExpressionFunction } from './ComputedFieldExpressionFunction';
+export type { ComputedFieldExpressionFunctionName } from './ComputedFieldExpressionFunctionName';
+export type { ComputedFieldExpressionNode } from './ComputedFieldExpressionNode';
+export type { ComputedFieldExpressionUnaryOperator } from './ComputedFieldExpressionUnaryOperator';
+export type { ComputedFieldExpressionVariableName } from './ComputedFieldExpressionVariableName';
+export type { ComputedFieldValueType } from './ComputedFieldValueType';
 export type { ConfigVariableValue } from './ConfigVariableValue';
 export type { ConfirmationModalCaller } from './ConfirmationModalCaller';
 export type { ConnectedAccountEmailFields } from './ConnectedAccountEmailFields';
@@ -94,6 +101,8 @@ export type { ExtractPropertiesThatEndsWithId } from './ExtractPropertiesThatEnd
 export type { ExtractPropertiesThatEndsWithIds } from './ExtractPropertiesThatEndsWithIds';
 export type { ExtractSerializedRelationProperties } from './ExtractSerializedRelationProperties';
 export { FeatureFlagKey } from './FeatureFlagKey';
+export type { FieldMetadataComputation } from './FieldMetadataComputation';
+export type { FieldMetadataComputationBindings } from './FieldMetadataComputationBindings';
 export type {
   FieldMetadataDefaultValueFunctionNames,
   FieldMetadataDefaultValueUuidFunction,
@@ -116,6 +125,7 @@ export {
   FIELD_METADATA_TYPES_WITHOUT_DEFAULT_VALUE,
   isFieldMetadataTypeWithDefaultValue,
 } from './FieldMetadataDefaultValue';
+export type { FieldMetadataFormulaComputation } from './FieldMetadataFormulaComputation';
 export type { FieldMetadataMultiItemSettings } from './FieldMetadataMultiItemSettings';
 export { FieldMetadataSettingsOnClickAction } from './FieldMetadataMultiItemSettings';
 export type {
@@ -126,6 +136,8 @@ export {
   FieldMetadataDefaultOption,
   FieldMetadataComplexOption,
 } from './FieldMetadataOptions';
+export type { FieldMetadataRollupComputation } from './FieldMetadataRollupComputation';
+export type { FieldMetadataRollupOperation } from './FieldMetadataRollupOperation';
 export type {
   FieldNumberVariant,
   FieldCurrencyFormat,
@@ -344,6 +356,7 @@ export { StepLogicalOperator } from './StepFilters';
 export type { SupportedViewGroupLoadLimit } from './SupportedViewGroupLoadLimit';
 export type { TagColor } from './TagColor';
 export { TwoFactorAuthenticationStrategy } from './TwoFactorAuthenticationStrategy';
+export type { TypedComputedFieldExpressionNode } from './TypedComputedFieldExpressionNode';
 export { UpgradeHealthEnum } from './UpgradeHealthEnum';
 export type { ValidationRuleBindings } from './ValidationRuleBindings';
 export type { ValidationRuleCompilationResult } from './ValidationRuleCompilationResult';

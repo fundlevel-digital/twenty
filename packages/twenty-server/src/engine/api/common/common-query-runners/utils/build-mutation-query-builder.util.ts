@@ -27,9 +27,12 @@ export const buildMutationQueryBuilder = async ({
 
   commonQueryParser.applyFilterToBuilder(filteredQueryBuilder, alias, filter);
 
-  const hasRelationTraversal = filteredQueryBuilder.getJoinAliases().length > 0;
+  // A mutation targets the stored table, so any other filter is resolved to record ids first
+  const isFilterOnStoredColumnsOnly =
+    filteredQueryBuilder.getJoinAliases().length === 0 &&
+    filteredQueryBuilder.getUnresolvedComputedColumns().length === 0;
 
-  if (!hasRelationTraversal) {
+  if (isFilterOnStoredColumnsOnly) {
     return {
       selectQueryBuilder: filteredQueryBuilder,
       rowLevelPermissionsApplied: false,
@@ -40,7 +43,10 @@ export const buildMutationQueryBuilder = async ({
     .select(`${alias}.id`)
     .withDeleted();
 
-  await repository.applyWriteRowLevelPermissions(idSubQueryBuilder, kind);
+  await repository.prepareForExecution({
+    queryBuilder: idSubQueryBuilder,
+    mutationKind: kind,
+  });
 
   const selectQueryBuilder = repository
     .createQueryBuilder(alias)

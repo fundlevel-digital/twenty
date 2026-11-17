@@ -24,10 +24,12 @@ export const getDefaultFlatFieldMetadata = ({
   objectMetadataUniversalIdentifier,
   isSystemSideEffect = false,
 }: GetDefaultFlatFieldMetadataArgs) => {
-  const { defaultValue, settings } = extractAndSanitizeObjectStringFields(
-    createFieldInput,
-    ['defaultValue', 'settings'],
-  );
+  const { computation, defaultValue, settings } =
+    extractAndSanitizeObjectStringFields(createFieldInput, [
+      'computation',
+      'defaultValue',
+      'settings',
+    ]);
 
   const createdAt = new Date().toISOString();
   const resolvedDefaultValue =
@@ -65,11 +67,13 @@ export const getDefaultFlatFieldMetadata = ({
     updatedAt: createdAt,
     // isUIReadOnly is the deprecated inverted alias; isUIEditable wins when both are set
     isUIEditable:
-      createFieldInput.isUIEditable ??
-      (isDefined(createFieldInput.isUIReadOnly)
-        ? !createFieldInput.isUIReadOnly
-        : true),
+      !isDefined(createFieldInput.computation) &&
+      (createFieldInput.isUIEditable ??
+        (isDefined(createFieldInput.isUIReadOnly)
+          ? !createFieldInput.isUIReadOnly
+          : true)),
     disabledFieldPermissionActions: null,
+    computation: computation ?? null,
     morphId: null,
     applicationUniversalIdentifier,
     objectMetadataUniversalIdentifier,

@@ -35,7 +35,8 @@ const buildTableShape = (columnNames: string[]): WorkspaceTableShape => ({
   columnShapeByColumnName: Object.fromEntries(
     columnNames.map((columnName) => [columnName, buildColumn(columnName)]),
   ),
-  columnNames,
+  storedColumnNames: columnNames,
+  computedColumnNames: [],
   relationShapeByFieldName: {},
   hasDeletedAtColumn: columnNames.includes('deletedAt'),
 });
