@@ -12,6 +12,12 @@ describe('isRecordFieldSupportedByViewType', () => {
     expect(
       isRecordFieldSupportedByViewType({
         recordField: { isCanonical: false },
+        viewType: ViewType.TABLE_WIDGET,
+      }),
+    ).toBe(true);
+    expect(
+      isRecordFieldSupportedByViewType({
+        recordField: { isCanonical: false },
         viewType: ViewType.KANBAN,
       }),
     ).toBe(false);

@@ -4,6 +4,9 @@ import { DraggableListRow } from '@/ui/layout/draggable-list/components/Draggabl
 import { ApplicationStackIcon } from '@/applications/components/ApplicationStackIcon';
 import { useGetFieldMetadataItemByIdOrThrow } from '@/object-metadata/hooks/useGetFieldMetadataItemById';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
+import { getLookupColumnLabel } from '@/object-record/record-column-lookup/utils/getLookupColumnLabel';
+import { getRecordFieldLookupTarget } from '@/object-record/record-column-lookup/utils/getRecordFieldLookupTarget';
 import { getLabelIdentifierFieldMetadataItem } from '@/object-metadata/utils/getLabelIdentifierFieldMetadataItem';
 import { useReorderVisibleRecordFields } from '@/object-record/record-field/hooks/useReorderVisibleRecordFields';
 import { useUpdateRecordField } from '@/object-record/record-field/hooks/useUpdateRecordField';
@@ -44,6 +47,8 @@ export const RecordTableFieldsDropdownVisibleFieldsContent = ({
 
   const { getFieldMetadataItemByIdOrThrow } =
     useGetFieldMetadataItemByIdOrThrow();
+
+  const { objectMetadataItems } = useObjectMetadataItems();
 
   const { reorderVisibleRecordFields } =
     useReorderVisibleRecordFields(recordIndexId);
@@ -116,6 +121,17 @@ export const RecordTableFieldsDropdownVisibleFieldsContent = ({
                   const { fieldMetadataItem } = getFieldMetadataItemByIdOrThrow(
                     recordField.fieldMetadataItemId,
                   );
+                  const lookupTarget = getRecordFieldLookupTarget({
+                    recordField,
+                    fieldMetadataItem,
+                    objectMetadataItems,
+                  });
+                  const columnLabel = isDefined(lookupTarget)
+                    ? getLookupColumnLabel(lookupTarget)
+                    : fieldMetadataItem.label;
+                  const columnIcon =
+                    lookupTarget?.lookupTargetFieldMetadataItem.icon ??
+                    fieldMetadataItem.icon;
 
                   return (
                     <DraggableItem
@@ -126,7 +142,7 @@ export const RecordTableFieldsDropdownVisibleFieldsContent = ({
                         <DraggableListRow
                           startIcon={
                             <ApplicationStackIcon
-                              Icon={getIcon(fieldMetadataItem.icon)}
+                              Icon={getIcon(columnIcon)}
                               applicationId={fieldMetadataItem.applicationId}
                             />
                           }
@@ -143,7 +159,7 @@ export const RecordTableFieldsDropdownVisibleFieldsContent = ({
                           }
                           dragHandleVisibility="always"
                         >
-                          {fieldMetadataItem.label}
+                          {columnLabel}
                         </DraggableListRow>
                       }
                     />

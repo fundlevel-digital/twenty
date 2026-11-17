@@ -101,6 +101,8 @@ DECLARATIVE CHILDREN (replace semantics): fields, filters, and sorts each descri
 - Omitting the key leaves existing entries untouched.
 This means you never need to fetch child ids to edit a view — just pass the desired end state. For surgical single-entry edits, the granular tools (create_view_filter, update_view_sort, etc.) remain available.
 
+LOOKUP COLUMNS: a field entry with relationTargetFieldMetadataId shows a field of related records instead of the relation itself, and can sit next to the plain column of the same relation. Example on a production view: { fieldName: "influencer", relationPathFieldMetadataIds: [<influencer.contactLinks id>, <influencerContact.person id>, <person.lastEmail id>], relationTargetFieldMetadataId: <message.subject id> }. Get the ids with get_field_metadata on each object along the path. Lookup columns are allowed in TABLE and TABLE_WIDGET views.
+
 VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELECT field), CALENDAR (requires calendarFieldName + calendarLayout).",
     "inputSchema": {
       "properties": {
@@ -138,6 +140,20 @@ VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELE
                 "default": true,
                 "description": "Whether the column is visible. Defaults to true.",
                 "type": "boolean",
+              },
+              "relationPathFieldMetadataIds": {
+                "description": "Multi-level lookup: UUIDs of the relation fields to follow, in order, after the column field (the first relation, on the view object) and before relationTargetFieldMetadataId. Each must be a many-to-one or one-to-many relation field on the object the previous relation points to; at most 5 relations in total, of which at most one is one-to-many. Omit for a one-level lookup.",
+                "items": {
+                  "format": "uuid",
+                  "type": "string",
+                },
+                "maxItems": 4,
+                "type": "array",
+              },
+              "relationTargetFieldMetadataId": {
+                "description": "Makes this an extra lookup column on a relation field: the UUID of the field to show from the related record(s). It must belong to the object reached at the end of the relation path. Lookup columns are read-only.",
+                "format": "uuid",
+                "type": "string",
               },
               "size": {
                 "default": 150,
@@ -464,7 +480,7 @@ VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELE
     "name": "delete_view",
   },
   {
-    "description": "Add a new column to a view. View fields define which columns are shown in table or kanban views. First call get_field_metadata to find the fieldMetadataId of the column to add, and get_views to find the target viewId.",
+    "description": "Add a new column to a view. View fields define which columns are shown in table or kanban views. First call get_field_metadata to find the fieldMetadataId of the column to add, and get_views to find the target viewId. Also works on a dashboard table widget view (its viewId is in the widget configuration from get_dashboard). To show a field of related records several relations away (a lookup column), set isCanonical: false, fieldMetadataId to the first relation field on the view object, relationPathFieldMetadataIds to the next relation fields in order, and relationTargetFieldMetadataId to the field to show. Lookup columns are read-only.",
     "inputSchema": {
       "properties": {
         "aggregateOperation": {
@@ -490,6 +506,11 @@ VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELE
           "format": "uuid",
           "type": "string",
         },
+        "isCanonical": {
+          "default": true,
+          "description": "False adds an extra column for a field the view already shows, e.g. to show a field of a related record.",
+          "type": "boolean",
+        },
         "isVisible": {
           "default": true,
           "description": "Whether the field is visible in the view.",
@@ -499,6 +520,20 @@ VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELE
           "default": 0,
           "description": "Position of the field in the view (0-based).",
           "type": "number",
+        },
+        "relationPathFieldMetadataIds": {
+          "description": "Multi-level lookup: the relation fields to follow, in order, after fieldMetadataId and before relationTargetFieldMetadataId. fieldMetadataId is the first relation, on the view object; each id here is a relation field on the object the previous relation points to; relationTargetFieldMetadataId is a field on the object the last one points to. Example on productions: fieldMetadataId = production.influencer, relationPathFieldMetadataIds = [influencer.contactLinks, influencerContact.person, person.lastEmail], relationTargetFieldMetadataId = message.subject. Relations can be many-to-one or one-to-many (one-to-many shows a list of values), not morph; at most 5 relations in total, of which at most one is one-to-many. Find the ids with get_field_metadata on each object along the path. Omit for a one-level lookup.",
+          "items": {
+            "format": "uuid",
+            "type": "string",
+          },
+          "maxItems": 4,
+          "type": "array",
+        },
+        "relationTargetFieldMetadataId": {
+          "description": "Lookup column: on an extra (isCanonical: false) column of a relation field, show this field of the related record(s) instead of the records. It must be an active non-relation field of the object reached at the end of the relation path (the object fieldMetadataId points to when relationPathFieldMetadataIds is empty).",
+          "format": "uuid",
+          "type": "string",
         },
         "size": {
           "default": 150,
@@ -553,6 +588,34 @@ VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELE
         "position": {
           "description": "Position of the field.",
           "type": "number",
+        },
+        "relationPathFieldMetadataIds": {
+          "anyOf": [
+            {
+              "items": {
+                "format": "uuid",
+                "type": "string",
+              },
+              "maxItems": 4,
+              "type": "array",
+            },
+            {
+              "type": "null",
+            },
+          ],
+          "description": "The relation fields followed, in order, between the column field and relationTargetFieldMetadataId (see create_view_field). Null or [] for a one-level lookup.",
+        },
+        "relationTargetFieldMetadataId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+          "description": "On an extra (non-canonical) column of a relation field, the field of the related record(s) to show (see create_view_field). Null shows the related records again; clear relationPathFieldMetadataIds at the same time.",
         },
         "size": {
           "description": "Column width in pixels.",
@@ -614,6 +677,11 @@ VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELE
                 "format": "uuid",
                 "type": "string",
               },
+              "isCanonical": {
+                "default": true,
+                "description": "False adds an extra column for a field the view already shows, e.g. to show a field of a related record.",
+                "type": "boolean",
+              },
               "isVisible": {
                 "default": true,
                 "description": "Whether the field is visible in the view.",
@@ -623,6 +691,20 @@ VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELE
                 "default": 0,
                 "description": "Position of the field in the view (0-based).",
                 "type": "number",
+              },
+              "relationPathFieldMetadataIds": {
+                "description": "Multi-level lookup: the relation fields to follow, in order, after fieldMetadataId and before relationTargetFieldMetadataId. fieldMetadataId is the first relation, on the view object; each id here is a relation field on the object the previous relation points to; relationTargetFieldMetadataId is a field on the object the last one points to. Example on productions: fieldMetadataId = production.influencer, relationPathFieldMetadataIds = [influencer.contactLinks, influencerContact.person, person.lastEmail], relationTargetFieldMetadataId = message.subject. Relations can be many-to-one or one-to-many (one-to-many shows a list of values), not morph; at most 5 relations in total, of which at most one is one-to-many. Find the ids with get_field_metadata on each object along the path. Omit for a one-level lookup.",
+                "items": {
+                  "format": "uuid",
+                  "type": "string",
+                },
+                "maxItems": 4,
+                "type": "array",
+              },
+              "relationTargetFieldMetadataId": {
+                "description": "Lookup column: on an extra (isCanonical: false) column of a relation field, show this field of the related record(s) instead of the records. It must be an active non-relation field of the object reached at the end of the relation path (the object fieldMetadataId points to when relationPathFieldMetadataIds is empty).",
+                "format": "uuid",
+                "type": "string",
               },
               "size": {
                 "default": 150,
@@ -691,6 +773,34 @@ VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELE
               "position": {
                 "description": "Position of the field.",
                 "type": "number",
+              },
+              "relationPathFieldMetadataIds": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "format": "uuid",
+                      "type": "string",
+                    },
+                    "maxItems": 4,
+                    "type": "array",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "The relation fields followed, in order, between the column field and relationTargetFieldMetadataId (see create_view_field). Null or [] for a one-level lookup.",
+              },
+              "relationTargetFieldMetadataId": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "On an extra (non-canonical) column of a relation field, the field of the related record(s) to show (see create_view_field). Null shows the related records again; clear relationPathFieldMetadataIds at the same time.",
               },
               "size": {
                 "description": "Column width in pixels.",

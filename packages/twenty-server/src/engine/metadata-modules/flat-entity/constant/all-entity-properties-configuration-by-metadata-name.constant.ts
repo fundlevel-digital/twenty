@@ -598,6 +598,11 @@ export const ALL_ENTITY_PROPERTIES_CONFIGURATION_BY_METADATA_NAME = {
       toStringify: false,
       universalProperty: 'relationTargetFieldMetadataUniversalIdentifier',
     },
+    relationPathFieldMetadataIds: {
+      toCompare: true,
+      toStringify: true,
+      universalProperty: 'universalRelationPathFieldMetadataIds',
+    },
     deletedAt: {
       toCompare: true,
       toStringify: false,

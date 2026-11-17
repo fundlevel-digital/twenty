@@ -14,7 +14,7 @@ import { VIEW_FIELD_ACCESS_POLICY } from 'src/engine/metadata-modules/view-field
   category: ToolCategory.VIEW,
   accessPolicy: VIEW_FIELD_ACCESS_POLICY,
   description:
-    'Add a new column to a view. View fields define which columns are shown in table or kanban views. First call get_field_metadata to find the fieldMetadataId of the column to add, and get_views to find the target viewId.',
+    'Add a new column to a view. View fields define which columns are shown in table or kanban views. First call get_field_metadata to find the fieldMetadataId of the column to add, and get_views to find the target viewId. Also works on a dashboard table widget view (its viewId is in the widget configuration from get_dashboard). To show a field of related records several relations away (a lookup column), set isCanonical: false, fieldMetadataId to the first relation field on the view object, relationPathFieldMetadataIds to the next relation fields in order, and relationTargetFieldMetadataId to the field to show. Lookup columns are read-only.',
 })
 export class CreateViewFieldTool extends BaseTool<
   typeof createViewFieldInputSchema
@@ -45,6 +45,9 @@ export class CreateViewFieldTool extends BaseTool<
         size: input.size,
         position: input.position,
         aggregateOperation: input.aggregateOperation,
+        isCanonical: input.isCanonical,
+        relationTargetFieldMetadataId: input.relationTargetFieldMetadataId,
+        relationPathFieldMetadataIds: input.relationPathFieldMetadataIds,
       },
       workspaceId,
     });
@@ -60,6 +63,9 @@ export class CreateViewFieldTool extends BaseTool<
         size: viewField.size,
         position: viewField.position,
         aggregateOperation: viewField.aggregateOperation,
+        isCanonical: viewField.isCanonical,
+        relationTargetFieldMetadataId: viewField.relationTargetFieldMetadataId,
+        relationPathFieldMetadataIds: viewField.relationPathFieldMetadataIds,
       },
     };
   }

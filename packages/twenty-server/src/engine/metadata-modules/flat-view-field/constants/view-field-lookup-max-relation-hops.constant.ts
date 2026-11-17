@@ -1,0 +1,1 @@
+export const VIEW_FIELD_LOOKUP_MAX_RELATION_HOPS = 5;

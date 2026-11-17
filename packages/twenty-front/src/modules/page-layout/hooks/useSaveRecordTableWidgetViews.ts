@@ -6,6 +6,7 @@ import { recordTableWidgetViewDraftComponentState } from '@/page-layout/states/r
 import { recordTableWidgetViewPersistedComponentState } from '@/page-layout/states/recordTableWidgetViewPersistedComponentState';
 import { getWidgetConfigurationViewId } from '@/page-layout/utils/getWidgetConfigurationViewId';
 import { widgetUsesRecordTableView } from '@/page-layout/utils/widgetUsesRecordTableView';
+import { buildUpsertViewWidgetViewFieldInput } from '@/page-layout/widgets/record-table/utils/buildUpsertViewWidgetViewFieldInput';
 import { buildUpsertViewWidgetViewSettingsInput } from '@/page-layout/widgets/record-table/utils/buildUpsertViewWidgetViewSettingsInput';
 import { normalizeRecordTableWidgetViewFields } from '@/page-layout/widgets/record-table/utils/normalizeRecordTableWidgetViewFields';
 import { useMutation } from '@apollo/client/react';
@@ -120,13 +121,9 @@ export const useSaveRecordTableWidgetViews = () => {
             input: {
               widgetId: widget.id,
               ...(hasViewSettingsChanges ? { view: draftViewSettings } : {}),
-              viewFields: normalizedWidgetViewDraft.viewFields.map((field) => ({
-                fieldMetadataId: field.fieldMetadataId,
-                isVisible: field.isVisible,
-                position: field.position,
-                size: field.size,
-                aggregateOperation: field.aggregateOperation ?? null,
-              })),
+              viewFields: normalizedWidgetViewDraft.viewFields
+                .map(buildUpsertViewWidgetViewFieldInput)
+                .filter(isDefined),
               viewFilters: widgetViewDraft.viewFilters.map((filter) => ({
                 id: filter.id,
                 fieldMetadataId: filter.fieldMetadataId,

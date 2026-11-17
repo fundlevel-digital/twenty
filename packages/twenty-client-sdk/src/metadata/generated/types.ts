@@ -4408,6 +4408,9 @@ export default {
             "position": [
                 8
             ],
+            "relationPathFieldMetadataIds": [
+                564
+            ],
             "relationTargetFieldMetadataId": [
                 564
             ],
@@ -15320,6 +15323,9 @@ export default {
             "position": [
                 8
             ],
+            "relationPathFieldMetadataIds": [
+                564
+            ],
             "relationTargetFieldMetadataId": [
                 564
             ],
@@ -15839,6 +15845,12 @@ export default {
             ],
             "position": [
                 8
+            ],
+            "relationPathFieldMetadataIds": [
+                564
+            ],
+            "relationTargetFieldMetadataId": [
+                564
             ],
             "size": [
                 8
@@ -16698,6 +16710,9 @@ export default {
             ],
             "position": [
                 8
+            ],
+            "relationPathFieldMetadataIds": [
+                564
             ],
             "relationTargetFieldMetadataId": [
                 564

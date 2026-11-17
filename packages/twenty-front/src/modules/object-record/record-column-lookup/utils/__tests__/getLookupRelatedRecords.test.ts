@@ -67,6 +67,42 @@ describe('getLookupRelatedRecords', () => {
     ]);
   });
 
+  it('returns the leaf records of a multi-level lookup instead of its first related record', () => {
+    const lastEmail = { id: 'message-1', __typename: 'Message', subject: 'Hi' };
+
+    expect(
+      getLookupRelatedRecords({
+        records: [
+          {
+            id: 'production-1',
+            __typename: 'Production',
+            influencer: {
+              id: 'influencer-1',
+              __typename: 'Influencer',
+              contactLinks: [
+                { id: 'link-1', person: { id: 'person-1', lastEmail } },
+              ],
+            },
+          },
+        ],
+        columnDescriptorByRecordFieldId: {
+          'subject-column': {
+            lookupTarget: {
+              relationFieldName: 'influencer',
+              isMultiLevel: true,
+              relationHops: [
+                { relationFieldMetadataItem: { name: 'influencer' } },
+                { relationFieldMetadataItem: { name: 'contactLinks' } },
+                { relationFieldMetadataItem: { name: 'person' } },
+                { relationFieldMetadataItem: { name: 'lastEmail' } },
+              ],
+            },
+          },
+        },
+      }),
+    ).toEqual([lastEmail]);
+  });
+
   it('returns nothing without lookup columns', () => {
     expect(
       getLookupRelatedRecords({

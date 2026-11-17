@@ -24,7 +24,8 @@ const RecordTableLookupObjectSSESubscribeEffect = ({
   return null;
 };
 
-// The table only receives its own object's events, while lookup cells read the related records
+// The table only receives its own object's events, while lookup cells read the leaf records;
+// a change to an intermediate hop of a multi-level path shows after the next table fetch
 export const RecordTableLookupSSESubscribeEffects = () => {
   const { columnDescriptorByRecordFieldId } = useRecordIndexContextOrThrow();
   const { recordTableId } = useRecordTableContextOrThrow();
@@ -34,7 +35,7 @@ export const RecordTableLookupSSESubscribeEffects = () => {
       Object.values(columnDescriptorByRecordFieldId).flatMap(
         ({ lookupTarget }) =>
           isDefined(lookupTarget)
-            ? [lookupTarget.relationObjectMetadataItem.nameSingular]
+            ? [lookupTarget.leafObjectMetadataItem.nameSingular]
             : [],
       ),
     ),

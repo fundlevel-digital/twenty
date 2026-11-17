@@ -17,6 +17,8 @@ export type CompleteViewFieldSpec = {
   fieldMetadataId: string;
   isVisible: boolean;
   size: number;
+  relationTargetFieldMetadataId?: string;
+  relationPathFieldMetadataIds?: string[];
 };
 
 export type CompleteViewFilterSpec = {
@@ -85,6 +87,9 @@ export const buildCompleteViewChildrenFlatOperations = ({
           isVisible: field.isVisible,
           size: field.size,
           position: index,
+          isCanonical: !isDefined(field.relationTargetFieldMetadataId),
+          relationTargetFieldMetadataId: field.relationTargetFieldMetadataId,
+          relationPathFieldMetadataIds: field.relationPathFieldMetadataIds,
         },
         flatApplication,
         flatFieldMetadataMaps,

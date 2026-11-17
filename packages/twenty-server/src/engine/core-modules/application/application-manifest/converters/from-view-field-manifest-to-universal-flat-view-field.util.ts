@@ -1,4 +1,5 @@
 import { type ViewFieldManifest } from 'twenty-shared/application';
+import { isNonEmptyArray } from 'twenty-shared/utils';
 
 import { type UniversalFlatViewField } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-view-field.type';
 
@@ -30,6 +31,11 @@ export const fromViewFieldManifestToUniversalFlatViewField = ({
     aggregateOperation: viewFieldManifest.aggregateOperation ?? null,
     relationTargetFieldMetadataUniversalIdentifier:
       viewFieldManifest.relationTargetFieldMetadataUniversalIdentifier ?? null,
+    universalRelationPathFieldMetadataIds: isNonEmptyArray(
+      viewFieldManifest.relationPathFieldMetadataUniversalIdentifiers,
+    )
+      ? viewFieldManifest.relationPathFieldMetadataUniversalIdentifiers
+      : null,
     universalOverrides: null,
     createdAt: now,
     updatedAt: now,

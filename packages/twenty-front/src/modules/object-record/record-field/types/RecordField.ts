@@ -9,4 +9,5 @@ export type RecordField = {
   size: number;
   aggregateOperation?: AggregateOperations | null;
   relationTargetFieldMetadataId?: string | null;
+  relationPathFieldMetadataIds?: string[] | null;
 };

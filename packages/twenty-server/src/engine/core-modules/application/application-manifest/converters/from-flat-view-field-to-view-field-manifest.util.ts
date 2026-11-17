@@ -1,5 +1,5 @@
 import { type ViewFieldManifest } from 'twenty-shared/application';
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
 
 import { type UniversalFlatViewField } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-view-field.type';
 
@@ -28,6 +28,12 @@ export const fromFlatViewFieldToViewFieldManifest = ({
     ? {
         relationTargetFieldMetadataUniversalIdentifier:
           flatViewField.relationTargetFieldMetadataUniversalIdentifier,
+      }
+    : {}),
+  ...(isNonEmptyArray(flatViewField.universalRelationPathFieldMetadataIds)
+    ? {
+        relationPathFieldMetadataUniversalIdentifiers:
+          flatViewField.universalRelationPathFieldMetadataIds.filter(isDefined),
       }
     : {}),
 });

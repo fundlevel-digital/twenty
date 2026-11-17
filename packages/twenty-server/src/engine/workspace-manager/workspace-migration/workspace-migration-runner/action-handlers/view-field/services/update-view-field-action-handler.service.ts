@@ -9,6 +9,7 @@ import {
   FlatUpdateViewFieldAction,
   UniversalUpdateViewFieldAction,
 } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/builders/view-field/types/workspace-migration-view-field-action.type';
+import { fromUniversalRelationPathFieldMetadataIdsToRelationPathFieldMetadataIds } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/action-handlers/view-field/services/utils/from-universal-relation-path-field-metadata-ids-to-relation-path-field-metadata-ids.util';
 import { fromUniversalOverridesToViewFieldOverrides } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/action-handlers/view-field/services/utils/from-universal-overrides-to-view-field-overrides.util';
 import {
   WorkspaceMigrationActionRunnerArgs,
@@ -34,12 +35,30 @@ export class UpdateViewFieldActionHandlerService extends WorkspaceMigrationRunne
       universalIdentifier: action.universalIdentifier,
     });
 
-    const { universalOverrides, ...updateWithResolvedForeignKeys } =
-      resolveUniversalUpdateRelationIdentifiersToIds({
-        metadataName: 'viewField',
-        universalUpdate: action.update,
-        allFlatEntityMaps,
-      });
+    const {
+      universalOverrides,
+      universalRelationPathFieldMetadataIds,
+      ...updateWithResolvedRelations
+    } = resolveUniversalUpdateRelationIdentifiersToIds({
+      metadataName: 'viewField',
+      universalUpdate: action.update,
+      allFlatEntityMaps,
+    });
+
+    const updateWithResolvedForeignKeys =
+      universalRelationPathFieldMetadataIds === undefined
+        ? updateWithResolvedRelations
+        : {
+            ...updateWithResolvedRelations,
+            relationPathFieldMetadataIds:
+              fromUniversalRelationPathFieldMetadataIdsToRelationPathFieldMetadataIds(
+                {
+                  universalRelationPathFieldMetadataIds,
+                  flatFieldMetadataMaps:
+                    allFlatEntityMaps.flatFieldMetadataMaps,
+                },
+              ),
+          };
 
     const update =
       universalOverrides === undefined

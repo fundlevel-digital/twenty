@@ -309,6 +309,7 @@ import { BackfillFieldMetadataOptionRowsFromStoredOptionsFastInstanceCommand } f
 import { AddViewFieldRelationTargetFieldMetadataIdFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-59/2-59-instance-command-fast-1794606690417-add-view-field-relation-target-field-metadata-id';
 import { RenameNavigationMenuItemFolderIdToParentIdFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-60/2-60-instance-command-fast-1794839679151-rename-navigation-menu-item-folder-id-to-parent-id';
 import { AddFieldMetadataComputationFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-60/2-60-instance-command-fast-1794856904595-add-field-metadata-computation';
+import { AddViewFieldRelationPathFieldMetadataIdsFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-60/2-60-instance-command-fast-1794924648050-add-view-field-relation-path-field-metadata-ids';
 
 export const INSTANCE_COMMANDS = [
   AddViewFieldGroupIdIndexOnViewFieldFastInstanceCommand,
@@ -620,4 +621,5 @@ export const INSTANCE_COMMANDS = [
   AddViewFieldRelationTargetFieldMetadataIdFastInstanceCommand,
   RenameNavigationMenuItemFolderIdToParentIdFastInstanceCommand,
   AddFieldMetadataComputationFastInstanceCommand,
+  AddViewFieldRelationPathFieldMetadataIdsFastInstanceCommand,
 ];

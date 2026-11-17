@@ -1,4 +1,5 @@
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
+import { getLookupColumnLabel } from '@/object-record/record-column-lookup/utils/getLookupColumnLabel';
 import { type RecordFieldLookupTarget } from '@/object-record/record-column-lookup/utils/getRecordFieldLookupTarget';
 import { type RecordFieldColumnDescriptor } from '@/object-record/record-field/types/RecordFieldColumnDescriptor';
 import { isDefined } from 'twenty-shared/utils';
@@ -20,8 +21,8 @@ export const getRecordFieldColumnDescriptor = ({
 
   return {
     lookupTarget,
-    label: isDefined(lookupTargetFieldMetadataItem)
-      ? `${fieldMetadataItem.label} › ${lookupTargetFieldMetadataItem.label}`
+    label: isDefined(lookupTarget)
+      ? getLookupColumnLabel(lookupTarget)
       : fieldMetadataItem.label,
     icon: lookupTargetFieldMetadataItem?.icon ?? fieldMetadataItem.icon,
     description:
