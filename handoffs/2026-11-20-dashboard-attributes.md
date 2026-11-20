@@ -17,6 +17,58 @@ YouTube metrics, and the engine changes in Twenty needed to show and group by th
 - Fulfillment dashboard: https://crm.fundlevel.co/object/dashboard/c5715902-b655-4ffe-bf95-6e686dde9a0b
   (tabs "Overview" and "PostHog Q4"; PostHog Q4 deal/opportunity id `754e5600-3db9-534c-a310-c2b9df28edf6`).
 
+## Deal filter picker fix — 2026-11-20
+
+Source commit `4f27f1a4d28fb843f5bda9154155ae5bb67dc624`, pushed to `org` on
+`dashboard--attribute-improvements`. The owner explicitly requested the fix.
+
+- The dashboard side-panel relation filter passed its persisted JSON ID array
+  or relation-value object to `FormSingleRecordPicker` as one UUID. All three
+  search requests could fail with `GRAPHQL_VALIDATION_FAILED / Invalid UUID`,
+  producing error toasts and a misleading empty result list. The deal records
+  and normal searches remained healthy; this was reproduced against the API.
+- `AdvancedFilterSidePanelValueFormInput` now uses the existing
+  `FormMultiRecordPicker` for many-to-one relation filters. The shared
+  `jsonRelationFilterValueSchema` unwraps saved relation objects; the existing
+  picker normalizes ID arrays, single IDs and workflow variables. Added/removed
+  selections serialize through the existing filter callback. Changing the filter
+  field resets the picker. The direct workspace-member “Me” picker is preserved.
+- Verification: all **five targeted Jest tests pass**, including both saved
+  formats, a single-ID selection, adding another record and clearing selections.
+  Capped direct `tsgo --noEmit --singleThreaded` passes for the changed files and
+  their imports; type-aware repository lint has zero errors/warnings, and oxfmt
+  passes. The isolated frontend dependency installation lacked three existing
+  lodash declaration packages; the checks used the exact versions in `yarn.lock`
+  without changing repository dependencies. The production frontend build passed.
+- Built on Claudy in `/mnt/storage/twenty-picker-build-20261120` using a frontend
+  subset of the standard Dockerfile. Runtime image
+  `fundlevel-twenty:4f27f1a4d2-relation-picker` copies the built frontend onto the
+  previously deployed metadata-fix image. Backend code and its two fixes are
+  preserved. The runtime image is local to Claudy, **not published to GHCR**.
+  A standard full build of the source branch can replace it later. Build and
+  check logs are `/mnt/storage/twenty-picker-*-20261120.log`.
+- Deployed the runtime image to both server and worker. Server is healthy, worker
+  is running, and the public `/healthz` returns 200. Fresh HTML serves
+  `/assets/index-BQ_ZnDau.js` (previously `index-BQw0IA7Y.js`), and the new asset
+  returns 200. Live Deal search succeeds with normalized selected/excluded IDs.
+  The first 120-second Compose wait expired during normal setup/cron registration;
+  waiting again with 300 seconds succeeded without another recreation.
+- After restart all **642** renamed field definitions remain Title Case, including
+  all **285** audited definitions visible in saved views. Both dashboard tables
+  retain their canonical Person and Status columns and their saved Deal selection.
+  The Influencers table retains its terminal-state filter. The Creators table
+  currently has only the Deal condition; the earlier strict filter-tree checker
+  detected the missing terminal-state group. Its current configuration was left
+  as found; the timing/cause of that separate change is unverified.
+- No saved filter values or CRM records were changed to implement this fix.
+  Hindsight remains unavailable; this handoff records the verified findings.
+  Browser interaction cannot be claimed because the configured Chrome executable
+  is absent. No backups, pg_dumps or direct SQL writes were used.
+- Earlier owner wording correction: Waiting On select values `US` and `THEM`
+  now display **Our Reply** and **Their Reply** on both Influencer and Production.
+  Only display labels changed; option IDs, values, positions and colors stayed
+  intact, verified by fresh metadata reads.
+
 ## Latest continuation — clickable contacts, Production Status and Title Case
 
 Source is committed on `dashboard--attribute-improvements` and pushed to `org`;
