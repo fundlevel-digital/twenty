@@ -3,6 +3,7 @@ import {
   type FieldMetadataRollupComputation,
   FieldMetadataType,
 } from 'twenty-shared/types';
+import { ComputedFieldExpressionError } from 'twenty-shared/utils';
 
 import { type ComputedFieldKindDescription } from 'src/engine/metadata-modules/computed-field/types/computed-field-kind-description.type';
 import { assertComputedValueFitsFieldTypeOrThrow } from 'src/engine/metadata-modules/computed-field/utils/assert-computed-value-fits-field-type-or-throw.util';
@@ -32,12 +33,19 @@ export const ROLLUP_COMPUTED_FIELD_KIND_DESCRIPTION: ComputedFieldKindDescriptio
       computation,
       fieldType,
       valueTypeBySlotProperty,
-    }) =>
+    }) => {
+      if (fieldType === FieldMetadataType.SELECT) {
+        throw new ComputedFieldExpressionError(
+          'a rollup cannot be a select; read the rollup from a formula of type SELECT instead',
+        );
+      }
+
       assertComputedValueFitsFieldTypeOrThrow({
         fieldType,
         valueType: getRollupComputedValueTypeOrThrow({
           computation,
           expressionValueType: valueTypeBySlotProperty.expression,
         }),
-      }),
+      });
+    },
   };

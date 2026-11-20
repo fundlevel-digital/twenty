@@ -1,4 +1,8 @@
-import { type FieldMetadataRollupComputation } from 'twenty-shared/types';
+import {
+  type FieldMetadataDefaultOption,
+  type FieldMetadataRollupComputation,
+  FieldMetadataType,
+} from 'twenty-shared/types';
 import {
   assertUnreachable,
   isComputedField,
@@ -8,11 +12,15 @@ import {
 import { ROLLUP_SQL_FUNCTION_BY_OPERATION } from 'src/engine/metadata-modules/computed-field/constants/rollup-sql-function-by-operation.constant';
 import { buildOrmComputedFieldSchemaReader } from 'src/engine/metadata-modules/computed-field/utils/build-orm-computed-field-schema-reader.util';
 import { resolveComputedFieldSourceRelationOrThrow } from 'src/engine/metadata-modules/computed-field/utils/resolve-computed-field-source-relation-or-throw.util';
+import { createEmptyFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/constant/create-empty-flat-entity-maps.constant';
+import { resolveFlatFieldMetadataOptions } from 'src/engine/metadata-modules/flat-field-metadata-option/utils/resolve-flat-field-metadata-options.util';
 import { type OrmFlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/orm-flat-field-metadata.type';
 import { type ComputedColumnSqlContext } from 'src/engine/twenty-orm/computed-column/types/computed-column-sql-context.type';
 import { type ComputedColumnSql } from 'src/engine/twenty-orm/computed-column/types/computed-column-sql.type';
 import { type ReadableSql } from 'src/engine/twenty-orm/computed-column/types/readable-sql.type';
+import { bindComputedColumnTextParameter } from 'src/engine/twenty-orm/computed-column/utils/bind-computed-column-text-parameter.util';
 import { buildComputedFieldExpressionSql } from 'src/engine/twenty-orm/computed-column/utils/build-computed-field-expression-sql.util';
+import { buildComputedSelectColumnSql } from 'src/engine/twenty-orm/computed-column/utils/build-computed-select-column-sql.util';
 import { canReadField } from 'src/engine/twenty-orm/computed-column/utils/can-read-field.util';
 import { canReadObject } from 'src/engine/twenty-orm/computed-column/utils/can-read-object.util';
 import { embedSubquery } from 'src/engine/twenty-orm/computed-column/utils/embed-subquery.util';
@@ -113,7 +121,10 @@ export const buildComputedColumnSql = async ({
   repository: WorkspaceRepository;
   context: ComputedColumnSqlContext;
 }): Promise<ComputedColumnSql> => {
-  const columnType = fieldMetadataTypeToColumnType(flatFieldMetadata.type);
+  const isSelect = flatFieldMetadata.type === FieldMetadataType.SELECT;
+  const columnType = isSelect
+    ? 'text'
+    : fieldMetadataTypeToColumnType(flatFieldMetadata.type);
   const nullSql = { sql: `NULL::${columnType}`, readComputedColumnNames: [] };
 
   if (!isComputedField(flatFieldMetadata)) {
@@ -148,6 +159,26 @@ export const buildComputedColumnSql = async ({
 
   if (!isDefined(valueSql)) {
     return nullSql;
+  }
+
+  if (isSelect) {
+    const options: FieldMetadataDefaultOption[] =
+      resolveFlatFieldMetadataOptions({
+        flatFieldMetadata,
+        flatFieldMetadataOptionMaps:
+          repository.internalContext.flatFieldMetadataOptionMaps ??
+          createEmptyFlatEntityMaps(),
+      }) ?? [];
+
+    return {
+      ...valueSql,
+      sql: buildComputedSelectColumnSql({
+        valueSql: valueSql.sql,
+        optionValues: options.map(({ value }) => value),
+        bindTextParameter: (text) =>
+          bindComputedColumnTextParameter({ context, text }),
+      }),
+    };
   }
 
   return { ...valueSql, sql: `(${valueSql.sql})::${columnType}` };
