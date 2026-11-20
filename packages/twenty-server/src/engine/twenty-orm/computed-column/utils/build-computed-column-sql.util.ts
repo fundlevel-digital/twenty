@@ -9,7 +9,6 @@ import {
   isDefined,
 } from 'twenty-shared/utils';
 
-import { ROLLUP_SQL_FUNCTION_BY_OPERATION } from 'src/engine/metadata-modules/computed-field/constants/rollup-sql-function-by-operation.constant';
 import { buildOrmComputedFieldSchemaReader } from 'src/engine/metadata-modules/computed-field/utils/build-orm-computed-field-schema-reader.util';
 import { resolveComputedFieldSourceRelationOrThrow } from 'src/engine/metadata-modules/computed-field/utils/resolve-computed-field-source-relation-or-throw.util';
 import { createEmptyFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/constant/create-empty-flat-entity-maps.constant';
@@ -21,6 +20,7 @@ import { type ReadableSql } from 'src/engine/twenty-orm/computed-column/types/re
 import { bindComputedColumnTextParameter } from 'src/engine/twenty-orm/computed-column/utils/bind-computed-column-text-parameter.util';
 import { buildComputedFieldExpressionSql } from 'src/engine/twenty-orm/computed-column/utils/build-computed-field-expression-sql.util';
 import { buildComputedSelectColumnSql } from 'src/engine/twenty-orm/computed-column/utils/build-computed-select-column-sql.util';
+import { buildRollupAggregateSql } from 'src/engine/twenty-orm/computed-column/utils/build-rollup-aggregate-sql.util';
 import { canReadField } from 'src/engine/twenty-orm/computed-column/utils/can-read-field.util';
 import { canReadObject } from 'src/engine/twenty-orm/computed-column/utils/can-read-object.util';
 import { embedSubquery } from 'src/engine/twenty-orm/computed-column/utils/embed-subquery.util';
@@ -81,20 +81,27 @@ const buildRollupSql = async ({
   };
 
   const aggregated = await buildRelatedExpressionSql(computation.expression);
+  const orderBy = await buildRelatedExpressionSql(computation.orderBy);
   const filter = await buildRelatedExpressionSql(computation.filter);
 
-  if (!aggregated.isReadable || !filter.isReadable) {
+  if (!aggregated.isReadable || !orderBy.isReadable || !filter.isReadable) {
+    return undefined;
+  }
+
+  const aggregateSql = buildRollupAggregateSql({
+    operation: computation.operation,
+    expressionSql: aggregated.sql,
+    orderBySql: orderBy.sql,
+    relatedRecordIdSql: quoteColumn(relatedAlias, 'id'),
+  });
+
+  if (!isDefined(aggregateSql)) {
     return undefined;
   }
 
   const queryBuilder = relatedRepository
     .createQueryBuilder(relatedAlias, { computedColumnSqlContext: context })
-    .select(
-      isDefined(aggregated.sql)
-        ? `${ROLLUP_SQL_FUNCTION_BY_OPERATION[computation.operation]}(${aggregated.sql})`
-        : 'COUNT(*)',
-      'value',
-    )
+    .select(aggregateSql, 'value')
     .where(
       `${quoteColumn(relatedAlias, relatedRecordJoinColumnName)} = ${quoteColumn(alias, 'id')}`,
     );

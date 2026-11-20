@@ -12,6 +12,13 @@ describe('isFieldMetadataComputation', () => {
       expression: 'points',
       filter: 'isDone',
     },
+    {
+      kind: 'ROLLUP',
+      relationFieldName: 'tasks',
+      operation: 'LATEST',
+      expression: 'status',
+      orderBy: 'dueAt',
+    },
   ])('accepts %j', (computation) => {
     expect(isFieldMetadataComputation(computation)).toBe(true);
   });
@@ -31,6 +38,13 @@ describe('isFieldMetadataComputation', () => {
       relationFieldName: 'tasks',
       operation: 'COUNT',
       filter: 1,
+    },
+    {
+      kind: 'ROLLUP',
+      relationFieldName: 'tasks',
+      operation: 'LATEST',
+      expression: 'status',
+      orderBy: 1,
     },
   ])('refuses %j', (computation) => {
     expect(isFieldMetadataComputation(computation)).toBe(false);
