@@ -10,10 +10,7 @@ export type UpsertMutationName =
   | 'createCompanies'
   | 'createOpportunities';
 
-export type RecordUpsert = { id: string } & Record<
-  string,
-  string | number | null
->;
+export type RecordUpsert = { id: string } & Record<string, string | null>;
 
 export const upsertRecordsInBatches = async (
   client: Pick<CoreApiClient, 'mutation'>,

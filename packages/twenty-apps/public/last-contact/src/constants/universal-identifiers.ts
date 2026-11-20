@@ -1,6 +1,6 @@
 export const APP_DISPLAY_NAME = 'Last contact';
 export const APP_DESCRIPTION =
-  'Know where every relationship stands. Adds Last contact, Last outbound, Last inbound, Last contact by, Messages in a row, and the last email and meeting to People, plus Last contact on Companies and Opportunities, kept up to date automatically from your synced emails and meetings.';
+  'Know where every relationship stands. Adds Last contact, Last outbound, Last inbound, Last contact by, and the last email and meeting to People, plus Last contact on Companies and Opportunities, kept up to date automatically from your synced emails and meetings.';
 export const APPLICATION_UNIVERSAL_IDENTIFIER = '66a504cc-0a75-410e-a43f-cdeae1db1522';
 export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER = '34187abe-1b98-4153-85cd-4808e0aebf30';
 export const LAST_CONTACT_AT_FIELD_UNIVERSAL_IDENTIFIER =
@@ -49,8 +49,6 @@ export const LAST_CONTACT_FOR_PEOPLE_ON_CALENDAR_EVENT_FIELD_UNIVERSAL_IDENTIFIE
 
 export const LAST_OUTBOUND_AT_FIELD_UNIVERSAL_IDENTIFIER =
   'f4bbac22-8a3d-44c2-bbf2-7e28237252e1';
-export const LAST_SENDER_STREAK_FIELD_UNIVERSAL_IDENTIFIER =
-  '6b6f0401-2370-41e7-b3a3-da0ad5713da9';
 export const LAST_INBOUND_AT_FIELD_UNIVERSAL_IDENTIFIER =
   '11ee7749-735d-4fcf-b127-fa6856de7ee0';
 export const LAST_EMAIL_FIELD_UNIVERSAL_IDENTIFIER =

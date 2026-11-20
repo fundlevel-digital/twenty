@@ -1,8 +1,8 @@
 # Handoff: Fundlevel dashboard and derived attributes
 
-Session "Twenty - Fundlevel Dashboard", 2026-11-17 → 2026-11-20. Worktree
-`.claude/worktrees/enchanted-prancing-duckling`. This branch, `dashboard-attributes`, holds everything below
-plus one commit not on `main` (the Last contact change, see "Left off").
+Session "Twenty - Fundlevel Dashboard", 2026-11-17 → 2026-11-20, continued in
+Conductor workspace `kathmandu`, branch `dashboard--attribute-improvements`.
+The latest continuation below supersedes historical stopping points.
 
 ## What this fork is about
 
@@ -17,7 +17,173 @@ YouTube metrics, and the engine changes in Twenty needed to show and group by th
 - Fulfillment dashboard: https://crm.fundlevel.co/object/dashboard/c5715902-b655-4ffe-bf95-6e686dde9a0b
   (tabs "Overview" and "PostHog Q4"; PostHog Q4 deal/opportunity id `754e5600-3db9-534c-a310-c2b9df28edf6`).
 
-## Left off here (do these first)
+## Latest continuation — clickable contacts, Production Status and Title Case
+
+Source is committed on `dashboard--attribute-improvements` and pushed to `org`;
+no main-branch merge or branch rename was performed by this continuation.
+
+Verified 2026-11-20. Both PostHog Q4 dashboard tables now have a canonical native
+**Point of Contact** Person relation and the Production **Status** select column.
+The earlier plain-text Point of Contact helpers remain as **Point of Contact Name**,
+hidden in these tables. Existing deal and terminal-state filters are preserved:
+exclude PUBLISHED and FAILED_CANCELED, retain blank statuses (17 of 20 deal rows).
+
+- The CRM-only Last Contact Extras companion is now **0.3.0**, with six functions.
+  It owns Person Messages in a Row, Influencer `lastContactPerson` and Production
+  `pointOfContact`, plus the reverse Person relations. It selects the latest
+  contacted linked Person, ties by descending Influencer Contact ID. Contact-link
+  events, Person `lastContactAt` updates, Production creation/reassignment and a
+  daily 06:30 UTC reconciliation keep the native relations current.
+- Independent read-only SQL verified all 479 Influencer contact selections and all
+  59 Production contact IDs, with zero mismatches. Fresh API reads resolved every
+  populated Production relation to its Person record. This uses the standard
+  Person record chip/navigation; browser verification remains unavailable because
+  the configured Google Chrome executable is missing.
+- The owner explicitly approved renaming audited field labels and requested Title
+  Case going forward. This standing preference is in `CLAUDE.md` and `DESIGN.md`.
+  English workspace `translations` overrides preserve application ownership and
+  upstream field definitions. API identifiers, field types, activation and customer
+  content are unchanged. Shared polymorphic backing fields inherit the Title Case
+  version of their original UI head's label, preserving the UI's wording.
+- Final fresh-read verification: **642 of 649** audited definitions are Title
+  Case, including **all 285** definitions visible in saved views. All 1,893
+  original fields retain their API name, type, activation and application owner.
+  Seven hidden system fields reject label-only updates because their existing
+  non-nullable schema has no default: Access Group `groupHash`; Record Share
+  `objectMetadataId`, `principalType`, `rowCause`; Short Link `authoredTemplateUrl`,
+  `resolvedDestinationUrl`, `templateAndResolvedUrlHash`. Their schema/defaults
+  were deliberately left unchanged. Unrelated fields added concurrently by another
+  agent were outside the original approved audit and were not edited.
+- The updated audit artifact compares original and verified current labels:
+  `628f3643-70d4-4bb5-96cd-89ef2df6194c`, version 2. Final metadata reads also
+  confirmed canonical Person and Status columns and the preserved filter trees.
+- Metadata editing exposed two engine bugs, fixed and pushed to `org` on this
+  feature branch: `69a5ca26d5` loads owners of dependent computed fields during
+  validation; `33b168b815` allows workspace display translations on system fields
+  while retaining restrictions on their base schema. Seven targeted tests pass.
+- The feature build queued on Boat was canceled. GHCR rejected publishing the
+  derived image with `permission_denied`; no credentials were changed. Claudy runs
+  the **local-only** image
+  `fundlevel-twenty:33b168b815c67cbf0012a644555e410bd57cf934-metadata`, based on
+  `d99c9e143fc852a646d5a6c219bf8ab03f43859f`, with the three compiled metadata
+  modules overlaid. Both compose image references point to it. Server is healthy,
+  worker runs and `/healthz` returns 200. This image is NOT in GHCR: publish a full
+  standard build of this branch before recreating the deployment on another host.
+  The build workflow now tags `main` only for main-branch builds.
+- Companion validation: 16 unit tests pass, standalone capped typecheck passes,
+  lint reports zero errors/warnings. The public Last contact directory is restored
+  to `origin/main`; its marketplace registration and upstream update path remain
+  intact. Earlier claims of three installed workspaces were corrected above.
+- Hindsight remains unavailable because this Mac lacks the scoped private profile.
+  Durable owner preference and verified operational findings are retained here;
+  no central-memory retention is claimed. No backups, pg_dumps or SQL writes.
+
+## Continuation — 2026-11-20, CRM-only companion
+
+The owner chose a **CRM-only companion app**, preserving the marketplace Last
+contact registration and upstream updates. This supersedes the installation
+choice and deployment instructions in the previous stopping point below.
+
+- Implemented `packages/twenty-apps/internal/last-contact-extras` (version 0.1.0),
+  installed as **Last contact extras**. Application universal identifier
+  `ac1d4cf8-7f02-4f2f-8edb-9459250feb1f`, installed application id
+  `d0880d27-d262-4b73-b1b7-21766d93a392`, owned by the CRM workspace.
+- The new Person field is `lastSenderStreak`, label **Messages in a row**, universal
+  identifier `166dbef6-83ad-4f96-8700-ebb1f01e3b65`. The earlier Last contact patch
+  was removed from the marketplace app source; that directory now matches `origin/main`.
+- The companion reads emails and participants and updates People only. Its role
+  cannot create or delete records. Participant changes refresh both former and
+  current people and all people on the affected messages; message creation,
+  deletion, date and draft-state changes also refresh counts. A 06:00 UTC daily
+  reconciliation runs in queued batches of up to 50 email-linked people.
+- Counts follow inbound/outbound **sides**, matching Last contact, rather than
+  individual sender identities within a side. Drafts, undated messages, meetings
+  and duplicate recipient rows are excluded. Dates order messages and descending
+  message IDs break ties. Empty history gives null; 50 means 50 or more.
+- **Correction:** live read-only SQL found only one Last contact installation,
+  in CRM, at marketplace version 1.12.0. The earlier claim that it is installed
+  in all three workspaces was not supported by the live data. Its registration
+  remains unclaimed and its source remains npm; neither was changed.
+- Deployed engine image `d99c9e143fc852a646d5a6c219bf8ab03f43859f` to server and
+  worker on claudy. Both run; server is healthy and `/healthz` returns 200.
+- Created Influencer `followUpStreak` (field id
+  `4141364f-192c-4f05-8bc7-be17a019fb23`), NUMBER, LATEST over `contactLinks`,
+  expression `person.lastSenderStreak`, orderBy `person.lastContactAt`.
+- Created Production `creatorFollowUpStreak` (field id
+  `7b9b9ffb-2007-472f-9a47-0edf4eb5d0e8`), NUMBER, formula
+  `influencer.followUpStreak`. Both labels are **Messages in a row**.
+- Verified visible canonical columns in 11 views: the named People, Influencer
+  and Production views, their default views and record fields, and the PostHog
+  Q4 Influencers and Creators dashboard tables.
+- Verification: all 12 companion unit tests pass, standalone capped typecheck
+  passes, lint is clean. All three deployed functions executed successfully.
+  Live filtering and sorting on both rollups works; all 59 Production formulas
+  match their related Influencer values. The server remains healthy (HTTP 200).
+- Started the full backfill with `app exec --name backfill-email-streaks`.
+  It discovers people through Message Participants instead of scanning all
+  18,718 People. Independent SQL finds 1,022 people with valid email history;
+  all 1,022 now have populated values, with **zero mismatches** against the
+  independent SQL calculation (verified 2026-11-20 at approximately 17:39 UTC).
+  To finish the initial population quickly, remaining null counts were grouped
+  by the independent SQL result and updated through the normal GraphQL
+  `updatePeople` API in batches of at most 100, only where the count was still
+  null. No SQL writes were used. The companion's queued reconciliation pass
+  remains active, checking already-filled values and skipping unchanged writes.
+- Final comparison: all **479 Influencer rollups** match an independent SQL
+  selection of the most recently contacted point of contact (ties by contact
+  link ID), and all **59 Production formulas** match their Influencer. No
+  remaining field population or configuration work is required.
+- Browser verification is unavailable because the Playwright browser expects a
+  missing Google Chrome installation; column persistence and values were checked
+  through fresh API reads. Hindsight recall/retention is unavailable on this Mac
+  because the scoped private profile is missing; no Hindsight write was attempted.
+
+The source changes and this updated handoff are local and uncommitted; no
+branch was renamed, merged or pushed during this continuation. The task relation
+filter, dashboard relation grouping, editor save bug and upstream merge remain
+separate open work. No backup or pg_dump was taken.
+
+## Dashboard contact names, active statuses and naming audit — 2026-11-20
+
+Owner asked to show the point of contact in the PostHog Q4 dashboard tables and
+exclude terminal Productions. Configured both the Influencers widget view
+`ff5668b9-efb3-4358-9953-61df39f85eb5` and Creators table view
+`7c75c821-493a-416a-97dd-2db822737d3d` through the metadata API.
+
+- Influencer `lastContactPersonName`, TEXT, label **Point of Contact**, field id
+  `66e2035e-023c-4d82-bf52-1ca8e12a03ad`. LATEST over `contactLinks`, ordered by
+  `person.lastContactAt`, reads the person's first and last name, omitting a
+  separator when either part is empty. Uses the same contact selection and tie
+  break as Messages in a row. No contacted linked person means an empty display.
+- Production `creatorPointOfContact`, TEXT, label **Point of Contact**, field id
+  `1eaa3805-5a5a-4b34-8641-fefe59c98f6a`, formula
+  `influencer.lastContactPersonName`. This displays a name, not a relation chip.
+  Added it after Influencer in the Influencers widget and near the front of the
+  Creators table.
+- Both views retain their deal filter and now use an AND root with a nested OR:
+  Status IS_NOT `["PUBLISHED","FAILED_CANCELED"]` OR Status IS_EMPTY. This excludes
+  only the two terminal options while retaining productions without a status.
+- Read-only SQL verified 20 productions for the selected deal, 3 terminal and
+  17 remaining. API results match: no terminal rows; all 17 show a contact name.
+  Saved column visibility and filter group structure were re-read and verified.
+  Independent SQL contact selection matches all 479 Influencer name displays
+  (null and empty are equivalent for a blank text display).
+- Owner also asked which UI field labels are not in Title Case. Audited the
+  English metadata API display labels: 1,893 definitions across 70 objects before
+  adding the two already-capitalized Point of Contact fields. Found 285 flagged
+  definitions visible in saved views, representing 87 distinct labels. The full
+  report includes hidden and internal fields separately. Connector words,
+  acronyms, brands, plural `(s)` and units such as `60d` are preserved.
+- No existing field labels were renamed. This was an audit request, not a bulk
+  rename instruction. The report includes the companion's own `Messages in a
+  row` label (proposed `Messages in a Row`).
+- Published Conductor artifact `628f3643-70d4-4bb5-96cd-89ef2df6194c`, version 1,
+  from `.context/artifacts/field-label-audit/`, without warnings. Raw audit data
+  and verification scripts are in `.context/`. The artifact contains metadata
+  only, no customer CRM records. Hindsight remains unavailable on this Mac.
+
+## Previous stopping point (superseded by the continuation above)
+
 
 1. **Last contact "Messages in a row" is built but NOT deployed.** Commit `c795bb4284`, only on this branch.
    - Adds Person field `lastSenderStreak`, label "Messages in a row": the number of consecutive emails from

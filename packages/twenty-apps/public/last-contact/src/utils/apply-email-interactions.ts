@@ -1,7 +1,6 @@
 import { type CoreApiClient } from 'twenty-client-sdk/core';
 
 import { applyPersonInteractions } from 'src/utils/apply-person-interactions';
-import { collectLastSenderStreaks } from 'src/utils/collect-last-sender-streaks';
 import { collectMessageInteractions } from 'src/utils/collect-message-interactions';
 import { type Interaction } from 'src/utils/update-person-last-contact';
 
@@ -49,17 +48,5 @@ export const applyEmailInteractions = async (
     }
   }
 
-  // Recomputed from the person's latest emails rather than incremented, so a
-  // batch arriving out of order cannot skew it.
-  const lastSenderStreakByPersonId = await collectLastSenderStreaks(
-    client,
-    [...interactionsByPersonId.keys()],
-    interactionByMessageId,
-  );
-
-  await applyPersonInteractions(
-    client,
-    interactionsByPersonId,
-    lastSenderStreakByPersonId,
-  );
+  await applyPersonInteractions(client, interactionsByPersonId);
 };

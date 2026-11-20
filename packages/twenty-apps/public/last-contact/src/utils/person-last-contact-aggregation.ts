@@ -2,10 +2,6 @@ import { type CoreApiClient } from 'twenty-client-sdk/core';
 import { isDefined } from 'twenty-sdk/utils';
 
 import { chunk } from 'src/utils/chunk';
-import {
-  computeLastSenderStreak,
-  type LastSenderStreakMessage,
-} from 'src/utils/compute-last-sender-streak';
 import { executeWithRetry } from 'src/utils/execute-with-retry';
 
 const PAGE_SIZE = 200;
@@ -23,7 +19,7 @@ type MeetingInteraction = {
 type MessageMemberInfo = { ownerId: string; fromIsMember: boolean };
 type ContactItem = { kind: 'email' | 'meeting'; id: string };
 
-export type PersonUpdateData = Record<string, string | number | null>;
+export type PersonUpdateData = Record<string, string | null>;
 
 export type PersonAgg = {
   lastContactAt?: string;
@@ -33,7 +29,6 @@ export type PersonAgg = {
   lastInboundAt?: string;
   lastEmail?: { at: string; id: string };
   lastMeeting?: { at: string; id: string };
-  lastSenderStreak?: number;
 };
 
 const collectEmailInteractions = async (
@@ -338,29 +333,13 @@ export const buildPersonAggregates = async (
     return created;
   };
 
-  const streakMessagesByPersonId = new Map<string, LastSenderStreakMessage[]>();
-
   for (const email of emails) {
-    const info = messageMemberInfo.get(email.messageId);
-
-    foldEmail(aggFor(email.personId), email.receivedAt, email.messageId, info);
-
-    const streakMessage: LastSenderStreakMessage = {
-      messageId: email.messageId,
-      receivedAt: email.receivedAt,
-      direction: info?.fromIsMember ? 'outbound' : 'inbound',
-    };
-    const streakMessages = streakMessagesByPersonId.get(email.personId);
-
-    if (streakMessages) {
-      streakMessages.push(streakMessage);
-    } else {
-      streakMessagesByPersonId.set(email.personId, [streakMessage]);
-    }
-  }
-  for (const [personId, streakMessages] of streakMessagesByPersonId) {
-    aggFor(personId).lastSenderStreak =
-      computeLastSenderStreak(streakMessages) ?? undefined;
+    foldEmail(
+      aggFor(email.personId),
+      email.receivedAt,
+      email.messageId,
+      messageMemberInfo.get(email.messageId),
+    );
   }
   for (const meeting of meetings) {
     foldMeeting(
@@ -381,7 +360,6 @@ export const buildPersonUpdateData = (
   lastContactById: agg?.lastContactById ?? null,
   lastOutboundAt: agg?.lastOutboundAt ?? null,
   lastInboundAt: agg?.lastInboundAt ?? null,
-  lastSenderStreak: agg?.lastSenderStreak ?? null,
   lastEmailId: agg?.lastEmail?.id ?? null,
   lastMeetingId: agg?.lastMeeting?.id ?? null,
   lastContactItemMessageId: agg?.item?.kind === 'email' ? agg.item.id : null,

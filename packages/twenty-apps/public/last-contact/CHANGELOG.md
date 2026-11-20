@@ -1,11 +1,5 @@
 # Changelog
 
-## 1.12.0
-
-- Add **Messages in a row** on People: how many of the latest emails with the person in a row came from the same side, you or them. They reply: 1. You reply: 1. You follow up: 2. A meeting does not count, and a person with no email has none. Direction follows the existing rule: an email sent by a workspace member is outbound, any other email inbound.
-- It is recomputed from the person's latest emails each time an email is linked to them, and the count stops at 50. Emails received at the same moment are ordered by id.
-- Run the backfill once on an upgrade to 1.12.0 to fill it for existing people.
-
 ## 1.11.0
 
 - Ignore draft emails. A draft linked to a person was counted as a contact, both when its participant was linked and in the backfill, so writing an email without sending it moved the person's last contact.
