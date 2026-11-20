@@ -36,7 +36,8 @@ type YoutubeChannelResource = {
 };
 
 type YoutubeErrorBody = {
-  error?: { errors?: { reason?: string }[] };
+  error?: string | { errors?: { reason?: string }[] };
+  detail?: string | { error?: string; retry_after_s?: number };
 };
 
 const YOUTUBE_ENDPOINT_PATHS: Record<YoutubeEndpoint, string> = {
@@ -46,18 +47,42 @@ const YOUTUBE_ENDPOINT_PATHS: Record<YoutubeEndpoint, string> = {
 };
 
 const retryDelayMilliseconds = (attempt: number): number =>
-  Math.min(2 ** attempt * 500, 5_000);
+  Math.min(2 ** attempt * 2_000, 30_000);
 
-const readErrorReason = async (
-  response: Response,
-): Promise<string | undefined> => {
+const readErrorBody = async (response: Response): Promise<YoutubeErrorBody> => {
   try {
-    const body = (await response.json()) as YoutubeErrorBody;
-
-    return body.error?.errors?.[0]?.reason;
+    return ((await response.json()) ?? {}) as YoutubeErrorBody;
   } catch {
-    return undefined;
+    return {};
   }
+};
+
+const getRetryDelayMilliseconds = (
+  response: Response,
+  body: YoutubeErrorBody,
+  attempt: number,
+): number => {
+  const retryAfter = response.headers.get('Retry-After');
+  const retryAfterSeconds = isNonEmptyString(retryAfter)
+    ? Number(retryAfter)
+    : Number.NaN;
+  const retryAfterMilliseconds = Number.isFinite(retryAfterSeconds)
+    ? retryAfterSeconds * 1_000
+    : isNonEmptyString(retryAfter)
+      ? Date.parse(retryAfter) - Date.now()
+      : Number.NaN;
+  const tregRetryAfterSeconds =
+    typeof body.detail === 'object' && isDefined(body.detail)
+      ? body.detail.retry_after_s
+      : undefined;
+
+  return Math.max(
+    retryDelayMilliseconds(attempt),
+    Number.isFinite(retryAfterMilliseconds) ? retryAfterMilliseconds : 0,
+    isDefined(tregRetryAfterSeconds) && Number.isFinite(tregRetryAfterSeconds)
+      ? tregRetryAfterSeconds * 1_000
+      : 0,
+  );
 };
 
 export class YoutubeClient {
@@ -140,10 +165,20 @@ export class YoutubeClient {
         return (await response.json()) as TResponse;
       }
 
-      const reason = await readErrorReason(response);
+      const body = await readErrorBody(response);
+      const isTregError = response.headers.get('X-Treg-Error') === '1';
+      const reason = isTregError
+        ? typeof body.detail === 'string'
+          ? body.detail
+          : (body.detail?.error ??
+            (typeof body.error === 'string' ? body.error : undefined))
+        : typeof body.error === 'object' && isDefined(body.error)
+          ? body.error.errors?.[0]?.reason
+          : undefined;
 
       if (
         response.status === 403 &&
+        !isTregError &&
         isDefined(reason) &&
         YOUTUBE_QUOTA_ERROR_REASONS.includes(reason)
       ) {
@@ -152,20 +187,32 @@ export class YoutubeClient {
       }
 
       const isDailyQuotaFailure =
-        reason === 'quotaExceeded' || reason === 'dailyLimitExceeded';
+        reason === 'quotaExceeded' ||
+        reason === 'dailyLimitExceeded' ||
+        (isTregError &&
+          (reason === 'member_spend_cap_reached' ||
+            reason === 'trial_allowance_reached'));
 
       if (
         attempt < YOUTUBE_REQUEST_MAX_ATTEMPTS &&
         !isDailyQuotaFailure &&
         (response.status === 429 || response.status >= 500)
       ) {
-        await this.#wait(retryDelayMilliseconds(attempt));
+        await this.#wait(getRetryDelayMilliseconds(response, body, attempt));
         attempt++;
         continue;
       }
 
+      const callId = response.headers.get('X-Treg-Call-Id');
+      const details = [
+        isTregError ? 'treg refusal' : 'upstream response',
+        `key tool: ${keyToolName}`,
+        ...(isNonEmptyString(reason) ? [reason] : []),
+        ...(isNonEmptyString(callId) ? [`call: ${callId}`] : []),
+      ];
+
       throw new Error(
-        `YouTube ${endpoint} failed with status ${response.status}${isDefined(reason) ? ` (${reason})` : ''}`,
+        `YouTube ${endpoint} failed with status ${response.status} (${details.join('; ')})`,
       );
     }
   }

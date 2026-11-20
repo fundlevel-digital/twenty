@@ -55,6 +55,13 @@ reason `quotaExceeded`, `dailyLimitExceeded` or `rateLimitExceeded`, the run
 marks that tool as exhausted and moves to the next one. Once every tool is
 exhausted, the remaining entries fail with an error that names the tools.
 
+Two creators refresh concurrently. Transient network, 429 and 5xx failures get
+at most four attempts, with 4, 8 and 16 second backoffs. Retries also honor a
+longer `Retry-After` (seconds or HTTP date) or treg `detail.retry_after_s`.
+Treg daily spend and trial allowance refusals fail immediately. Treg refusals
+do not exhaust or rotate YouTube keys; terminal errors include the origin,
+key tool, reason when available and treg call ID for investigation.
+
 The result counts every request, including retries and rotated requests. A
 channel with 60 qualifying videos in its first 100 uploads usually costs five
 units: one channel request, two playlist pages and two video batches.

@@ -7,5 +7,5 @@ export const YOUTUBE_ANALYTICS_SYNC_OPTIONS: YoutubeAnalyticsSyncOptions = {
   recentWindowDays: 60,
   maxUploads: 60,
   minimumDurationSeconds: 181,
-  concurrency: 4,
+  concurrency: 2,
 };

@@ -2,6 +2,60 @@
 
 Written 2026-11-20. Branch `fundlevel/youtube-analytics-app`, based on `91e6edbf31` ("Add the YouTube Analytics app"). That commit is also on `main`, so `main` already holds the app.
 
+## Continuation: 2026-11-20, Codex
+
+Continued in Conductor workspace `memphis`, on
+`fundlevel/youtube-analytics-app-v1`. The branch name was preserved.
+
+### Rate-limit investigation and deployed fix
+
+- Read the supplied Claude JSONL transcripts and verified the original live
+  state with read-only PostgreSQL queries: 77 READY, 13 FAILED, with the same
+  9 playlist and 4 video HTTP 429 errors reported below.
+- Queried treg's `/calls` history filtered by this app's agent API key, following
+  `before_id` pagination. The first cron generated 541 recorded attempts:
+  **384 HTTP 200 and 157 HTTP 429**. All 157 failures were treg refusals tagged
+  `refused_by: cap`, with no upstream duration or charge. They did not reach
+  Google. This tag covers several kinds of refusal; the exact historical reason
+  is not exposed by the team's retained audit response. Do not equate it with
+  an exhausted YouTube key or assume a specific treg cap.
+- Updated `youtube-client.ts`: four attempts with 4, 8 and 16 second backoffs;
+  honor longer `Retry-After` values (seconds or HTTP date) and
+  `detail.retry_after_s`; identify treg errors via `X-Treg-Error`; include
+  origin, tool name, available reason and `X-Treg-Call-Id` in terminal errors.
+  Known treg daily spend/trial refusals fail immediately. Only upstream Google
+  quota errors exhaust a YouTube key; treg refusals do not rotate keys.
+- Reduced creator concurrency from 4 to 2. Metric definitions were unchanged.
+- Deployed using Twenty CLI 2.59.0, explicit remote `fundlevel`, `app apply
+  --no-prune`. The plan updated one logic-function checksum and deleted nothing.
+  Deployed content hash:
+  `7b922b375933271ad4a337de1793d90caf9bdebb8797903efd34e91ebd8db7fe`.
+- Retried only the 13 failed entries through `app exec`. Run:
+  **2026-11-20 16:55:12–16:55:35 UTC**, 23.6 seconds; 13 selected,
+  13 written, 0 failed; 81 requests (1 channel, 40 playlist, 40 video),
+  no exhausted key tools. treg recorded 81 HTTP 200 responses. Own keys cost $0.
+- Verified PostgreSQL afterward: **90 READY, 0 FAILED, no calculation errors**.
+  The other 77 entries retain their original successful morning refresh.
+
+### Verification and remaining limits
+
+- **45 tests pass in 8 files**, each file run sequentially with the app's own
+  installed dependencies; oxlint reports no warnings or errors.
+- App typecheck passed directly with resource limits:
+  `GOMEMLIMIT=512MiB GOMAXPROCS=2 GOGC=25 ./node_modules/.bin/tsgo --noEmit
+  -p tsconfig.spec.json --composite false --incremental false`.
+- The next scheduled run, **2026-11-21 05:00 UTC**, still needs verification.
+  The daytime retry establishes recovery, not a reproduction of the original
+  overnight treg contention. Inspect new error reasons and call IDs if it fails.
+- Browser verification remains open: Playwright could not start because its
+  configured Google Chrome binary is absent. No browser was installed.
+- Hindsight recall/retention was unavailable on this Mac because its private
+  `twenty` profile is missing. This handoff records the verified continuation.
+- Private operation outputs are gitignored under `.context/` in `memphis`:
+  `youtube-treg-call-audit.json`, `youtube-app-apply.json`, and
+  `youtube-retry-result.json`. These contain operational evidence and must not
+  be added to Git or engineering memory as raw records.
+
 ## What this fork is about
 
 Fundlevel moved its influencer CRM from Attio to a self-hosted Twenty fork (`https://crm.fundlevel.co`). In Attio, a Cloudflare Worker refreshed each creator's YouTube analytics every day. After the migration nothing refreshed them in Twenty, and the analytics entries there were only ever edited by hand.
@@ -53,7 +107,7 @@ The decisions, all made by the owner:
 - Calls go to `https://treg.to/call/<tool>/youtube/v3/<endpoint>?…` with the `X-Treg-Token` header and no `key` parameter; treg injects the key.
 - The two tools are the team's own treg tools, each holding a Google API key from a different project, so calls are free. Each key has 10,000 units a day, and one creator costs about 5.
 - On 403 `quotaExceeded`, `dailyLimitExceeded` or `rateLimitExceeded`, the app marks that tool exhausted for the rest of the run and moves to the next. When every tool is exhausted, the remaining entries fail.
-- 429 and 5xx responses are retried up to 4 times on the same tool. They do **not** rotate to the next tool.
+- Transient failures get at most 4 attempts on the same tool, with 4/8/16-second backoff and longer server retry timing honored. They do **not** rotate to the next tool. Terminal errors identify treg versus upstream and include the call ID when available.
 - treg token `youtube-analytics-twenty`: viewer role, limited to those two tools, local runs off. treg shows a token only once.
   - To rotate it, run `treg org agent-new youtube-analytics-twenty --role viewer --tools yt-key-fundlevel-internal,yt-key-scheduler-zero --local-run off`.
   - Then set the new value with the metadata mutation `updateOneApplicationVariable(key: "TREG_TOKEN", value: …, applicationId: "cb7f8a34-0b8f-44c8-b07d-db9bc706e836")`, via `npx -y twenty@2.59.0 api graphql --metadata`.
@@ -84,12 +138,12 @@ The decisions, all made by the owner:
 
 ## Where we left off (open items, most important first)
 
-1. **Fix the 429s from the first run.** Unknown: whether the 429 came from Google (per-key rate limit) or from treg (`share_busy` or `provider_rate_limited`; treg's own refusals carry `X-Treg-Error: 1`). Options:
-   - lower `concurrency` in `src/logic-functions/constants/youtube-analytics-sync-options.constant.ts` (currently 4);
-   - lengthen the 429 backoff or honour `Retry-After` in `src/logic-functions/utils/youtube-client.ts`;
-   - rotate to the next key tool on 429.
+1. **Verify the next scheduled run.** The 429 handling fix is deployed and the
+   13 failed entries recovered; all 90 are now READY. See the continuation above.
+   Check the 2026-11-21 05:00 UTC cron. If treg refuses calls again, use the saved
+   reason and call ID to identify its policy or capacity limit before changing
+   YouTube key settings.
 
-   To retry the 13 by hand now, use the "Refresh YouTube analytics" action on them, or `npx -y twenty@2.59.0 --no-input app exec --name refresh-youtube-analytics --payload '{"requestContext":{},"body":{"entryIds":[…]}}'` from this folder. A payload with `requestContext` is treated as a route call.
 2. **Posts per month can't exceed 5** because collection stops at 60 videos (60 ÷ 12), the same as the old worker. Raising `maxUploads` costs about 2 more units per extra 50-video page for heavy posters. The owner hasn't decided.
 3. **Hand-set values were overwritten.** Before this app, AI Search had been set by hand on 2026-11-18 to 563,584 average views and 9.92 posts a month, and 62 entries were `BLOCKED` / `MISSING_ANALYTICS_INPUT`. Nobody found what wrote those. The owner was told; check with them if another process turns out to own `calculationStatus`.
 4. Optional, not done:

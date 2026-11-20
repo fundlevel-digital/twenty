@@ -121,7 +121,7 @@ describe('refreshYoutubeAnalytics', () => {
       recentWindowDays: 60,
       maxUploads: 60,
       minimumDurationSeconds: 181,
-      concurrency: 4,
+      concurrency: 2,
     });
   });
 

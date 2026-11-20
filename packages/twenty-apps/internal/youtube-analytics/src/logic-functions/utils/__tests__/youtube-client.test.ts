@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { YoutubeClient } from 'src/logic-functions/utils/youtube-client';
 
@@ -38,15 +38,20 @@ const recordRequest = (
 const buildClient = (
   fetchImplementation: typeof fetch,
   keyToolNames = ['key-a', 'key-b'],
+  waitImplementation: (milliseconds: number) => Promise<void> = async () => {},
 ) =>
   new YoutubeClient({
     tregToken: 'treg-token',
     keyToolNames,
     fetchImplementation,
-    waitImplementation: async () => {},
+    waitImplementation,
   });
 
 describe('YoutubeClient', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('calls the channels, playlistItems and videos endpoints through treg', async () => {
     const requests: RecordedRequest[] = [];
     const fetchImplementation = (async (
@@ -226,5 +231,187 @@ describe('YoutubeClient', () => {
       'key-a',
     ]);
     expect(client.exhaustedKeyToolNames).toEqual([]);
+  });
+
+  it.each([
+    { retryAfter: '12', retryAfterSeconds: undefined, expectedDelay: 12_000 },
+    {
+      retryAfter: 'Fri, 20 Nov 2026 05:00:20 GMT',
+      retryAfterSeconds: undefined,
+      expectedDelay: 20_000,
+    },
+    { retryAfter: undefined, retryAfterSeconds: 15, expectedDelay: 15_000 },
+    { retryAfter: '12', retryAfterSeconds: 15, expectedDelay: 15_000 },
+    {
+      retryAfter: 'invalid',
+      retryAfterSeconds: undefined,
+      expectedDelay: 4_000,
+    },
+    { retryAfter: '-1', retryAfterSeconds: undefined, expectedDelay: 4_000 },
+    { retryAfter: '1', retryAfterSeconds: undefined, expectedDelay: 4_000 },
+  ])(
+    'waits $expectedDelay ms before retrying a treg 429 with $retryAfter / $retryAfterSeconds',
+    async ({ retryAfter, retryAfterSeconds, expectedDelay }) => {
+      vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-20T05:00:00Z'));
+      const requests: RecordedRequest[] = [];
+      const delays: number[] = [];
+      const fetchImplementation = (async (
+        input: string | URL | Request,
+        init?: RequestInit,
+      ) => {
+        recordRequest(requests, input, init);
+
+        return requests.length === 1
+          ? Response.json(
+              {
+                detail: {
+                  error: 'org_rate_limit',
+                  retry_after_s: retryAfterSeconds,
+                },
+              },
+              {
+                status: 429,
+                headers: {
+                  'X-Treg-Error': '1',
+                  ...(retryAfter === undefined
+                    ? {}
+                    : { 'Retry-After': retryAfter }),
+                },
+              },
+            )
+          : Response.json({ items: [] });
+      }) as typeof fetch;
+      const client = buildClient(
+        fetchImplementation,
+        ['key-a', 'key-b'],
+        async (delay) => {
+          delays.push(delay);
+        },
+      );
+
+      await client.listUploadPage({
+        uploadsPlaylistId: 'UU000',
+        asOf: '2026-11-20T05:00:00Z',
+      });
+
+      expect(delays).toEqual([expectedDelay]);
+      expect(requests.map(({ url }) => url.pathname.split('/')[2])).toEqual([
+        'key-a',
+        'key-a',
+      ]);
+      expect(client.exhaustedKeyToolNames).toEqual([]);
+    },
+  );
+
+  it('reports the treg reason and call id after bounded retries', async () => {
+    const delays: number[] = [];
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () =>
+        Response.json(
+          { detail: { error: 'org_concurrency_limit' } },
+          {
+            status: 429,
+            headers: { 'X-Treg-Error': '1', 'X-Treg-Call-Id': 'call-123' },
+          },
+        ),
+      );
+    const client = buildClient(
+      fetchImplementation,
+      ['key-a'],
+      async (delay) => {
+        delays.push(delay);
+      },
+    );
+
+    await expect(
+      client.listUploadPage({
+        uploadsPlaylistId: 'UU000',
+        asOf: '2026-11-20T05:00:00Z',
+      }),
+    ).rejects.toThrow(
+      'YouTube playlistItemsList failed with status 429 (treg refusal; key tool: key-a; org_concurrency_limit; call: call-123)',
+    );
+    expect(fetchImplementation).toHaveBeenCalledTimes(4);
+    expect(delays).toEqual([4_000, 8_000, 16_000]);
+    expect(client.exhaustedKeyToolNames).toEqual([]);
+  });
+
+  it.each(['member_spend_cap_reached', 'trial_allowance_reached'])(
+    'fails without retrying a daily treg %s refusal',
+    async (reason) => {
+      const fetchImplementation = vi
+        .fn<typeof fetch>()
+        .mockImplementation(async () =>
+          Response.json(
+            { detail: { error: reason } },
+            {
+              status: 429,
+              headers: { 'X-Treg-Error': '1', 'Retry-After': '86400' },
+            },
+          ),
+        );
+      const waitImplementation = vi.fn(async () => {});
+      const client = buildClient(
+        fetchImplementation,
+        ['key-a', 'key-b'],
+        waitImplementation,
+      );
+
+      await expect(
+        client.listUploadPage({
+          uploadsPlaylistId: 'UU000',
+          asOf: '2026-11-20T05:00:00Z',
+        }),
+      ).rejects.toThrow(reason);
+      expect(fetchImplementation).toHaveBeenCalledTimes(1);
+      expect(waitImplementation).not.toHaveBeenCalled();
+      expect(client.exhaustedKeyToolNames).toEqual([]);
+    },
+  );
+
+  it('does not exhaust a YouTube key for a treg 403', async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () =>
+        Response.json(
+          {
+            error: { errors: [{ reason: 'quotaExceeded' }] },
+            detail: 'tool_access_denied',
+          },
+          {
+            status: 403,
+            headers: { 'X-Treg-Error': '1' },
+          },
+        ),
+      );
+    const client = buildClient(fetchImplementation);
+
+    await expect(
+      client.listUploadPage({
+        uploadsPlaylistId: 'UU000',
+        asOf: '2026-11-20T05:00:00Z',
+      }),
+    ).rejects.toThrow('tool_access_denied');
+    expect(fetchImplementation).toHaveBeenCalledTimes(1);
+    expect(client.exhaustedKeyToolNames).toEqual([]);
+  });
+
+  it('retries a non-JSON upstream 429 and keeps its origin in the final error', async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockImplementation(
+        async () =>
+          new Response('<html>Too many requests</html>', { status: 429 }),
+      );
+    const client = buildClient(fetchImplementation);
+
+    await expect(
+      client.listUploadPage({
+        uploadsPlaylistId: 'UU000',
+        asOf: '2026-11-20T05:00:00Z',
+      }),
+    ).rejects.toThrow('upstream response; key tool: key-a');
+    expect(fetchImplementation).toHaveBeenCalledTimes(4);
   });
 });
