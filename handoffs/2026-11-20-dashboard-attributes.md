@@ -39,8 +39,8 @@ YouTube metrics, and the engine changes in Twenty needed to show and group by th
        Upstream updates would stop arriving automatically, and sunny/schedulerzero may be affected.
    - The owner wanted it to be "part of the last contact app". Ask before claiming anything.
    - After deploy: the backfill does NOT run on `app apply`. Trigger it from Settings → Last contact → "Trigger backfill".
-2. **LATEST rollup (engine) is committed and on `main` (`d99c9e143f`), but not deployed.** A Boat build
-   (run 44773859653) was in progress at the end. Then:
+2. **LATEST rollup (engine) is committed and on `main` (`d99c9e143f`), but not deployed.** Its Boat build
+   (run 44773859653) **succeeded**, and the image is ready. Then:
    1. Deploy it: `ssh claudy`, `docker pull ghcr.io/fundlevel-digital/twenty:<full sha>`, set the image on lines 4
       and 65 of `/mnt/storage/twenty-crm/docker-compose.yml`, `docker compose up -d server worker`, and wait for
       `https://crm.fundlevel.co/healthz` to return 200.
