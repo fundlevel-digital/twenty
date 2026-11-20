@@ -4,10 +4,13 @@ const { buildPersonAggregatesMock } = vi.hoisted(() => ({
   buildPersonAggregatesMock: vi.fn(),
 }));
 
-vi.mock('src/utils/person-last-contact-aggregation', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  buildPersonAggregates: buildPersonAggregatesMock,
-}));
+vi.mock(
+  'src/utils/person-last-contact-aggregation',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    buildPersonAggregates: buildPersonAggregatesMock,
+  }),
+);
 
 import { backfillPeopleLastContact } from 'src/utils/backfill-people-last-contact';
 
@@ -24,6 +27,7 @@ const CONTACTED_PERSON_DATA = {
   lastContactById: MEMBER_ID,
   lastOutboundAt: RECEIVED_AT,
   lastInboundAt: null,
+  lastSenderStreak: 1,
   lastEmailId: MESSAGE_ID,
   lastMeetingId: null,
   lastContactItemMessageId: MESSAGE_ID,
@@ -35,6 +39,7 @@ const EMPTY_PERSON_DATA = {
   lastContactById: null,
   lastOutboundAt: null,
   lastInboundAt: null,
+  lastSenderStreak: null,
   lastEmailId: null,
   lastMeetingId: null,
   lastContactItemMessageId: null,
@@ -45,6 +50,7 @@ const STALE_PERSON_DATA = {
   ...EMPTY_PERSON_DATA,
   lastContactAt: STALE_RECEIVED_AT,
   lastInboundAt: STALE_RECEIVED_AT,
+  lastSenderStreak: 4,
   lastEmailId: STALE_MESSAGE_ID,
   lastContactItemMessageId: STALE_MESSAGE_ID,
 };
@@ -79,6 +85,7 @@ beforeEach(() => {
           item: { kind: 'email', id: MESSAGE_ID },
           lastOutboundAt: RECEIVED_AT,
           lastEmail: { at: RECEIVED_AT, id: MESSAGE_ID },
+          lastSenderStreak: 1,
         },
       ],
     ]),
@@ -159,6 +166,22 @@ describe('backfillPeopleLastContact', () => {
         id: CONTACTED_PERSON_ID,
         ...CONTACTED_PERSON_DATA,
         lastEmailId: STALE_MESSAGE_ID,
+      },
+    ]);
+
+    await backfillPeopleLastContact(client as never, [CONTACTED_PERSON_ID]);
+
+    expect(upsertedPeople()).toEqual([
+      { id: CONTACTED_PERSON_ID, ...CONTACTED_PERSON_DATA },
+    ]);
+  });
+
+  it('writes a person whose only change is messages in a row', async () => {
+    mockCurrentPeople([
+      {
+        id: CONTACTED_PERSON_ID,
+        ...CONTACTED_PERSON_DATA,
+        lastSenderStreak: 3,
       },
     ]);
 

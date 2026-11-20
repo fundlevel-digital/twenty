@@ -44,6 +44,10 @@ const shouldRunPostInstall = ({
     return true;
   }
 
+  if (compare(previousVersion, '1.12.0') < 0 && compare(newVersion, '1.12.0') >= 0) { // Fill Messages in a row
+    return true;
+  }
+
   return false
 }
 

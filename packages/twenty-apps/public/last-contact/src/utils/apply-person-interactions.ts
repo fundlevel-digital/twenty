@@ -1,5 +1,6 @@
 import { type CoreApiClient } from 'twenty-client-sdk/core';
 
+import { hasLastContactChanged } from 'src/utils/has-last-contact-changed';
 import {
   buildPersonLastContactUpdate,
   collectPersonLastContactState,
@@ -18,6 +19,7 @@ import {
 export const applyPersonInteractions = async (
   client: Pick<CoreApiClient, 'query' | 'mutation'>,
   interactionsByPersonId: Map<string, Interaction[]>,
+  lastSenderStreakByPersonId: Map<string, number | null> = new Map(),
 ): Promise<void> => {
   const personIds = [...interactionsByPersonId.keys()];
 
@@ -45,8 +47,15 @@ export const applyPersonInteractions = async (
       interactions,
     );
 
-    if (update) {
-      updates.push(update);
+    const lastSenderStreak = lastSenderStreakByPersonId.get(personId);
+    const lastSenderStreakData =
+      lastSenderStreak !== undefined &&
+      hasLastContactChanged(current, { lastSenderStreak })
+        ? { lastSenderStreak }
+        : undefined;
+
+    if (update || lastSenderStreakData) {
+      updates.push({ id: personId, ...update, ...lastSenderStreakData });
     }
 
     const latest = pickLatestInteraction(interactions);

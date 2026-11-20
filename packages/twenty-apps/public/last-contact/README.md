@@ -14,6 +14,7 @@ On **People** you get:
 - **Last contact** — the most recent touch, either direction
 - **Last outbound** / **Last inbound** — when you last reached out vs. when they last did
 - **Last contact by** — the teammate connected to this person
+- **Messages in a row** — how many of the latest emails in a row came from the same side, you or them (up to 50)
 - **Last contact item** / **Last email** / **Last meeting** — one click to the actual record
 
 On **Companies** and **Opportunities** you also get **Last contact** and **Last contact item** columns.

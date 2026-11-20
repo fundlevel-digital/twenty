@@ -21,6 +21,7 @@ export type PersonLastContactState = {
   lastContactAt?: string | null;
   lastOutboundAt?: string | null;
   lastInboundAt?: string | null;
+  lastSenderStreak?: number | null;
   lastEmail?: { receivedAt: string | null } | null;
   lastMeeting?: { startsAt: string | null } | null;
   company?: RelatedLastContact | null;
@@ -78,6 +79,7 @@ export const collectPersonLastContactState = async (
                 lastContactAt: true,
                 lastOutboundAt: true,
                 lastInboundAt: true,
+                lastSenderStreak: true,
                 lastEmail: { receivedAt: true },
                 lastMeeting: { startsAt: true },
                 company: { id: true, lastContactAt: true },

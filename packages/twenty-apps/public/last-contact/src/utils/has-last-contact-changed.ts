@@ -20,7 +20,7 @@ const normalizeValue = (fieldName: string, value: unknown): unknown => {
 // out of the write.
 export const hasLastContactChanged = (
   current: Record<string, unknown>,
-  next: Record<string, string | null>,
+  next: Record<string, string | number | null>,
 ): boolean =>
   Object.entries(next).some(
     ([fieldName, value]) =>
