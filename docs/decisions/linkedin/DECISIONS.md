@@ -17,8 +17,8 @@ choices are identified separately from Kareem's decisions.
 | [0007](0007-open-the-rebuild-pull-request.md) | 2026-11-21 | Commit and open the complete rebuild for review against main | superseded by 0008 (deployment restriction only) |
 | [0008](0008-merge-main-and-deploy-to-production.md) | 2026-11-21 | Merge main, commit/push and deploy the rebuild to the live CRM | superseded by 0009 (deployment authorization only) |
 | [0009](0009-cancel-the-production-deployment.md) | 2026-11-21 | Cancel deployment while retaining the completed merge and push | superseded by repository 0005 |
-
-| [0010](0010-automatic-webhook-and-internal-configuration.md) | 2026-11-21 | Configure the webhook automatically and remove obsolete/internal settings | accepted |
+| [0010](0010-automatic-webhook-and-internal-configuration.md) | 2026-11-21 | Configure the webhook automatically and remove obsolete/internal settings | superseded by 0011 (webhook setup mechanism only) |
+| [0011](0011-app-managed-webhooks-and-service-key.md) | 2026-11-21 | Let the app configure its webhook automatically from a Service Key | accepted |
 
 See the [app handoff](../../../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md)
 for verified completion, preview limitations and production status. Record 0009

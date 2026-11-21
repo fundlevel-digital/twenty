@@ -5,20 +5,10 @@ import styled from '@emotion/styled';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { RestApiClient } from 'twenty-client-sdk/rest';
 import { defineFrontComponent } from 'twenty-sdk/define';
-import {
-  enqueueSnackbar,
-  t,
-  useColorScheme,
-  useLocation,
-} from 'twenty-sdk/front-component';
+import { enqueueSnackbar, t, useColorScheme } from 'twenty-sdk/front-component';
 import { InlineBanner } from 'twenty-ui/components/feedback';
 import { Section } from 'twenty-ui/components/layout';
-import {
-  IconBriefcase,
-  IconLink,
-  IconRefresh,
-  IconUsers,
-} from 'twenty-ui/icon';
+import { IconBriefcase, IconUsers } from 'twenty-ui/icon';
 import { Button, Input } from 'twenty-ui/primitives/input';
 import { Card } from 'twenty-ui/primitives/surfaces';
 import { Text } from 'twenty-ui/primitives/typography';
@@ -31,20 +21,18 @@ import {
 import { SETTINGS_FRONT_UNIVERSAL_IDENTIFIER } from 'src/constants/identifiers';
 import { SlackContactPolicyCards } from 'src/front-components/components/SlackContactPolicyCards';
 import { SlackPreferenceToggle } from 'src/front-components/components/SlackPreferenceToggle';
-import { SlackPreferenceSelect } from 'src/front-components/components/SlackPreferenceSelect';
+import {
+  SlackConversationSettings,
+  type SlackSyncAccount,
+} from 'src/front-components/components/SlackConversationSettings';
 import {
   DEFAULT_CONTACT_PREFERENCES,
   type ContactPreferences,
 } from 'src/types/contact-preferences.type';
 import { type SnapshotImportSummary } from 'src/types/snapshot-import-summary.type';
 
-type Account = {
-  id: string;
-  name: string;
-  folders: { id: string; name: string }[];
-};
 type PreferencesResult = {
-  accounts: Account[];
+  accounts: SlackSyncAccount[];
   contactPreferences: ContactPreferences;
   snapshotImport?: SnapshotImportSummary | null;
 };
@@ -71,24 +59,8 @@ const StyledInputContainer = styled.div`
   flex: 1;
   min-width: 200px;
 `;
-const StyledConnectionRow = styled.div`
-  align-items: center;
-  color: ${() => themeCssVariables.font.color.tertiary};
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${() => themeCssVariables.spacing[3]};
-`;
-const StyledConnectionText = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: ${() => themeCssVariables.spacing[1]};
-  min-width: 180px;
-`;
-
 export const SlackPreferences = () => {
   const colorScheme = useColorScheme();
-  const location = useLocation();
   const domainInputId = useId();
   const [contactPreferences, setContactPreferences] =
     useState<ContactPreferences>(DEFAULT_CONTACT_PREFERENCES);
@@ -96,11 +68,9 @@ export const SlackPreferences = () => {
   // Native input callbacks can outlive a render; merge saves with the latest preferences.
   const contactPreferencesRef = useRef(DEFAULT_CONTACT_PREFERENCES);
   const employeeDomainsRef = useRef('');
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<SlackSyncAccount[]>([]);
   const [snapshotImport, setSnapshotImport] =
     useState<SnapshotImportSummary | null>(null);
-  const [selection, setSelection] = useState('');
-  const [history, setHistory] = useState('30_DAYS');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -109,13 +79,6 @@ export const SlackPreferences = () => {
   const controlsDisabled = isBusy || !isReady;
   const domainsChanged =
     employeeDomains !== contactPreferences.employeeDomains.join(', ');
-  const conversationOptions = accounts.flatMap((account) =>
-    account.folders.map((folder) => ({
-      value: `${account.id}/${folder.id}`,
-      label: `${account.name} / ${folder.name}`,
-    })),
-  );
-
   const load = useCallback(async () => {
     setIsLoading(true);
     setLoadError(false);
@@ -192,29 +155,73 @@ export const SlackPreferences = () => {
       },
       true,
     );
-  const start = async () => {
-    const [connectedAccountId, channelId] = selection.split('/');
-    if (!connectedAccountId || !channelId) return;
+  const saveSync = async (
+    conversationSelections: {
+      connectedAccountId: string;
+      conversationIds: string[];
+    }[],
+    history: '30_DAYS' | 'ALL',
+  ) => {
     setIsSaving(true);
     try {
-      await new RestApiClient().post('/s/slack-sync/history', {
-        connectedAccountId,
-        channelId,
-        history,
-      });
+      const result = await new RestApiClient().post<PreferencesResult>(
+        '/s/slack-sync/settings',
+        { conversationSelections, history },
+      );
+      setAccounts(result.accounts);
       void enqueueSnackbar({
-        message: t('History import queued'),
+        message: t('Sync Settings Saved'),
         variant: 'success',
       });
+      return true;
     } catch {
       void enqueueSnackbar({
-        message: t('Could not start the import. Try again.'),
+        message: t('Could not save sync settings. Refresh and try again.'),
         variant: 'error',
       });
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
+  const refreshConversations = async () => {
+    setIsLoading(true);
+    try {
+      const result = await new RestApiClient().post<PreferencesResult>(
+        '/s/slack-sync/settings',
+        { refreshConversations: true },
+      );
+      setAccounts(result.accounts);
+    } catch {
+      void enqueueSnackbar({
+        message: t('Could not refresh conversations.'),
+        variant: 'error',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const isDiscovering = accounts.some(
+    (account) =>
+      account.discovery?.isRunning &&
+      Date.now() - account.discovery.updatedAt < 600000,
+  );
+  useEffect(() => {
+    if (!isDiscovering || isSaving) return;
+    let isCancelled = false;
+    const timer = setInterval(() => {
+      void new RestApiClient()
+        .post<PreferencesResult>('/s/slack-sync/settings', {})
+        .then((result) => {
+          if (!isCancelled) setAccounts(result.accounts);
+        })
+        .catch(() => undefined);
+    }, 5000);
+    return () => {
+      isCancelled = true;
+      clearInterval(timer);
+    };
+  }, [isDiscovering, isSaving]);
 
   return (
     <ThemeProvider
@@ -234,9 +241,18 @@ export const SlackPreferences = () => {
             {t('Unable to load Slack preferences.')}
           </InlineBanner>
         )}
+        {isReady && (
+          <SlackConversationSettings
+            accounts={accounts}
+            disabled={controlsDisabled}
+            isDiscovering={isDiscovering}
+            onSave={saveSync}
+            onRefresh={refreshConversations}
+          />
+        )}
         <Section.Root>
           <Section.Header
-            title={t('Contact auto-creation')}
+            title={t('Contact Auto-Creation')}
             description={t(
               'Choose when Slack conversations create new People and Companies.',
             )}
@@ -255,7 +271,7 @@ export const SlackPreferences = () => {
           <Card.Root fullWidth>
             <SlackPreferenceToggle
               Icon={IconUsers}
-              title={t('Exclude group emails')}
+              title={t('Exclude Group Emails')}
               description={t(
                 'Skip shared addresses like team@, support@, and noreply@.',
               )}
@@ -268,7 +284,7 @@ export const SlackPreferences = () => {
             />
             <SlackPreferenceToggle
               Icon={IconBriefcase}
-              title={t('Exclude non-professional emails')}
+              title={t('Exclude Non-Professional Emails')}
               description={t(
                 'Skip personal addresses from Gmail, Outlook, and similar providers.',
               )}
@@ -284,14 +300,14 @@ export const SlackPreferences = () => {
         </Section.Root>
         <Section.Root>
           <Section.Header
-            title={t('Internal employees')}
+            title={t('Internal Employees')}
             description={t(
               'Slack teammates and Twenty workspace members are excluded automatically.',
             )}
           />
           <StyledStack>
             <Text weight="medium" render={<label htmlFor={domainInputId} />}>
-              {t('Additional employee domains')}
+              {t('Additional Employee Domains')}
             </Text>
             <StyledRow>
               <StyledInputContainer>
@@ -335,95 +351,20 @@ export const SlackPreferences = () => {
             </Text>
           </StyledStack>
         </Section.Root>
-        <Section.Root>
-          <Section.Header
-            title={t('History import')}
-            description={t(
-              'Import earlier messages from connected Slack conversations.',
-            )}
-            actions={
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isBusy}
-                onClick={load}
-                aria-label={t('Refresh conversations')}
-                startIcon={<IconRefresh size={14} />}
-              >
-                {t('Refresh')}
-              </Button>
-            }
-          />
-          <StyledStack>
-            {conversationOptions.length > 0 ? (
-              <>
-                <SlackPreferenceSelect
-                  label={t('Conversation')}
-                  value={selection}
-                  placeholder={t('Choose a conversation')}
-                  options={conversationOptions}
-                  disabled={controlsDisabled}
-                  onChange={setSelection}
-                />
-                <StyledRow>
-                  <SlackPreferenceSelect
-                    label={t('History')}
-                    value={history}
-                    options={[
-                      { value: '30_DAYS', label: t('Last 30 days') },
-                      { value: 'ALL', label: t('All available history') },
-                    ]}
-                    disabled={controlsDisabled}
-                    onChange={setHistory}
-                  />
-                  <Button
-                    color="accent"
-                    disabled={controlsDisabled || !selection}
-                    onClick={start}
-                  >
-                    {t('Import history')}
-                  </Button>
-                </StyledRow>
-              </>
-            ) : (
-              <Card.Root fullWidth>
-                <Card.Content>
-                  <StyledConnectionRow>
-                    <IconLink size={20} />
-                    <StyledConnectionText>
-                      <Text weight="medium">
-                        {t('Connect Slack to import history')}
-                      </Text>
-                      <Text size="sm" color="tertiary">
-                        {t('Add your Slack account in the General tab.')}
-                      </Text>
-                    </StyledConnectionText>
-                    {location?.pathname && (
-                      <Button
-                        variant="outline"
-                        render={<a href={location.pathname} />}
-                      >
-                        {t('Manage connections')}
-                      </Button>
-                    )}
-                  </StyledConnectionRow>
-                </Card.Content>
-              </Card.Root>
-            )}
-            {snapshotImport && (
-              <InlineBanner status="neutral">
-                {t(
-                  '{channel}: {messages} messages in {conversations} conversations imported for testing.',
-                  {
-                    channel: snapshotImport.channel,
-                    messages: snapshotImport.messages,
-                    conversations: snapshotImport.conversations,
-                  },
-                )}
-              </InlineBanner>
-            )}
-          </StyledStack>
-        </Section.Root>
+        <StyledStack>
+          {snapshotImport && (
+            <InlineBanner status="neutral">
+              {t(
+                '{channel}: {messages} messages in {conversations} conversations imported for testing.',
+                {
+                  channel: snapshotImport.channel,
+                  messages: snapshotImport.messages,
+                  conversations: snapshotImport.conversations,
+                },
+              )}
+            </InlineBanner>
+          )}
+        </StyledStack>
       </StyledContainer>
     </ThemeProvider>
   );

@@ -170,3 +170,19 @@ redirect-URI cache for the token exchange, rather than requiring state again in
 the app callback. Concurrent connections retain the same exact callback URI.
 The fix was deployed on 2026-11-21; all 79 app tests, typecheck, lint and build
 passed. A fresh Connect Slack attempt is required after an earlier failure.
+
+### Bulk Conversation Sync Settings (2026-11-21)
+
+Apps Preferences → Slack Sync → Sync now starts with a searchable checklist of
+all discovered conversations, including currently unselected DMs and channels.
+Filter by type, Select All Shown or Clear Shown, choose Message History once and
+Save Sync Settings. Saving uses native message-folder inclusion and batches the
+history jobs; there is no repeated per-conversation import step. Unselecting does
+not delete earlier imported messages.
+
+Discovery resolves DM and group-DM names from Slack profiles and preserves saved
+inclusion choices. Refresh queues discovery and the settings list updates while
+it runs. The earlier menu showed only selected conversations; production had 82
+discovered and 36 selected at investigation time, not a three-channel limit.
+The old single-conversation history API remains compatible but is no longer the
+settings UI. See [decision 0015](decisions/slack/0015-bulk-dm-and-channel-sync-settings.md).

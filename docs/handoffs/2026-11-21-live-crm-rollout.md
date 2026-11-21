@@ -147,3 +147,55 @@ four functions changed and five metadata entities were removed (three variables,
 one obsolete tab and its widget). All 821 legacy messages and 1,475 PlusVibe
 messages remained intact. The Unipile endpoint and encrypted secrets were
 configured automatically; signed/unsigned probes returned 200/401.
+
+## Follow-Up: App Automation And Bulk Slack Settings
+
+Kareem clarified that the app must manage its webhook itself, rather than an
+administrator running setup once. LinkedIn Sync now runs setup in its native
+settings-save health check and retries every five minutes. The only workspace
+credential field is **Unipile Service Key** (`UNIPILE_API_KEY`); the manual
+signing-secret field was pruned. No message objects or fields were pruned.
+The obsolete administrator helper is retired.
+
+The app discovers Twenty's workspace URL when no public app domain is configured.
+It adopted the existing explicitly scoped endpoint, kept its provider ID, and
+changed delivery to the app-managed workspace route. Two live app health checks
+returned `SUCCESS` / `Webhook Configured`; signed synthetic non-LinkedIn delivery
+returned HTTP 200, unsigned and incorrect-signature deliveries returned HTTP 401.
+Only the endpoint ID is persisted in app KV. Its signing secret stays at Unipile
+and is fetched with the saved Service Key for verification. Unrelated endpoints
+are excluded, and legacy adoption is scoped to the known endpoint and install.
+
+Slack Sync now offers one searchable checklist for channels and DMs with
+conversation-type filters, bulk selection, readable profile names and one
+Save Sync Settings action. Saving updates native folder inclusion and batches
+historical imports using the shared history setting. The handler validates all
+connections and conversation IDs before making changes, and retains retry state
+if selection is saved but history enqueue fails. Previously imported messages
+are retained when a conversation is unselected.
+
+The live settings API returned 82 conversations and 36 selected; the earlier menu
+hid everything not already selected. A refresh was queued to resolve old DM user
+IDs through Slack profiles, while preserving selections. A subsequent read found
+zero remaining raw DM user-ID labels and confirmed the five-minute webhook
+repair schedule. No bulk selection or
+history import was submitted on the owner's behalf. Browser checks with sample
+data verified row selection, bulk selection, filtered clearing and save behavior
+at desktop and mobile sizes. Screenshots are private `.context/` preview artifacts,
+not screenshots of live customer records.
+
+Validation: LinkedIn app typecheck, 302 unit tests, 12 legacy tests and lint;
+Slack app typecheck, 89 unit tests, lint and CLI build. Both apps were applied to
+the live Fundlevel workspace; the LinkedIn migration-stage schema was retained.
+The core server image was unchanged. Core cron registration completed with
+31 successful, zero failed and four intentionally skipped jobs.
+
+The 821 LinkedIn legacy messages and 144 chats remain intact. A read-only check
+found 1,480 PlusVibe native messages and 807 threads, five more messages than the
+earlier rollout count; this follow-up did not change the PlusVibe app or submit a
+PlusVibe import. LinkedIn sign-in, legacy-message migration and native privacy
+verification remain deferred.
+
+Owner corrections are recorded in LinkedIn decision 0011 and Slack decision 0015.
+Hindsight recall remains unavailable because the private repo profile could not
+be resolved; these verified findings are retained in repository documentation.

@@ -1,3 +1,4 @@
+import { conversationLabel } from 'src/utils/conversation-label';
 import { isEmployeeDomain } from 'src/utils/contact-preferences';
 import * as schema from 'src/constants/schema-identifiers';
 import { upsertSlackChannel } from 'src/utils/slack-channel';
@@ -61,7 +62,11 @@ export const mapMessage = async ({
         'conversations.info',
         { channel: channelId },
       );
-      return upsertSlackChannel(teamId, detail.channel);
+      const label = await conversationLabel(token, teamId, detail.channel);
+      return upsertSlackChannel(teamId, {
+        ...detail.channel,
+        name: label.name,
+      });
     },
   );
   const canonicalParentId =

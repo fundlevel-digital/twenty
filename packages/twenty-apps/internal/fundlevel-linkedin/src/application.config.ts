@@ -12,30 +12,22 @@ export default defineApplication({
   category: 'Communication',
   serverVariables: {
     UNIPILE_API_KEY: {
-      description: 'Unipile API key for hosted sign-in and webhook routing.',
+      description: 'Unipile Service Key for hosted sign-in.',
       isSecret: true,
       isRequired: true,
     },
     UNIPILE_WEBHOOK_SECRET: {
-      description: 'Unipile webhook signing secret.',
+      description: 'Legacy server route signing secret.',
       isSecret: true,
-      isRequired: true,
+      isRequired: false,
     },
   },
   applicationVariables: {
     UNIPILE_API_KEY: {
       universalIdentifier: APP.VAR_UNIPILE_API_KEY,
-      label: 'Unipile API Key',
+      label: 'Unipile Service Key',
       description:
-        'Unipile API v2 key with access to the connected LinkedIn accounts. Used for synchronization and replies.',
-      isSecret: true,
-      isRequired: true,
-    },
-    UNIPILE_WEBHOOK_SECRET: {
-      universalIdentifier: APP.VAR_UNIPILE_WEBHOOK_SECRET,
-      label: 'Unipile Webhook Signing Secret',
-      description:
-        'Signing secret of the Unipile webhook endpoint that points at this app. Events without a valid signature are rejected.',
+        'Unipile Service Key with permission to manage webhooks. Saving this key automatically configures webhook delivery, synchronization and replies.',
       isSecret: true,
       isRequired: true,
     },

@@ -14,13 +14,14 @@ const mocks = vi.hoisted(() => ({
   slackRequest: vi.fn(),
   enqueue: vi.fn(),
   get: vi.fn(),
+  set: vi.fn(),
 }));
 vi.mock('twenty-sdk/define', () => ({
   defineLogicFunction: (value: unknown) => value,
 }));
 vi.mock('twenty-sdk/logic-function', () => ({
   ...mocks,
-  kv: { get: mocks.get },
+  kv: { get: mocks.get, set: mocks.set },
 }));
 vi.mock('src/utils/slack', () => ({
   slackRequest: mocks.slackRequest,
