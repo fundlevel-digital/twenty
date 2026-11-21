@@ -8,6 +8,7 @@ import { themeCssVariables, useTheme } from 'twenty-ui/theme';
 import { getSettingsFieldTypeConfig } from '@/settings/data-model/utils/getSettingsFieldTypeConfig';
 import { isFieldTypeSupportedInSettings } from '@/settings/data-model/utils/isFieldTypeSupportedInSettings';
 import { SettingsValidationRuleExampleExpression } from '@/validation-rules/components/SettingsValidationRuleExampleExpression';
+import { type ExpressionEditorMode } from '@/validation-rules/types/ExpressionEditorMode';
 import { type ValidationRuleEditorField } from '@/validation-rules/types/ValidationRuleEditorField';
 import { type ValidationRuleHelperItem } from '@/validation-rules/types/ValidationRuleHelperItem';
 import { computeValidationRuleHelperItemExamples } from '@/validation-rules/utils/computeValidationRuleHelperItemExamples';
@@ -70,11 +71,13 @@ const StyledExample = styled.div`
 `;
 
 type SettingsValidationRuleHelperDetailsProps = {
+  mode?: ExpressionEditorMode;
   item: ValidationRuleHelperItem;
   editorFields: ValidationRuleEditorField[];
 };
 
 export const SettingsValidationRuleHelperDetails = ({
+  mode = 'condition',
   item,
   editorFields,
 }: SettingsValidationRuleHelperDetailsProps) => {
@@ -84,10 +87,10 @@ export const SettingsValidationRuleHelperDetails = ({
 
   const ItemIcon = getValidationRuleHelperItemIcon({ item, getIcon });
 
-  const examples = computeValidationRuleHelperItemExamples({
-    item,
-    fields: editorFields,
-  });
+  const examples =
+    mode === 'condition'
+      ? computeValidationRuleHelperItemExamples({ item, fields: editorFields })
+      : [];
 
   const itemIcon = (
     <ItemIcon
@@ -144,7 +147,7 @@ export const SettingsValidationRuleHelperDetails = ({
       return t(item.definition.description);
     }
 
-    return item.field.readsRelatedRecord
+    return mode === 'condition' && item.field.readsRelatedRecord
       ? t`Checked only when the record this rule belongs to is saved. Editing the related record does not check it again.`
       : undefined;
   };

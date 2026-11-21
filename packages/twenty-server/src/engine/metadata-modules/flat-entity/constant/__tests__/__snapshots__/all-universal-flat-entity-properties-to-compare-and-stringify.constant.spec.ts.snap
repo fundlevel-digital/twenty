@@ -18,6 +18,8 @@ exports[`ALL_UNIVERSAL_FLAT_ENTITY_PROPERTIES_TO_COMPARE_AND_STRINGIFY should ma
       "isActive",
       "overrides",
       "isSystem",
+      "isPrivate",
+      "createdByUserWorkspaceId",
     ],
     "propertiesToStringify": [
       "responseFormat",
@@ -202,7 +204,6 @@ exports[`ALL_UNIVERSAL_FLAT_ENTITY_PROPERTIES_TO_COMPARE_AND_STRINGIFY should ma
       "serverRouteTriggerSettings",
       "toolTriggerSettings",
       "workflowActionTriggerSettings",
-      "jobConfig",
       "builtHandlerPath",
     ],
     "propertiesToStringify": [
@@ -212,7 +213,6 @@ exports[`ALL_UNIVERSAL_FLAT_ENTITY_PROPERTIES_TO_COMPARE_AND_STRINGIFY should ma
       "serverRouteTriggerSettings",
       "toolTriggerSettings",
       "workflowActionTriggerSettings",
-      "jobConfig",
     ],
   },
   "mcpServer": {
@@ -248,10 +248,15 @@ exports[`ALL_UNIVERSAL_FLAT_ENTITY_PROPERTIES_TO_COMPARE_AND_STRINGIFY should ma
       "name",
       "link",
       "nativePageKey",
+      "builtInSectionKey",
       "icon",
       "color",
+      "isActive",
+      "overrides",
     ],
-    "propertiesToStringify": [],
+    "propertiesToStringify": [
+      "overrides",
+    ],
   },
   "objectMetadata": {
     "propertiesToCompare": [
@@ -387,6 +392,7 @@ exports[`ALL_UNIVERSAL_FLAT_ENTITY_PROPERTIES_TO_COMPARE_AND_STRINGIFY should ma
   "roleTarget": {
     "propertiesToCompare": [
       "roleUniversalIdentifier",
+      "isSystemSideEffect",
       "userWorkspaceId",
       "apiKeyId",
       "webhookUniversalIdentifier",
@@ -606,6 +612,7 @@ exports[`ALL_UNIVERSAL_FLAT_ENTITY_PROPERTIES_TO_COMPARE_AND_STRINGIFY should ma
       "direction",
       "subFieldName",
       "fieldMetadataUniversalIdentifier",
+      "relationTargetFieldMetadataUniversalIdentifier",
       "viewUniversalIdentifier",
       "deletedAt",
     ],
@@ -624,7 +631,6 @@ exports[`ALL_UNIVERSAL_FLAT_ENTITY_PROPERTIES_TO_COMPARE_AND_STRINGIFY should ma
   },
   "workflow": {
     "propertiesToCompare": [
-      "jobConfig",
       "versionDefinitionHash",
       "name",
       "isSystem",
@@ -633,9 +639,7 @@ exports[`ALL_UNIVERSAL_FLAT_ENTITY_PROPERTIES_TO_COMPARE_AND_STRINGIFY should ma
       "lastPublishedVersionId",
       "lastPublishedCoreWorkflowVersionId",
     ],
-    "propertiesToStringify": [
-      "jobConfig",
-    ],
+    "propertiesToStringify": [],
   },
   "workflowVersion": {
     "propertiesToCompare": [
@@ -643,7 +647,7 @@ exports[`ALL_UNIVERSAL_FLAT_ENTITY_PROPERTIES_TO_COMPARE_AND_STRINGIFY should ma
       "status",
       "triggers",
       "steps",
-      "coreWorkflowId",
+      "coreWorkflowUniversalIdentifier",
     ],
     "propertiesToStringify": [
       "triggers",

@@ -5,6 +5,7 @@ import {
 } from '@/object-record/record-field/ui/types/FieldMetadata';
 
 import {
+  type FieldMetadataComputation,
   type FieldMetadataMultiItemSettings,
   type PartialFieldMetadataItemOption,
 } from 'twenty-shared/types';
@@ -19,6 +20,7 @@ export type FieldMetadataItem = Omit<
   Field,
   | '__typename'
   | 'applicationId'
+  | 'computation'
   | 'defaultValue'
   | 'objectMetadataId'
   | 'options'
@@ -30,6 +32,7 @@ export type FieldMetadataItem = Omit<
   __typename?: string;
   applicationId?: string;
   objectMetadataId?: string;
+  computation?: FieldMetadataComputation | null;
   defaultValue?: any;
   options?: FieldMetadataItemOption[] | null;
   relation?: FieldMetadataItemRelation | null;

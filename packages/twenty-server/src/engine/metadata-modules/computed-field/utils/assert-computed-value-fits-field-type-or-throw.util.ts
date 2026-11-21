@@ -21,12 +21,15 @@ const ASSIGNABLE_VALUE_TYPES_BY_FIELD_TYPE: Record<
   [TEXT]: [...COMPUTED_FIELD_VALUE_TYPES],
 };
 
+// `otherFieldTypes`: the types a kind of computation supports through its own rules, named in the error
 export const assertComputedValueFitsFieldTypeOrThrow = ({
   fieldType,
   valueType,
+  otherFieldTypes = [],
 }: {
   fieldType: FieldMetadataType;
   valueType: ComputedFieldValueType | undefined;
+  otherFieldTypes?: FieldMetadataType[];
 }): void => {
   const fieldValueType = COMPUTED_FIELD_VALUE_TYPES.find(
     (computedFieldValueType) => computedFieldValueType === fieldType,
@@ -34,7 +37,7 @@ export const assertComputedValueFitsFieldTypeOrThrow = ({
 
   if (!isDefined(fieldValueType)) {
     throw new ComputedFieldExpressionError(
-      `A computed field must be of type ${COMPUTED_FIELD_VALUE_TYPES.join(', ')}`,
+      `A computed field must be of type ${[...COMPUTED_FIELD_VALUE_TYPES, ...otherFieldTypes].join(', ')}`,
     );
   }
 

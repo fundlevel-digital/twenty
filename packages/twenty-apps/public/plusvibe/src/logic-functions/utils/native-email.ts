@@ -1,0 +1,375 @@
+import { isNonEmptyString } from '@sniptt/guards';
+import { RestApiClient } from 'twenty-client-sdk/rest';
+import {
+  createMessageChannel,
+  ingestMessages,
+  kv,
+  listConnections,
+  listMessageChannels,
+  updateMessageChannel,
+  type AppMessageChannel,
+} from 'twenty-sdk/logic-function';
+import { z } from 'zod';
+
+import { getWorkspacePreferences } from 'src/logic-functions/utils/preferences';
+import { extractEmailReply } from 'src/logic-functions/utils/email-content';
+import {
+  findSourceLeadIds,
+  syncEmailRelations,
+  syncSender,
+} from 'src/logic-functions/utils/sync-relations';
+import {
+  ACCOUNT_PROVIDER_NAMES,
+  ACCOUNT_PROVIDER_NAME,
+  USER_ACCOUNT_PROVIDER_NAME,
+} from 'src/constants/plusvibe';
+import {
+  API_KEY_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
+  USER_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
+  MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
+} from 'src/constants/universal-identifiers';
+import {
+  getAccountConnection,
+  getApiKeyFingerprint,
+} from 'src/logic-functions/utils/plusvibe-api';
+import {
+  recordId,
+  syncCampaign,
+  syncPerson,
+} from 'src/logic-functions/utils/sync-records';
+import { syncWorkspace } from 'src/logic-functions/utils/sync-workspace';
+import { type PlusvibeLead } from 'src/logic-functions/utils/normalize-event';
+import { syncSourceThread } from 'src/logic-functions/utils/sync-source-thread';
+
+const MAX_NATIVE_EMAIL_TEXT_LENGTH = 262_144;
+const MAX_NATIVE_EMAIL_SUBJECT_LENGTH = 998;
+
+export type NativeEmail = {
+  kind?: 'outreach' | 'unibox';
+  externalId: string;
+  workspaceId: string;
+  workspaceName: string;
+  sender: string;
+  leadEmail: string;
+  leadId?: string;
+  lead?: PlusvibeLead;
+  campaignId?: string;
+  campaignName?: string;
+  threadId?: string;
+  subject: string;
+  text: string;
+  receivedAt: string;
+  direction: 'IN' | 'OUT';
+  label?: string;
+};
+
+export const findMailConnection = async (
+  workspaceId?: string,
+  connectionId?: string,
+) => {
+  const account = await getAccountConnection(workspaceId, connectionId);
+  const fingerprint = await getApiKeyFingerprint(workspaceId, connectionId);
+  return (await listConnections({}))
+    .sort(
+      (first, second) =>
+        Number(second.providerName === 'plusvibe-mail') -
+        Number(first.providerName === 'plusvibe-mail'),
+    )
+    .find(
+      (connection) =>
+        ['plusvibe-mail', ...ACCOUNT_PROVIDER_NAMES].includes(
+          connection.providerName,
+        ) &&
+        connection.externalAccountId === fingerprint &&
+        (!account || connection.userWorkspaceId === account.userWorkspaceId) &&
+        (!ACCOUNT_PROVIDER_NAMES.includes(connection.providerName) ||
+          !account ||
+          connection.id === account.id) &&
+        connection.authFailedAt === null,
+    );
+};
+
+const ensureChannel = async (
+  connectedAccountId: string,
+  email: NativeEmail,
+  messagingProviderUniversalIdentifier: string,
+): Promise<AppMessageChannel> => {
+  const preferences = await getWorkspacePreferences(email.workspaceId);
+  const kind =
+    email.kind ??
+    (email.direction === 'OUT' && email.campaignId ? 'outreach' : 'unibox');
+  const channelHandle = `plusvibe:${kind}:${email.sender.trim().toLowerCase()}`;
+  const visibility =
+    kind === 'outreach' ? 'SHARE_EVERYTHING' : preferences.uniboxVisibility;
+  const channels = await listMessageChannels({ connectedAccountId });
+  const legacy = channels.find(
+    (channel) => channel.handle === email.sender.trim().toLowerCase(),
+  );
+  if (legacy && legacy.visibility !== preferences.uniboxVisibility)
+    await updateMessageChannel({
+      id: legacy.id,
+      visibility: preferences.uniboxVisibility,
+    });
+  const findExisting = async () =>
+    (await listMessageChannels({ connectedAccountId })).find(
+      (channel) => channel.handle === channelHandle,
+    );
+  const existing = channels.find((channel) => channel.handle === channelHandle);
+  if (existing) {
+    if (existing.visibility !== visibility)
+      return updateMessageChannel({ id: existing.id, visibility });
+    return existing;
+  }
+  try {
+    return await createMessageChannel({
+      connectedAccountId,
+      handle: channelHandle,
+      displayName: email.sender,
+      visibility,
+      messagingProvider: {
+        universalIdentifier: messagingProviderUniversalIdentifier,
+      },
+    });
+  } catch (error) {
+    const concurrent = await findExisting();
+    if (concurrent) return concurrent;
+    throw error;
+  }
+};
+
+const THREAD_SCHEMA = z.object({
+  updatedAt: z.string(),
+  plusvibeHasReplies: z.boolean().nullish(),
+  plusvibeReplyLabel: z.string().nullish(),
+  plusvibeReplyLabels: z.array(z.string()).nullish(),
+  plusvibeLatestActivityAt: z.string().nullish(),
+});
+
+export const mergeThreadState = (
+  current: z.infer<typeof THREAD_SCHEMA>,
+  email: Pick<NativeEmail, 'direction' | 'label' | 'receivedAt'>,
+) => {
+  const labels = new Set(current.plusvibeReplyLabels ?? []);
+  const label = email.label?.trim().toUpperCase();
+  if (isNonEmptyString(label))
+    labels.add(
+      [
+        'INTERESTED',
+        'NOT_INTERESTED',
+        'UNSUBSCRIBED',
+        'OUT_OF_OFFICE',
+      ].includes(label)
+        ? label
+        : 'OTHER',
+    );
+  const isLatest =
+    Date.parse(email.receivedAt) >=
+    Date.parse(current.plusvibeLatestActivityAt ?? '1970-01-01');
+  return {
+    plusvibeHasReplies:
+      current.plusvibeHasReplies === true || email.direction === 'IN',
+    plusvibeReplyLabels: [...labels],
+    plusvibeReplyLabel:
+      isLatest && isNonEmptyString(label)
+        ? label
+        : (current.plusvibeReplyLabel ?? ''),
+    plusvibeLatestActivityAt: isLatest
+      ? email.receivedAt
+      : current.plusvibeLatestActivityAt,
+  };
+};
+
+const getConversationId = (email: NativeEmail) =>
+  recordId(
+    'conversation',
+    email.workspaceId,
+    email.sender,
+    email.leadEmail,
+    email.campaignId ?? '',
+  );
+
+export const getCanonicalThreadId = async (email: NativeEmail) => {
+  const logicalId = getConversationId(email);
+  const key = `plusvibe:conversation:${logicalId}`;
+  const current = await kv.get<{
+    canonicalId: string;
+    providerThreadId?: string;
+  }>(key);
+  if (
+    current &&
+    (!current.providerThreadId ||
+      !email.threadId ||
+      current.providerThreadId === email.threadId)
+  ) {
+    if (email.threadId && !current.providerThreadId)
+      await kv.set(key, { ...current, providerThreadId: email.threadId });
+    return current.canonicalId;
+  }
+  if (current && email.threadId) return email.threadId;
+  const canonicalId = email.threadId ?? logicalId;
+  await kv.set(key, { canonicalId, providerThreadId: email.threadId });
+  return canonicalId;
+};
+
+export const updateThreadMetadata = async (
+  threadId: string,
+  fields: Record<string, unknown>,
+  email: Pick<NativeEmail, 'direction' | 'label' | 'receivedAt'>,
+) => {
+  const client = new RestApiClient({ runAs: 'application' });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await client.get<{ data: { messageThread: unknown } }>(
+      `/rest/messageThreads/${threadId}`,
+    );
+    const current = THREAD_SCHEMA.parse(response.data.messageThread);
+    const result = await client.post<{
+      data?: { updateMessageThreads: { id: string }[] };
+      errors?: unknown[];
+    }>('/graphql', {
+      query:
+        'mutation($id:UUID!,$updatedAt:DateTime!,$data:MessageThreadUpdateInput!){updateMessageThreads(filter:{id:{eq:$id},updatedAt:{eq:$updatedAt}},data:$data){id}}',
+      variables: {
+        id: threadId,
+        updatedAt: current.updatedAt,
+        data: { ...fields, ...mergeThreadState(current, email) },
+      },
+    });
+    if (result.errors?.length)
+      throw new Error('Could not update PlusVibe thread metadata');
+    if (result.data?.updateMessageThreads.length) return;
+  }
+  throw new Error(
+    'PlusVibe thread metadata changed concurrently; retry the delivery',
+  );
+};
+
+export const updateThreadLabel = async (
+  workspaceId: string,
+  threadId: string,
+  label: string,
+  occurredAt: string,
+) => {
+  const response = await new RestApiClient({ runAs: 'application' }).post<{
+    data?: {
+      plusvibeThreadConversations: {
+        edges: { node: { conversationId: string } }[];
+      };
+    };
+    errors?: unknown[];
+  }>('/graphql', {
+    query:
+      'query($thread:UUID!){plusvibeThreadConversations(filter:{threadId:{eq:$thread}}){edges{node{conversationId}}}}',
+    variables: { thread: recordId('thread', workspaceId, threadId) },
+  });
+  if (response.errors?.length)
+    throw new Error('Could not find the PlusVibe thread');
+  for (const { node } of response.data?.plusvibeThreadConversations.edges ?? [])
+    await updateThreadMetadata(
+      node.conversationId,
+      {},
+      { direction: 'OUT', label, receivedAt: occurredAt },
+    );
+};
+
+export const syncNativeEmail = async (email: NativeEmail) => {
+  z.email().parse(email.sender);
+  z.email().parse(email.leadEmail);
+  if (!Number.isFinite(Date.parse(email.receivedAt)))
+    throw new Error('Invalid PlusVibe email timestamp');
+  const connection = await findMailConnection(email.workspaceId);
+  if (!connection)
+    throw new Error(
+      'Connect PlusVibe emails in the app Connections tab before importing messages',
+    );
+  const channel = await ensureChannel(
+    connection.id,
+    email,
+    connection.providerName === USER_ACCOUNT_PROVIDER_NAME
+      ? USER_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER
+      : connection.providerName === ACCOUNT_PROVIDER_NAME
+        ? API_KEY_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER
+        : MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
+  );
+  const personId = await syncPerson(
+    {
+      ...email.lead,
+      email: email.leadEmail,
+      lead_id: email.leadId ?? email.lead?.lead_id,
+    },
+    email.workspaceId,
+    { direction: email.direction, senderEmail: email.sender },
+  );
+  const workspaceId = await syncWorkspace(
+    { _id: email.workspaceId, name: email.workspaceName },
+    true,
+  );
+  const campaignId = email.campaignId
+    ? await syncCampaign({
+        workspaceId: email.workspaceId,
+        workspaceName: email.workspaceName,
+        externalId: email.campaignId,
+        name: email.campaignName,
+      })
+    : undefined;
+  const nativeThreadExternalId = await getCanonicalThreadId(email);
+  const conversation = await kv.get<{ providerThreadId?: string }>(
+    `plusvibe:conversation:${getConversationId(email)}`,
+  );
+  const providerThreadId = email.threadId ?? conversation?.providerThreadId;
+  const sourceThreadId = providerThreadId
+    ? await syncSourceThread(email.workspaceId, providerThreadId)
+    : undefined;
+  const [message] = await ingestMessages({
+    messageChannelId: channel.id,
+    messages: [
+      {
+        externalId: `${email.workspaceId}:${email.externalId}`,
+        threadExternalId: `${email.workspaceId}:${nativeThreadExternalId}`,
+        subject: email.subject.slice(0, MAX_NATIVE_EMAIL_SUBJECT_LENGTH),
+        text: extractEmailReply(email.text).slice(
+          0,
+          MAX_NATIVE_EMAIL_TEXT_LENGTH,
+        ),
+        receivedAt: new Date(email.receivedAt),
+        participants: [
+          {
+            role: email.direction === 'OUT' ? 'FROM' : 'TO',
+            handle: channel.handle,
+            displayName: email.sender,
+          },
+          {
+            role: email.direction === 'OUT' ? 'TO' : 'FROM',
+            handle: email.leadEmail,
+            displayName: email.leadEmail,
+            ...(personId ? { personId } : {}),
+          },
+        ],
+      },
+    ],
+  });
+  if (!message)
+    throw new Error('Twenty did not acknowledge the imported message');
+  const client = new RestApiClient({ runAs: 'application' });
+  const senderId = await syncSender(email.workspaceId, email.sender);
+  const leadIds = await findSourceLeadIds(email, personId);
+  const common = {
+    source: 'PLUSVIBE',
+    plusvibeWorkspaceRecordId: workspaceId,
+    ...(campaignId ? { plusvibeCampaignRecordId: campaignId } : {}),
+  };
+  await client.patch(`/rest/messages/${message.messageId}`, {
+    ...common,
+    text: extractEmailReply(email.text).slice(0, MAX_NATIVE_EMAIL_TEXT_LENGTH),
+    plusvibeSenderRecordId: senderId,
+    ...(sourceThreadId ? { plusvibeThreadRecordId: sourceThreadId } : {}),
+  });
+  await updateThreadMetadata(message.messageThreadId, common, email);
+  await syncEmailRelations(
+    email,
+    message.messageThreadId,
+    senderId,
+    leadIds,
+    sourceThreadId,
+  );
+  return message;
+};

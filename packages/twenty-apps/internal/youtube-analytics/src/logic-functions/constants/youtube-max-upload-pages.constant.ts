@@ -1,1 +1,1 @@
-export const YOUTUBE_MAX_UPLOAD_PAGES = 20;
+export const YOUTUBE_MAX_UPLOAD_PAGES = 100;

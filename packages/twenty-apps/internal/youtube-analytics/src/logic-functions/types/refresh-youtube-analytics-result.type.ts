@@ -10,6 +10,6 @@ export type RefreshYoutubeAnalyticsResult = {
   missingIdentity: number;
   channelsNotFound: number;
   quota: YoutubeQuotaUsage & { total: number };
-  exhaustedKeyTools: string[];
+  unavailableCredentialIds: string[];
   failures: RefreshYoutubeAnalyticsFailure[];
 };

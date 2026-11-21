@@ -26,7 +26,14 @@ type RecordFormLayout = { tabs: RecordFormTab[] };
 
 type RecordFormFieldMetadataItem = Pick<
   FieldMetadataItem,
-  'id' | 'name' | 'type' | 'isActive' | 'isSystem' | 'isUIEditable' | 'settings'
+  | 'id'
+  | 'name'
+  | 'type'
+  | 'isActive'
+  | 'isSystem'
+  | 'isUIEditable'
+  | 'settings'
+  | 'computation'
 > & {
   morphRelations?:
     | Pick<FieldMetadataItemRelation, 'sourceFieldMetadata'>[]

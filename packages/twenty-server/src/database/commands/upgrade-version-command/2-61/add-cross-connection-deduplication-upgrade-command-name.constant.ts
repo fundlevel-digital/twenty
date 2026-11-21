@@ -1,0 +1,2 @@
+export const ADD_CROSS_CONNECTION_DEDUPLICATION_UPGRADE_COMMAND_NAME =
+  '2.61.0_AddCrossConnectionDeduplicationFastInstanceCommand_1795281277521';

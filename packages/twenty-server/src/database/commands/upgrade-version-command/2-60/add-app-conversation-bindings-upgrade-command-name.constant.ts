@@ -1,2 +1,0 @@
-export const ADD_APP_CONVERSATION_BINDINGS_UPGRADE_COMMAND_NAME =
-  '2.60.0_AddAppConversationBindingsFastInstanceCommand_1795270892361';

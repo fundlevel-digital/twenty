@@ -1,0 +1,1 @@
+export const UNIPILE_CHATS_PAGE_MAX_SIZE = 25;

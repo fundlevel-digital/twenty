@@ -17,3 +17,4 @@ Owner decisions for the Slack application, conversation views, test data and con
 | [0008](0008-contact-creation-and-employees.md)                | 2026-11-21 | Make contact creation configurable and exclude internal employees      | accepted |
 | [0009](0009-native-preferences-ui.md)                         | 2026-11-21 | Replace the plain Slack preferences form with native settings controls | accepted |
 | [0013](0013-open-slack-pull-request.md)                       | 2026-11-21 | Open the Slack work for review                                         | accepted |
+| [0014](0014-integrate-main-and-push.md)                       | 2026-11-21 | Integrate remote main, resolve conflicts, commit and push              | accepted |

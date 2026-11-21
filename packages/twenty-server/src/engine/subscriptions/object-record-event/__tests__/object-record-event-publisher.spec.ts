@@ -50,11 +50,11 @@ jest.mock(
   () => ({ WorkspaceCacheService: class {} }),
 );
 jest.mock(
-  'src/engine/api/graphql/graphql-query-runner/graphql-query-parsers/graphql-query.parser',
+  'src/engine/api/common/common-query-parsers/common-query.parser',
   () => ({
-    GraphqlQueryParser: class {
+    CommonQueryParser: class {
       parseSelectedFields() {
-        return { select: {}, relations: {} };
+        return { columns: {}, relations: {} };
       }
     },
   }),
@@ -99,6 +99,7 @@ const createFixture = ({
     objectMetadata,
     events: [
       {
+        eventId: 'event-id',
         recordId: 'message-id',
         properties: {
           before: {
@@ -383,6 +384,7 @@ describe('ObjectRecordEventPublisher subscriber visibility', () => {
     expect(event).toEqual({
       action: 'updated',
       objectNameSingular: 'message',
+      eventId: 'event-id',
       recordId: 'message-id',
       properties: {
         before: { id: 'message-id', messageThreadId: 'thread-id' },

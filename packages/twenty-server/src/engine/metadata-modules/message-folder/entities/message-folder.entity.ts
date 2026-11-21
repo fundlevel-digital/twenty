@@ -14,7 +14,7 @@ import {
 
 import { MessageFolderPendingSyncAction } from 'twenty-shared/types';
 
-import { ADD_APP_CONVERSATION_BINDINGS_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-60/add-app-conversation-bindings-upgrade-command-name.constant';
+import { ADD_APP_CONVERSATION_BINDINGS_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-61/add-app-conversation-bindings-upgrade-command-name.constant';
 import { WasIntroducedInUpgrade } from 'src/engine/core-modules/upgrade/decorators/was-introduced-in-upgrade.decorator';
 import { MessageChannelEntity } from 'src/engine/metadata-modules/message-channel/entities/message-channel.entity';
 import { WorkspaceRelatedEntity } from 'src/engine/workspace-manager/types/workspace-related-entity.type';

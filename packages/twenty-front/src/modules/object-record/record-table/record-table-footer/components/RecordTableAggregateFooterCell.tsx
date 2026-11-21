@@ -105,17 +105,14 @@ export const RecordTableAggregateFooterCell = ({
     isRecordTableColumnResizableComponentState,
   );
 
-  // A total over a lookup counts a related record once per row that links to it
+  const recordField = visibleRecordFields.find(findById(viewFieldId));
   const isLookupColumn = isDefined(
     columnDescriptorByRecordFieldId[viewFieldId]?.lookupTarget,
   );
-
   const isFooterReadOnly =
     (useIsRecordTableWidgetAggregateNonInteractive() ??
       !isRecordTableColumnResizable) ||
     isLookupColumn;
-
-  const recordField = visibleRecordFields.find(findById(viewFieldId));
 
   const isFirstCell = columnIndex === 0;
 

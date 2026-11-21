@@ -9,8 +9,8 @@ import {
 } from 'typeorm';
 import { type MessagingProviderConversationStyle } from 'twenty-shared/application';
 
-import { ADD_APP_CONVERSATION_BINDINGS_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-60/add-app-conversation-bindings-upgrade-command-name.constant';
-import { ADD_CROSS_CONNECTION_DEDUPLICATION_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-60/add-cross-connection-deduplication-upgrade-command-name.constant';
+import { ADD_APP_CONVERSATION_BINDINGS_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-61/add-app-conversation-bindings-upgrade-command-name.constant';
+import { ADD_CROSS_CONNECTION_DEDUPLICATION_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-61/add-cross-connection-deduplication-upgrade-command-name.constant';
 import { ADD_MARK_THREAD_AS_READ_TO_MESSAGING_PROVIDER_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-59/add-mark-thread-as-read-to-messaging-provider-upgrade-command-name.constant';
 import { ADD_MESSAGING_PROVIDER_CONVERSATION_STYLE_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-58/add-messaging-provider-conversation-style-upgrade-command-name.constant';
 import { ADD_MESSAGING_PROVIDER_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-52/add-messaging-provider-upgrade-command-name.constant';

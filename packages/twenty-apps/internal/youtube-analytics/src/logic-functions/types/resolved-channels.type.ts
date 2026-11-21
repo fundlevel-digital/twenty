@@ -4,5 +4,5 @@ export type ResolvedChannels = {
   channels: ChannelIdentity[];
   missingIdentity: string[];
   notFound: string[];
-  failed: { influencerId: string; reason: string }[];
+  failed: { recordId: string; reason: string }[];
 };

@@ -10,9 +10,9 @@ import { SOURCE_LOCALE } from 'twenty-shared/translations';
 import { serializePlainTextAsAdvancedTextEditorDocument } from '@/advanced-text-editor/utils/serializePlainTextAsAdvancedTextEditorDocument';
 import { InboxThreadListItem } from '@/inbox/components/InboxThreadListItem';
 import { setInboxSelectedChannelView } from '@/inbox/testing/setInboxSelectedChannelView';
-import { aiChatChannelsState } from '@/ai/states/aiChatChannelsState';
-import { aiChatDraftsByThreadIdState } from '@/ai/states/aiChatDraftsByThreadIdState';
-import { type AiChatThreadRecord } from '@/ai/types/AiChatThreadRecord';
+import { aiChatChannelsState } from '@/ai-chat/threads/states/aiChatChannelsState';
+import { aiChatComposerDraftsState } from '@/ai-chat/states/composer/aiChatComposerDraftsState';
+import { type AiChatThreadRecord } from '@/ai-chat/threads/types/AiChatThreadRecord';
 import {
   jotaiStore,
   resetJotaiStore,
@@ -31,7 +31,7 @@ jest.mock('@/inbox/components/InboxThreadActionsDropdown', () => ({
   InboxThreadActionsDropdown: () => null,
 }));
 
-jest.mock('@/ai/hooks/useAiChatThreadRename', () => ({
+jest.mock('@/ai-chat/threads/hooks/useAiChatThreadRename', () => ({
   useAiChatThreadRename: () => ({
     isRenaming: false,
     draftTitle: '',
@@ -134,7 +134,7 @@ describe('InboxThreadListItem', () => {
   it('shows an unsent draft in place of the last message', () => {
     const thread = buildThread({});
 
-    jotaiStore.set(aiChatDraftsByThreadIdState.atom, {
+    jotaiStore.set(aiChatComposerDraftsState.atom, {
       [thread.id]: serializePlainTextAsAdvancedTextEditorDocument(
         'Quote the **annual** plan',
       ),
@@ -152,7 +152,7 @@ describe('InboxThreadListItem', () => {
   it('shows no draft once the composer is cleared', () => {
     const thread = buildThread({});
 
-    jotaiStore.set(aiChatDraftsByThreadIdState.atom, { [thread.id]: '' });
+    jotaiStore.set(aiChatComposerDraftsState.atom, { [thread.id]: '' });
 
     renderListItem({ thread });
 

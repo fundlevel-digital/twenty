@@ -6,6 +6,8 @@ Updated 2026-11-21. This documents the Slack MVP in this branch and its local pr
 
 The VM preview runs the Twenty fork with the Slack app installed. Native channel/thread/message browsing, record Slack tabs, files, message formatting, sharing, and configurable contact creation are implemented. Synthetic tests and a private import of the actual #posthog channel are available.
 
+The source branch integrates main's Twenty 2.61 changes. The existing VM preview remains isolated on its verified 2.60 snapshot; it does not verify the merged 2.61 runtime. See the [main integration handoff](handoffs/2026-11-21-slack-main-integration.md) for conflict resolutions and fresh checks.
+
 The #posthog import contains **77 distinct messages in 14 conversations**: five multi-message threads and nine standalone posts. This is a connected-tool snapshot. It does not give the installed app a Slack OAuth token; continuous history import and event sync still need the app's own authorization. The linked Scalekit channel's membership was inspected to explain multiple-lead behavior; that channel was not imported.
 
 No commit, push or production deployment is implied by an implementation or test result in this document.
@@ -149,7 +151,7 @@ Verified in the local VM:
 - Native files, signed downloads, read-only thread behavior, record grouping and safe message formatting.
 - Native preference cards/switches, automatic saving, domain save/clear/reload, disconnected-account state, and light/dark rendering.
 
-The scoped server typecheck retains two previously observed errors outside these changes: GraphQL error `status` typing and missing semver declarations. Do not describe the full monorepo typecheck as passing.
+After integrating main, 330 focused tests pass: 77 app, 127 server, 46 frontend, 71 CLI and 9 SDK. App typecheck/lint and the scoped frontend typecheck pass. The expanded scoped server typecheck reports four diagnostics in files unchanged from main: missing semver declarations and error `status` typing. Do not describe the full monorepo typecheck as passing.
 
 Still needed for a live rollout: configure the installed app's own Slack credentials and callback/events URLs, complete native OAuth, verify live event delivery and membership changes, apply the fork's required upgrades to the target instance, and deploy the fork/app there. Use the current-version migration rules in Twenty's engineering instructions. Do not treat the VM snapshot or a connected Slack tool as native OAuth authorization.
 
@@ -157,4 +159,4 @@ The preview frontend, backend and worker are supervised. Their local scripts, cr
 
 ### Pull request readiness
 
-At PR preparation, main advanced to Twenty 2.61 while this branch and the running preview retain the tested 2.60 baseline. The review PR is a draft: reconcile the upstream changes and current-version upgrade requirements before merging. The separate Ruler, preview and decision documentation already on main must be retained during integration. Opening the PR does not deploy this work.
+Draft [PR #10](https://github.com/fundlevel-digital/twenty/pull/10) now integrates main at `a691dd35aa6db0df6315bd4555b9bbb038fa0fc1` (Twenty 2.61). Conflicts were resolved while retaining main's Ruler, documentation and messaging changes. Slack upgrade commands are registered under 2.61 with real timestamps after main's existing commands; historical 2.60 commands match main. Focused tests pass, but the merged runtime and live OAuth/event delivery still need verification before rollout. The PR remains a draft, and no live CRM deployment has been performed.

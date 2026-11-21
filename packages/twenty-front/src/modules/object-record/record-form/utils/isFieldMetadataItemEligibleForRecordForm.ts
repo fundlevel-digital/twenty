@@ -1,10 +1,19 @@
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
-import { isFieldMetadataEligibleForRecordForm } from 'twenty-shared/utils';
+import {
+  isComputedField,
+  isFieldMetadataEligibleForRecordForm,
+} from 'twenty-shared/utils';
 
 export const isFieldMetadataItemEligibleForRecordForm = (
   fieldMetadataItem: Pick<
     FieldMetadataItem,
-    'name' | 'type' | 'isActive' | 'isSystem' | 'isUIEditable' | 'settings'
+    | 'name'
+    | 'type'
+    | 'isActive'
+    | 'isSystem'
+    | 'isUIEditable'
+    | 'settings'
+    | 'computation'
   >,
 ): boolean =>
   isFieldMetadataEligibleForRecordForm({
@@ -12,6 +21,8 @@ export const isFieldMetadataItemEligibleForRecordForm = (
     fieldType: fieldMetadataItem.type,
     isActive: fieldMetadataItem.isActive === true,
     isSystem: fieldMetadataItem.isSystem === true,
-    isUIEditable: fieldMetadataItem.isUIEditable !== false,
+    isUIEditable:
+      !isComputedField(fieldMetadataItem) &&
+      fieldMetadataItem.isUIEditable !== false,
     relationType: fieldMetadataItem.settings?.relationType,
   });

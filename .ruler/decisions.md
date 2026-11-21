@@ -1,9 +1,16 @@
-# Documentation and decisions
+# Decisions And Operational Skills
 
-Use the `decisions` skill at `.agents/skills/decisions/SKILL.md` before work in an area and when Kareem settles, rejects, corrects or reverses a choice. Read `docs/DECISIONS.md`, then the relevant index under `docs/decisions/`.
+Use the [decisions skill](.agents/skills/decisions/SKILL.md) before substantial
+work and when Kareem settles, rejects, corrects or reverses a choice. Read
+[docs/DECISIONS.md](docs/DECISIONS.md), then the relevant area index. Record the
+exchange and evidence in root `docs/decisions/<area>/` in the same turn. Respect
+settled choices unless Kareem changes them; record reversals by supersession.
 
-Record decisions in the same turn, including Kareem's exact words and the exchange that led to the choice. Distinguish explicit owner choices from agent implementation decisions and observed behavior. Do not turn a question into approval or claim a proposed, unverified, or preview-only change is deployed.
+For setting up, restoring or diagnosing a remote Twenty preview, use the
+[Twenty remote preview skill](.agents/skills/twenty-remote-preview/SKILL.md).
 
-All decision records live under root `docs/decisions/<area>/`, with indexes and stable per-area numbering. Keep accepted records immutable; a reversal gets a new record that supersedes the old one. Keep credentials and customer message contents out of documentation.
+LinkedIn's index is `docs/decisions/linkedin/DECISIONS.md`; implementation and
+operating details remain in `packages/twenty-apps/internal/fundlevel-linkedin/`.
+Distinguish source implementation, preview verification and production changes.
 
-For Slack work, read `docs/slack-sync.md` and `docs/decisions/slack/DECISIONS.md`. Use the Slack area for Slack work. Do not import unrelated Sunny/mono decisions or infrastructure instructions.
+For Slack work, read `docs/slack-sync.md` and `docs/decisions/slack/DECISIONS.md`. Keep the distinction between the local snapshot, native Slack OAuth, and live deployment explicit.

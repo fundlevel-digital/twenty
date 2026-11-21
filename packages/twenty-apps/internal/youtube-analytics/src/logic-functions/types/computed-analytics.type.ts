@@ -1,4 +1,3 @@
-// Keys are the influencerAnalyticsEntry field names they are written to.
 export type ComputedAnalytics = {
   averageViews: number;
   averageEngagementPercentage: number;

@@ -52,6 +52,17 @@ const oneToManyFieldDefinition: FieldDefinition<FieldRelationMetadata> = {
 };
 
 describe('isRecordFieldReadOnly', () => {
+  it('keeps calculated values read-only even when the member can edit the field', () => {
+    expect(
+      isRecordFieldReadOnly({
+        ...baseParams,
+        fieldMetadataItem: {
+          ...baseParams.fieldMetadataItem,
+          computation: { kind: 'FORMULA', expression: 'budget * 2' },
+        },
+      }),
+    ).toBe(true);
+  });
   it('should return true when record is read-only', () => {
     expect(
       isRecordFieldReadOnly({ ...baseParams, isRecordReadOnly: true }),

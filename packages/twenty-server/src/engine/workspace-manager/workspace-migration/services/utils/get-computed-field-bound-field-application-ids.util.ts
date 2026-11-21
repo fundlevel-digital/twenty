@@ -6,7 +6,7 @@ import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-m
 type ComputedFieldCandidate = { computation?: unknown };
 
 // Bindings are no foreign key: the applications of the fields a computation reads are not found through relations.
-// Follows the computed fields it reads, which validation evaluates too.
+// Validation also checks computations that depend on an edited or deleted field.
 export const getComputedFieldBoundFieldApplicationIds = ({
   flatFieldMetadataMaps,
   fieldMetadataOperations,
@@ -25,6 +25,7 @@ export const getComputedFieldBoundFieldApplicationIds = ({
     | {
         flatEntityToCreate: Partial<Record<string, ComputedFieldCandidate>>;
         flatEntityToUpdate: Partial<Record<string, ComputedFieldCandidate>>;
+        flatEntityToDelete?: Partial<Record<string, unknown>>;
       }
     | undefined;
 }): string[] => {
@@ -41,6 +42,26 @@ export const getComputedFieldBoundFieldApplicationIds = ({
     ...Object.values(fieldMetadataOperations.flatEntityToCreate),
     ...Object.values(fieldMetadataOperations.flatEntityToUpdate),
   ];
+
+  const changedFieldUniversalIdentifiers = new Set([
+    ...Object.keys(fieldMetadataOperations.flatEntityToUpdate),
+    ...Object.keys(fieldMetadataOperations.flatEntityToDelete ?? {}),
+  ]);
+
+  for (const field of Object.values(
+    flatFieldMetadataMaps.byUniversalIdentifier,
+  )) {
+    if (
+      isDefined(field) &&
+      Object.values(field.computation?.bindings ?? {}).some(
+        (boundFieldUniversalIdentifier) =>
+          changedFieldUniversalIdentifiers.has(boundFieldUniversalIdentifier),
+      )
+    ) {
+      applicationIds.add(field.applicationId);
+      fieldsToVisit.push(field);
+    }
+  }
 
   for (const field of fieldsToVisit) {
     if (!isFieldMetadataComputation(field?.computation)) {

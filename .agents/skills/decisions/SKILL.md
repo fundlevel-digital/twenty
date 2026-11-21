@@ -1,97 +1,101 @@
 ---
 name: decisions
-description: "Kareem's auditable decisions: numbered records and area indexes under root docs/decisions, with docs/DECISIONS.md as the top-level index. Load before work in any area, before reopening a settled question, and whenever Kareem settles, reverses or confirms a choice."
+description: Record Kareem's decisions with exact quotes, the exchange, evidence and outcomes under root docs/decisions. Read before substantial work, reopening a settled question, or recording an approval, rejection, correction or reversal.
 ---
 
-# Decision records
+# Decision Records
 
-Kareem wants every decision he makes, and the exchange that led to it, written down so it can be audited later and never argued again by an agent that did not see it (2026-11-18: "I want this to basically be super auditable; so like every single decision and back and forth we have could be there"). This is not only for engineering: GTM, campaigns, lists, copy, landing pages, spend, vendors and process decisions all go here.
+Read `docs/DECISIONS.md`, then the relevant area's index and records before
+working. Follow settled choices unless Kareem changes them. A record supplies
+context, not permission for a new production action.
 
-## Where they live
+This adapts the centralized layout from
+[`fundlevel-digital/mono`](https://github.com/fundlevel-digital/mono/blob/main/.agents/skills/decisions/SKILL.md).
+The earlier `sunny` skill colocates indexes with packages; use the centralized
+layout here.
 
-All decision records and indexes live under the repository root's `docs` folder.
-Read `docs/DECISIONS.md` first, then the relevant area's index.
+## Placement
 
-| Area | Index | Records |
-| --- | --- | --- |
-| Whole repo | `docs/DECISIONS.md` | `docs/decisions/NNNN-title.md` |
-| Trigger.dev jobs | `docs/decisions/packages/jobs/sunny/DECISIONS.md` | `docs/decisions/packages/jobs/sunny/NNNN-title.md` |
-| Lead database | `docs/decisions/packages/db/lead/DECISIONS.md` | `docs/decisions/packages/db/lead/NNNN-title.md` |
-| GTM client | `docs/decisions/gtm/<brand>/client-work/<client>/DECISIONS.md` | same directory |
-| Consolidation | `docs/decisions/consolidation/DECISIONS.md` | same directory |
+All decision records and indexes live in the repository root's `docs` directory:
 
-Keep each area's existing numbers. A new area gets an index under
-`docs/decisions/<area>/`; do not create decision folders or indexes in packages,
-apps or GTM workspaces. Non-decision documentation, skills and rules may be
-colocated with their consuming package or workspace.
+| Scope             | Index                                                              | Records                        |
+| ----------------- | ------------------------------------------------------------------ | ------------------------------ |
+| Repository        | `docs/DECISIONS.md`                                                | `docs/decisions/NNNN-title.md` |
+| YouTube Analytics | `docs/decisions/youtube-analytics/DECISIONS.md`                    | Same directory                 |
+| LinkedIn Sync     | `docs/decisions/linkedin/DECISIONS.md`                             | Same directory                 |
+| PlusVibe          | `docs/decisions/packages/twenty-apps/public/plusvibe/DECISIONS.md` | Same directory                 |
+| Slack Sync        | `docs/decisions/slack/DECISIONS.md`                                | Same directory                 |
+| New area          | `docs/decisions/<area>/DECISIONS.md`                               | Same directory                 |
 
-## Before working
+Keep operational instructions beside their owning package or skill. Link to
+them from records rather than copying a runbook into every decision. Record a
+cross-area decision once and link it from the other area indexes.
 
-Read the root index and the relevant area index under `docs/decisions/`.
-Follow settled decisions unless Kareem changes them. Link cross-area decisions
-instead of duplicating their records.
+## When To Record
 
-## When to write a record
+Write a record in the same turn when Kareem chooses or rejects an option,
+approves a plan, corrects a requirement, or reverses a settled choice. Group
+small command approvals into the larger decision they serve. For list-building
+work, record the criteria, changes, counts and spend even without a debate.
 
-Whenever Kareem:
+Use the actual conversation, not a reconstructed dialogue. Quote Kareem exactly,
+including typos. Summarize the agent's findings and proposals in a line each.
+If older messages are unavailable, identify the gap and cite the available
+handoff or record; do not invent a quote or attribute an inferred reason to him.
 
-- picks between options, approves a plan, a spend, a run size or a merge pattern;
-- corrects how something was done or says how he wants it done from now on;
-- rejects a proposal (a rejection is a decision too: "we will not do X");
-- reverses or changes an earlier decision.
+Keep credentials, private sharing links and customer record contents out of
+records. Use counts and non-sensitive identifiers for verification. Separate
+implemented, merged, deployed and verified states, with dates and source links.
+Do not report a preserved timestamp as proof of a fresh calculation.
 
-And for every list build, whether or not anything was debated (Kareem, 2026-11-18: "u should keep decision logs for list builds and stuff too"): one record per list or batch of lists, under `docs/decisions/gtm/<brand>/client-work/<client>/`, holding the request in his words, every criterion and filter as built (titles kept and excluded, size bands, geography, exclusions, how one person per company was picked, checks such as an agency review), the list name and the migration that made it, the counts at each step, and what was spent. A rebuild or a change of criteria is a new record that supersedes it.
+## Record Format
 
-Write it in the same turn, before moving on. Small one-off approvals of a single command ("yeah run it") belong in the record of the larger decision they serve, as a line in its exchange, not in a record of their own.
-
-## The record
-
-File: `docs/decisions/<area>/NNNN-short-title.md`, numbered from 0001 in each area, never reused.
+Number from `0001` within each area, using the next unused number. Never reuse
+a number or rewrite an accepted record. To reverse a decision, add a new record,
+change only the old record's status to `superseded by NNNN`, and update both
+index entries. Commit the record with its work, or separately for documentation.
 
 ```markdown
-# NNNN. Title in plain words
+# NNNN. Title In Plain Words
 
-- Date: YYYY-MM-DD (the day it was settled)
+- Date: YYYY-MM-DD
 - Status: accepted | superseded by NNNN | reverted on YYYY-MM-DD
 - Decided by: Kareem
-- Area: <folder>
-- Related: <other records, by area and number>
+- Area: <area>
+- Related: <links, if any>
 
 ## Context
-What the situation was and what question had to be answered.
+
+The situation and the question to settle.
 
 ## Exchange
-The back-and-forth, in order, dated. Kareem's words are quoted exactly, typos included. The agent's proposals and findings are summarised in a line each.
-- YYYY-MM-DD Kareem: "..."
-- YYYY-MM-DD Agent: proposed ...
-- YYYY-MM-DD Kareem: "..."
+
+- YYYY-MM-DD Kareem: "Exact words."
+- YYYY-MM-DD Agent: summarized finding or proposal.
+- YYYY-MM-DD Kareem: "Exact correction or approval."
 
 ## Decision
-What was decided, stated so someone else can follow it.
+
+The resulting choice and what it rules out.
 
 ## Why
-The reasons, from Kareem's words and the evidence.
+
+Reasons stated by Kareem or supported by cited evidence; label inferences.
 
 ## Consequences
-What changed because of it: files, tasks, migrations, commits, PRs, runs, lists, money spent. What it rules out.
+
+Resulting behavior, files, migrations, commits, deployments or costs.
 
 ## Evidence
-Numbers, query results, test runs, vendor answers that informed it, with where they came from.
+
+Sources, checks and remaining uncertainty.
 ```
 
-Rules for records:
-
-- Kareem's words are quoted exactly. Do not paraphrase them into something stronger or weaker. If profanity is part of the point, keep it.
-- No people's names, emails, phones or LinkedIn URLs from the data (the lead database's people). Counts and ids only. Company names are fine when they illustrate the decision.
-- Never rewrite an accepted record. To change a decision, write a new record, set the old one's Status to `superseded by NNNN` (the only edit allowed), and add a line to both index entries.
-- Commit the record with the work it governs, or on its own if no code changed.
-
-## The index
-
-`DECISIONS.md` in the area directory under root `docs/decisions/`: a one-line description of the area, then a table, newest last:
+Each area index starts with a one-line description followed by this table,
+oldest first. Links are relative to the index's directory:
 
 ```markdown
-| # | Date | Decision | Status |
-| --- | --- | --- | --- |
-| [0001](decisions/0001-short-title.md) | 2026-11-18 | One line saying what was decided | accepted |
+| #                           | Date       | Decision           | Status   |
+| --------------------------- | ---------- | ------------------ | -------- |
+| [0001](0001-short-title.md) | YYYY-MM-DD | The settled choice | accepted |
 ```

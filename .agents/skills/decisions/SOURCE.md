@@ -5,3 +5,5 @@ Installed on 2026-11-21 with the Codex skill-installer Git workflow from `fundle
 Upstream reference: [mono commit 94038532154c12f58e51e01a99a0769d1a169f6e](https://github.com/fundlevel-digital/mono/tree/94038532154c12f58e51e01a99a0769d1a169f6e/.agents/skills/decisions).
 
 `SKILL.md` is the shared guide. Its area table contains examples from mono; Twenty's actual area indexes are listed in [docs/DECISIONS.md](../../../docs/DECISIONS.md). Ruler rule ownership follows mono's `.ruler/authoring.md`; Twenty's existing engineering rules and MCP configuration remain under their original scope. Claude and Pi aliases point here; other agents read `.agents/skills` directly.
+
+During integration with main on 2026-11-21, the canonical guide was reconciled with main’s Twenty-specific adaptation, preserving all existing area mappings and adding Slack Sync. The original mono pin records the initial import, not a claim that the adapted local file remains byte-identical.
