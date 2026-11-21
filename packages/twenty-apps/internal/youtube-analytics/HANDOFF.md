@@ -1,5 +1,37 @@
 # Handoff: YouTube Analytics app (session fork "Twenty - YouTube Analytics Sync")
 
+## Current State: 2026-11-21, Deployed And Verified
+
+The native app and channel avatars are merged and live. Read the
+[YouTube decision index](../../../../docs/decisions/youtube-analytics/DECISIONS.md)
+for the owner's requests, reversals, implementation choices and evidence. The
+older continuation notes below preserve history: their statements about
+production being unchanged, CSV controls or a 266-day limit are superseded.
+
+- App: [YouTube Channels](https://crm-login.fundlevel.co/objects/youtubeChannels).
+- [PR #4](https://github.com/fundlevel-digital/twenty/pull/4): native API-key
+  pool, one YouTube Channels object, configurable metric columns, validated
+  1–366-day tags and App Preferences. Migrated all 90 enabled legacy records,
+  preserving the originals, then verified fresh real calculations.
+- [PR #5](https://github.com/fundlevel-digital/twenty/pull/5): native channel
+  profile-photo avatars. Main commit
+  `1dc1d4319a3397b5e34ff866fe2dbf682cdbf43d`; production app content hash
+  `0fe99aae1dd1066076eaa9ea6912089209b4233c12868784fe922abb91b51918`.
+- Final batch, 2026-11-21 16:14:59.927–16:16:05.442 UTC: 90 selected / 90 written /
+  zero failures or avatar-import warnings. Independent reads verified 90 native
+  avatars, 90 Ready, 90 fresh timestamps and zero errors. The sample's unchanged
+  photo reused its file. A subsequent live plan reported zero pending changes.
+- Validation: 142 tests, direct TypeScript, lint, CLI build/plan and real preview
+  upload/browser checks passed at the avatar release.
+- The 90 records are the migrated enabled population, not an app cap. Daily cron
+  remains 05:00 UTC. Production has a native connection added by the owner.
+- For a new or recovered VM preview, use the
+  [remote preview skill](../../../../.agents/skills/twenty-remote-preview/SKILL.md).
+  Old `.context/` paths and process IDs below are historical workspace artifacts,
+  not reusable configuration or a promise that a preview is currently running.
+
+## Historical Handoff And Continuations
+
 Written 2026-11-20. Branch `fundlevel/youtube-analytics-app`, based on `91e6edbf31` ("Add the YouTube Analytics app"). That commit is also on `main`, so `main` already holds the app.
 
 ## Continuation: 2026-11-21, App Preferences Placement
