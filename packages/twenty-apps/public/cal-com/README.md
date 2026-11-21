@@ -172,8 +172,10 @@ to 28 People without assigning repeated emails to multiple Person records.
 
 [PR #16](https://github.com/fundlevel-digital/twenty/pull/16) is merged, and the
 app from commit `a07620c917d9b2df5c036df9c58665b7c623fe1a` is installed at
-`https://crm-login.fundlevel.co`. Both live OAuth variables are filled. Live
-account consent and imports remain pending verification; the verified 100-booking
-import and 39 Person links above belong to the isolated preview. See the
-[release handoff](../../../../docs/handoffs/2026-11-21-cal-com-preview.md#production-release)
-for deployment evidence and remaining setup.
+`https://crm-login.fundlevel.co`. Live OAuth, webhook registration and booking
+imports are verified. At 23:43 UTC on 2026-11-21, the latest sync succeeded;
+100 booking records were present, with 97 linked to People. The owner selected
+three booking links and enabled missing-Person creation. Signed webhook delivery
+and token refresh remain unverified. See the
+[release handoff](../../../../docs/handoffs/2026-11-21-cal-com-preview.md#completed-live-connection-verification)
+for deployment evidence and verification details.

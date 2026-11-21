@@ -1,8 +1,8 @@
 # Cal.com OAuth App And Preview
 
-Date: 2026-11-21. The app is merged and installed in the live CRM. Preview
-OAuth and imports are verified. Live credentials are filled, but live account
-consent and imports remain unverified; see the production release section below.
+Date: 2026-11-21. The app is merged and installed in the live CRM. Live OAuth,
+webhook registration and booking imports are verified; see the production release
+section and completed live connection verification below.
 Earlier sections preserve the successive preview verification stages.
 
 ## Implementation
@@ -274,3 +274,29 @@ all history and matching existing People, with missing-Person creation disabled.
 After connecting live, review **Configure Cal.com**, save the desired links and
 contact preferences, then run **Sync Now**. Existing imported records are never
 deleted when the selection changes.
+
+
+## Completed Live Connection Verification
+
+At 23:43 UTC on 2026-11-21, Kareem confirmed: "It returned successfully and shows
+connected". Fresh API and read-only aggregate checks now confirm one shared live
+connection, with no recorded authentication failure. The app's registration state
+is active and contains a saved remote webhook ID. OAuth-authenticated event-type
+listing returns eight links. This supersedes the earlier zero-connection snapshot;
+no source fix or redeployment was required.
+
+The owner's saved live preferences select three booking links, all history,
+Create Missing People enabled, all booking answers and no custom answer mappings.
+Sync is enabled. The latest run completed with phase `SUCCESS` at
+`2026-11-21T23:43:20.073Z`, processing 74 bookings under those preferences.
+The CRM contains 100 booking records in total; 97 are linked to 69 distinct People.
+These are link counts, not a count of People newly created by this import.
+Bookings imported before a watched-link selection remain preserved, so the total
+can exceed the latest selected-link sync count.
+
+Live account consent, token-authenticated API calls, webhook registration and
+initial/repeated imports are now verified. Signed delivery from Cal.com and token
+refresh were not exercised. No credentials or customer record contents were
+included in this verification or documentation. Hindsight remained unavailable
+because this workspace lacks its private profile; durable findings are recorded
+here instead.
