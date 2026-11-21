@@ -99,7 +99,7 @@ The existing native LinkedIn connection belongs to the separate official app,
 not LinkedIn Sync. That app was not uninstalled because its hooks can delete
 upstream accounts.
 
-The owner was asked to connect LinkedIn Sync through its native preferences.
+The owner intends to connect LinkedIn Sync later. [Decision 0006](../decisions/0006-connect-linkedin-after-the-rollout.md) defers native connection and its dependent history migration; no immediate owner action is required for the deployment.
 One legacy account has an assigned member and 584 messages. The second has no
 assigned owner and 237 messages; the owner was asked to choose its rightful
 member. No ownership was guessed. Native privacy setup and multi-member access
