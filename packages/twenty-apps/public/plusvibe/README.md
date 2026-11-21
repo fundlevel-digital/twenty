@@ -20,15 +20,25 @@ Open the app's Settings tab and follow the three steps:
    key and stores it encrypted. It validates the key, creates the messaging
    connection, and returns to setup. No PlusVibe OAuth redirect or app-variable
    key entry is involved.
-2. **Choose workspaces.** No workspace is selected automatically.
+2. **Choose workspaces.** Choose a connection to manage its workspace selection.
+   No workspace is selected automatically. Use **Add connection** for another key.
 3. **Enable sync.** This saves the selection, registers webhooks, and queues the
    initial import. Imported emails are shared with the Twenty workspace through
    channels with `SHARE_EVERYTHING` visibility.
 
 Change the selection with **Save changes**, refresh history with **Import again**,
 or use **Stop syncing** to keep existing records while stopping future imports.
-Stop syncing before reconnecting with a different account. Reconnecting an
-existing native account updates that connection instead of adding a duplicate.
+Each API key has its own native connection row, encrypted credential, and
+workspace selection. Adding a connection leaves other connections syncing.
+**Manage connection** opens Twenty's native detail page for replacement/removal.
+Stop that connection's sync before replacing its key. Reconnecting an existing
+native account updates that connection instead of adding a duplicate.
+
+Requests, webhook checks, and native email channels resolve the key assigned to
+the source workspace. A workspace can sync through one connection at a time;
+stop its current selection before assigning it to another key. A revoked or
+removed key never sends that workspace's requests through an unrelated key.
+Existing workspace, campaign, lead, and message identities remain stable.
 A daily refresh also runs at 03:00 UTC.
 
 Existing installs reuse their approved messaging connection and saved key;
@@ -44,8 +54,16 @@ legacy messaging channels to avoid duplicating already imported messages.
 ## Records and filters
 
 - **People:** new contacts receive names, primary email, and job title. Existing
-  contacts match by primary email and retain their fields. Source lead mappings
-  keep alternate-address replies linked to the same person.
+  contacts match by primary or additional email, case-insensitively, and retain
+  their fields. Matches are verified against the full address. Ambiguous matches
+  keep the source Lead as Needs Review and do not create another Person. A
+  selected Lead Person takes precedence over the previous source lead mapping;
+  existing mappings keep alternate-address replies linked to the same Person.
+- **PlusVibe Leads:** workspace-scoped source lead ID, name, email, Status select,
+  raw status, Lead Label, Person Match, and Last Synced At. Each lead has a
+  many-to-one Person relation; People expose the inverse PlusVibe Leads list.
+  Leads also relate to their Workspace and Campaign. Partial email events do not
+  overwrite a fully imported lead profile.
 - **PlusVibe workspaces:** source workspace ID, name, and whether sync is selected.
 - **PlusVibe campaigns:** source campaign ID, name, Status select, and Workspace
   relation. Status choices are Draft, Active, Paused, Completed, Archived, and
@@ -114,7 +132,7 @@ say so. Execution logs provide per-job details. Both current paginated API
 responses and legacy array pages are supported. Legacy lists continue using the
 last record ID until an empty page, with repeated cursors rejected.
 
-**Stop syncing** clears the selection. Queued jobs and deliveries check it before
+**Stop syncing** clears the selected connection’s workspace selection. Queued jobs and deliveries check it before
 processing, and existing CRM records remain. Provider webhooks are retained for
 reuse. The importer does not send mail or change campaigns or leads in PlusVibe;
 reply sending from Twenty is not enabled by this messaging provider.

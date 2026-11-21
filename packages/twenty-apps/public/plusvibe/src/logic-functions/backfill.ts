@@ -33,6 +33,7 @@ import {
 } from 'src/logic-functions/utils/native-email';
 import { mapEmail } from 'src/logic-functions/utils/map-email';
 import { enqueueLeadEmails } from 'src/logic-functions/lead-emails';
+import { AmbiguousPersonMatchError } from 'src/logic-functions/errors/ambiguous-person-match.error';
 
 const CAMPAIGN_SCHEMA = z.union([
   z.object({
@@ -75,7 +76,10 @@ export const backfillHandler = async (
     !registration
   )
     return { skipped: true };
-  if (registration.apiKeyFingerprint !== (await getApiKeyFingerprint()))
+  if (
+    registration.apiKeyFingerprint !==
+    (await getApiKeyFingerprint(registration.workspaceId))
+  )
     return { skipped: true };
   if (state.phase === 'failed') return { skipped: true };
   if (state.phase !== phase || (state.cursor ?? null) !== cursor) {
@@ -88,7 +92,7 @@ export const backfillHandler = async (
       { _id: workspaceId, name: registration.workspaceName },
       true,
     );
-    const connection = await findMailConnection();
+    const connection = await findMailConnection(workspaceId);
     if (['emails', 'archivedEmails'].includes(state.phase) && !connection) {
       await kv.set(key, {
         ...state,
@@ -134,7 +138,12 @@ export const backfillHandler = async (
         if (lead.workspace_id && lead.workspace_id !== workspaceId)
           throw new Error('PlusVibe returned a foreign workspace lead');
         if (!z.email().safeParse(lead.email).success) continue;
-        await syncPerson(lead, workspaceId);
+        try {
+          await syncPerson(lead, workspaceId, { isFullLeadRecord: true });
+        } catch (error) {
+          if (error instanceof AmbiguousPersonMatchError) continue;
+          throw error;
+        }
         if (connection && lead.email) {
           await enqueueLeadEmails(
             { workspaceId, runId, leadEmail: lead.email },

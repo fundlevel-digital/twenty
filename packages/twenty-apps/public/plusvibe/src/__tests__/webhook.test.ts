@@ -84,7 +84,7 @@ describe('PlusVibe webhook processing', () => {
     expect(syncActivity).not.toHaveBeenCalled();
   });
 
-  it('ignores deliveries from unknown registrations and replaced keys', async () => {
+  it('ignores unknown registrations and fails closed when the assigned key is missing', async () => {
     expect(
       await webhookHandler({
         ...event(),
@@ -92,7 +92,9 @@ describe('PlusVibe webhook processing', () => {
       }),
     ).toEqual({ skipped: true });
     vi.stubEnv('PLUSVIBE_API_KEY', 'replacement');
-    expect(await webhookHandler(event())).toEqual({ skipped: true });
+    await expect(webhookHandler(event())).rejects.toThrow(
+      'assigned to this workspace',
+    );
     expect(syncActivity).not.toHaveBeenCalled();
   });
 

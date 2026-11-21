@@ -44,6 +44,7 @@ const StyledHint = styled.span`
 
 export const PlusvibeSettings = () => {
   const [status, setStatus] = useState<PlusvibeSettingsStatus>();
+  const [activeAccountId, setActiveAccountId] = useState<string>();
   const [workspaceIds, setWorkspaceIds] = useState<string[]>([]);
   const location = useLocation();
   const [isBusy, setIsBusy] = useState(true);
@@ -55,7 +56,12 @@ export const PlusvibeSettings = () => {
       '/s/plusvibe/status',
     );
     setStatus(result);
-    setWorkspaceIds(result.selectedWorkspaceIds);
+    setWorkspaceIds(
+      (
+        result.accounts?.find((value) => value.id === activeAccountId) ??
+        result.accounts?.[0]
+      )?.selectedWorkspaceIds ?? result.selectedWorkspaceIds,
+    );
   };
 
   useEffect(() => {
@@ -65,7 +71,10 @@ export const PlusvibeSettings = () => {
       .then((result) => {
         if (cancelled) return;
         setStatus(result);
-        setWorkspaceIds(result.selectedWorkspaceIds);
+        setWorkspaceIds(
+          result.accounts?.[0]?.selectedWorkspaceIds ??
+            result.selectedWorkspaceIds,
+        );
       })
       .catch(() => {
         if (!cancelled)
@@ -102,7 +111,20 @@ export const PlusvibeSettings = () => {
     }
   };
 
-  const connect = async () => {
+  const account =
+    status?.accounts?.find((value) => value.id === activeAccountId) ??
+    status?.accounts?.[0];
+  const accountStatus =
+    account && status
+      ? {
+          ...status,
+          ...account,
+          accountConnectionId: account.id,
+          isApiKeySet: true,
+        }
+      : status;
+
+  const connect = async (reconnectingConnectedAccountId?: string) => {
     const client = new MetadataApiClient();
     const result = await client.query({
       findOneApplication: {
@@ -119,22 +141,34 @@ export const PlusvibeSettings = () => {
     await navigate(
       AppPath.SettingsCatchAll,
       { '*': `applications/${applicationId}/connect/${ACCOUNT_PROVIDER_NAME}` },
-      status?.accountConnectionId
-        ? { reconnectingConnectedAccountId: status.accountConnectionId }
+      reconnectingConnectedAccountId
+        ? { reconnectingConnectedAccountId }
         : undefined,
       { state: { returnTo }, surface: 'main' },
     );
   };
 
+  const selectedWorkspaceIds = account
+    ? workspaceIds.filter((id) =>
+        account.workspaces.some((workspace) => workspace._id === id),
+      )
+    : workspaceIds;
   const saveSelection = async (selection: string[]) => {
     await new RestApiClient().post('/s/plusvibe/workspaces', {
-      workspaceIds: selection,
+      workspaceIds: account
+        ? selection.filter((id) =>
+            account.workspaces.some((workspace) => workspace._id === id),
+          )
+        : selection,
+      ...(account ? { accountConnectionId: account.id } : {}),
     });
   };
   const isConnected = Boolean(
-    status?.isApiKeySet && status.isMailConnected && !status.hasAccountError,
+    accountStatus?.isApiKeySet &&
+    accountStatus.isMailConnected &&
+    !accountStatus.hasAccountError,
   );
-  const hasSelection = (status?.selectedWorkspaceIds.length ?? 0) > 0;
+  const hasSelection = (accountStatus?.selectedWorkspaceIds.length ?? 0) > 0;
 
   return (
     <StyledStack>
@@ -143,7 +177,7 @@ export const PlusvibeSettings = () => {
           {error}
         </InlineBanner>
       )}
-      {status?.hasAccountError && (
+      {accountStatus?.hasAccountError && (
         <InlineBanner status="error" layout="compact">
           {t(
             'Could not verify the PlusVibe account. Refresh or reconnect to continue.',
@@ -159,20 +193,32 @@ export const PlusvibeSettings = () => {
         <Section.Header
           title={t('1. Connect PlusVibe')}
           description={t(
-            'Enter your PlusVibe API key once, then choose the workspaces to sync.',
+            'Add one connection per API key, then choose the workspaces each connection will sync.',
           )}
         />
         <StyledStack>
           <StyledRow>
             {isConnected && <span>{t('PlusVibe connected.')}</span>}
             <Button
-              variant={isConnected ? 'outline' : 'solid'}
-              color={isConnected ? 'neutral' : 'accent'}
-              disabled={isBusy || hasSelection}
-              onClick={() => runAction(connect)}
+              variant="solid"
+              color="accent"
+              disabled={isBusy}
+              onClick={() => runAction(() => connect())}
             >
-              {isConnected ? t('Reconnect PlusVibe') : t('Connect PlusVibe')}
+              {status?.isApiKeySet
+                ? t('Add connection')
+                : t('Connect PlusVibe')}
             </Button>
+            {accountStatus?.isApiKeySet && (
+              <Button
+                disabled={isBusy || hasSelection}
+                onClick={() =>
+                  runAction(() => connect(accountStatus.accountConnectionId))
+                }
+              >
+                {t('Reconnect PlusVibe')}
+              </Button>
+            )}
             {!isConnected && hasSelection && (
               <Button
                 disabled={isBusy}
@@ -190,9 +236,59 @@ export const PlusvibeSettings = () => {
               {t('Refresh')}
             </Button>
           </StyledRow>
+          {status?.accounts?.map((connection) => (
+            <StyledWorkspaceRow key={connection.id}>
+              <Button
+                variant={account?.id === connection.id ? 'soft' : 'outline'}
+                aria-pressed={account?.id === connection.id}
+                disabled={isBusy}
+                onClick={() => {
+                  setActiveAccountId(connection.id);
+                  setWorkspaceIds(connection.selectedWorkspaceIds);
+                }}
+              >
+                {connection.name}
+              </Button>
+              <StyledHint>
+                {connection.hasAccountError
+                  ? t('Needs reconnection')
+                  : t('Connected')}{' '}
+                · {connection.selectedWorkspaceIds.length}{' '}
+                {t('selected workspaces')}
+              </StyledHint>
+              <Button
+                disabled={isBusy}
+                onClick={() =>
+                  runAction(async () => {
+                    const result = await new MetadataApiClient().query({
+                      findOneApplication: {
+                        __args: {
+                          universalIdentifier: APPLICATION_UNIVERSAL_IDENTIFIER,
+                        },
+                        id: true,
+                      },
+                    });
+                    const applicationId = result.findOneApplication?.id;
+                    if (!applicationId)
+                      throw new Error('PlusVibe application is not installed');
+                    await navigate(
+                      AppPath.SettingsCatchAll,
+                      {
+                        '*': `applications/${applicationId}/connections/${connection.id}`,
+                      },
+                      undefined,
+                      { surface: 'main' },
+                    );
+                  })
+                }
+              >
+                {t('Manage connection')}
+              </Button>
+            </StyledWorkspaceRow>
+          ))}
           {hasSelection && (
             <StyledHint>
-              {t('Stop syncing before changing the connected account.')}
+              {t('Stop syncing this connection before replacing its key.')}
             </StyledHint>
           )}
         </StyledStack>
@@ -204,10 +300,10 @@ export const PlusvibeSettings = () => {
             description={t('Only the workspaces you select will sync.')}
           />
           <StyledStack>
-            {status.workspaces.length === 0 && (
+            {(accountStatus?.workspaces.length ?? 0) === 0 && (
               <StyledHint>{t('No accessible workspaces found.')}</StyledHint>
             )}
-            {status.workspaces.map((workspace) => {
+            {(accountStatus?.workspaces ?? []).map((workspace) => {
               const selected = workspaceIds.includes(workspace._id);
               const importState = status.imports[workspace._id];
               return (
@@ -258,7 +354,7 @@ export const PlusvibeSettings = () => {
           </StyledStack>
         </Section.Root>
       )}
-      {isConnected && status && status.workspaces.length > 0 && (
+      {isConnected && status && (accountStatus?.workspaces.length ?? 0) > 0 && (
         <Section.Root>
           <Section.Header
             title={t('3. Enable sync')}
@@ -271,7 +367,7 @@ export const PlusvibeSettings = () => {
               <Button
                 variant="solid"
                 color="accent"
-                disabled={isBusy || workspaceIds.length === 0}
+                disabled={isBusy || selectedWorkspaceIds.length === 0}
                 onClick={() =>
                   runAction(
                     () => saveSelection(workspaceIds),
@@ -289,10 +385,10 @@ export const PlusvibeSettings = () => {
                     disabled={isBusy}
                     onClick={() =>
                       runAction(async () => {
-                        await new RestApiClient().post(
-                          '/s/plusvibe/import',
-                          {},
-                        );
+                        await new RestApiClient().post('/s/plusvibe/import', {
+                          workspaceIds:
+                            accountStatus?.selectedWorkspaceIds ?? [],
+                        });
                       }, t('Import queued.'))
                     }
                   >

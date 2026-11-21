@@ -15,5 +15,5 @@ export default defineNavigationMenuItem({
   parentUniversalIdentifier: FOLDER_NAVIGATION_UNIVERSAL_IDENTIFIER,
   targetObjectUniversalIdentifier: SOURCE_THREAD_UNIVERSAL_IDENTIFIER,
   viewUniversalIdentifier: SOURCE_THREAD_VIEW_UNIVERSAL_IDENTIFIER,
-  position: 2,
+  position: 3,
 });

@@ -8,26 +8,59 @@ import {
   ACCOUNT_CONNECTION_KEY,
   ACCOUNT_PROVIDER_NAME,
   PLUSVIBE_API_URL,
+  getRegistrationKey,
+  type PlusvibeRegistration,
 } from 'src/constants/plusvibe';
 
-export const getAccountConnection = async () => {
+export const fingerprintApiKey = (apiKey: string) =>
+  createHash('sha256').update(apiKey.trim()).digest('hex');
+
+export const getAccountConnection = async (
+  workspaceId?: string,
+  connectionId?: string,
+) => {
   const connections = await listConnections({
     providerName: ACCOUNT_PROVIDER_NAME,
     scope: 'WORKSPACE',
   });
-  const activeId = await kv.get<string>(ACCOUNT_CONNECTION_KEY);
+  const registration = workspaceId
+    ? await kv.get<PlusvibeRegistration>(getRegistrationKey(workspaceId))
+    : null;
+  if (workspaceId && !registration)
+    throw new Error('Select this PlusVibe workspace before syncing');
+  if (registration) {
+    const connection = connections.find(
+      (value) => value.externalAccountId === registration.apiKeyFingerprint,
+    );
+    if (connection) return connection;
+    const legacyApiKey = process.env.PLUSVIBE_API_KEY?.trim();
+    if (
+      !registration.accountConnectionId &&
+      isNonEmptyString(legacyApiKey) &&
+      fingerprintApiKey(legacyApiKey) === registration.apiKeyFingerprint
+    )
+      return undefined;
+    throw new Error('Reconnect the PlusVibe key assigned to this workspace');
+  }
+  const activeId =
+    connectionId ?? (await kv.get<string>(ACCOUNT_CONNECTION_KEY));
   const connection = activeId
     ? connections.find((value) => value.id === activeId)
     : connections.length === 1
       ? connections[0]
       : undefined;
+  if (connectionId && !connection)
+    throw new Error('The PlusVibe connection is unavailable');
   if (connections.length > 0 && !connection)
     throw new Error('Reconnect PlusVibe from its setup page');
   return connection;
 };
 
-export const getApiKey = async () => {
-  const connection = await getAccountConnection();
+export const getApiKey = async (
+  workspaceId?: string,
+  connectionId?: string,
+) => {
+  const connection = await getAccountConnection(workspaceId, connectionId);
   if (connection?.authFailedAt)
     throw new Error('The PlusVibe connection needs to be reconnected');
   if (connection) {
@@ -38,19 +71,17 @@ export const getApiKey = async () => {
       throw new Error('The PlusVibe connection is missing its API key');
     return connection.accessToken;
   }
-  // Existing installs retain their saved key until they reconnect through the native key form.
+  // Retain the original saved key for workspaces that have not migrated yet.
   const apiKey = process.env.PLUSVIBE_API_KEY?.trim();
-  if (!isNonEmptyString(apiKey)) {
+  if (!isNonEmptyString(apiKey))
     throw new Error('PlusVibe API key is required');
-  }
   return apiKey;
 };
 
-export const fingerprintApiKey = (apiKey: string) =>
-  createHash('sha256').update(apiKey.trim()).digest('hex');
-
-export const getApiKeyFingerprint = async () =>
-  fingerprintApiKey(await getApiKey());
+export const getApiKeyFingerprint = async (
+  workspaceId?: string,
+  connectionId?: string,
+) => fingerprintApiKey(await getApiKey(workspaceId, connectionId));
 
 export const plusvibeRequest = async <TData>(
   path: string,
@@ -60,6 +91,7 @@ export const plusvibeRequest = async <TData>(
     body?: unknown;
     query?: Record<string, string>;
     apiKey?: string;
+    connectionId?: string;
     retryRateLimits?: boolean;
   } = {},
 ): Promise<TData> => {
@@ -70,7 +102,12 @@ export const plusvibeRequest = async <TData>(
   const request = {
     method: options.method ?? 'GET',
     headers: {
-      'x-api-key': options.apiKey ?? (await getApiKey()),
+      'x-api-key':
+        options.apiKey ??
+        (await getApiKey(
+          options.connectionId ? undefined : options.query?.workspace_id,
+          options.connectionId,
+        )),
       'Content-Type': 'application/json',
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
@@ -126,5 +163,6 @@ export const WORKSPACES_SCHEMA = z.object({
   workspaces: z.array(z.object({ _id: z.string().min(1), name: z.string() })),
 });
 
-export const listWorkspaces = async () =>
-  (await plusvibeRequest('/authenticate', WORKSPACES_SCHEMA)).workspaces;
+export const listWorkspaces = async (connectionId?: string) =>
+  (await plusvibeRequest('/authenticate', WORKSPACES_SCHEMA, { connectionId }))
+    .workspaces;

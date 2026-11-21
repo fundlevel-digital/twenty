@@ -9,6 +9,7 @@ import {
   ACTIVITY_UNIVERSAL_IDENTIFIER,
   WORKSPACE_UNIVERSAL_IDENTIFIER,
   SOURCE_THREAD_UNIVERSAL_IDENTIFIER,
+  LEAD_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineApplicationRole({
@@ -30,6 +31,7 @@ export default defineApplicationRole({
       ACTIVITY_UNIVERSAL_IDENTIFIER,
       WORKSPACE_UNIVERSAL_IDENTIFIER,
       SOURCE_THREAD_UNIVERSAL_IDENTIFIER,
+      LEAD_UNIVERSAL_IDENTIFIER,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
     ].map((objectUniversalIdentifier) => ({

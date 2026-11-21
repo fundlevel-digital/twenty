@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { getLeadPersonKey } from 'src/constants/plusvibe';
 import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import { AmbiguousPersonMatchError } from 'src/logic-functions/errors/ambiguous-person-match.error';
 import {
   type PlusvibeLead,
   type normalizeEvent,
@@ -52,6 +53,7 @@ export const createRecordIfMissing = async (
 export const syncPerson = async (
   lead: PlusvibeLead,
   workspaceId: string,
+  options: { isFullLeadRecord?: boolean } = {},
 ): Promise<string> => {
   const email = (lead.email ?? lead.lead_email)?.trim().toLowerCase();
   if (!isNonEmptyString(email))
@@ -60,38 +62,183 @@ export const syncPerson = async (
   const mappingKey = isNonEmptyString(leadId)
     ? getLeadPersonKey(workspaceId, leadId)
     : undefined;
+  const linkPerson = async (personId: string) => {
+    await syncLead(lead, workspaceId, personId, options.isFullLeadRecord);
+    if (mappingKey) await kv.set(mappingKey, personId);
+    return personId;
+  };
+  if (isNonEmptyString(leadId)) {
+    try {
+      const existing = await restClient().get<{
+        data?: { plusvibeLead?: { personId?: string | null } };
+      }>(`/rest/plusvibeLeads/${recordId('lead', workspaceId, leadId)}`);
+      const selectedPersonId = existing.data?.plusvibeLead?.personId;
+      if (
+        isNonEmptyString(selectedPersonId) &&
+        (await findRecord('people', selectedPersonId))
+      )
+        return linkPerson(selectedPersonId);
+    } catch (error) {
+      if (!(error instanceof RestApiClientError && error.status === 404))
+        throw error;
+    }
+  }
   if (mappingKey) {
     const mappedId = await kv.get<string>(mappingKey);
     if (isNonEmptyString(mappedId) && (await findRecord('people', mappedId)))
-      return mappedId;
+      return linkPerson(mappedId);
   }
   const client = new CoreApiClient({ runAs: 'application' });
-  const result: unknown = await client.query({
-    people: {
-      __args: { filter: { emails: { primaryEmail: { eq: email } } }, first: 1 },
-      edges: { node: { id: true } },
-    },
-  });
-  const { people } = z
-    .object({
-      people: z.object({
-        edges: z.array(z.object({ node: z.object({ id: z.uuid() }) })),
-      }),
-    })
-    .parse(result);
-  const existing = people.edges[0]?.node;
-  if (existing) {
-    if (mappingKey) await kv.set(mappingKey, existing.id);
-    return existing.id;
+  const matches = new Set<string>();
+  let cursor: string | undefined;
+  do {
+    const result: unknown = await client.query({
+      people: {
+        __args: {
+          filter: {
+            or: [
+              { emails: { primaryEmail: { ilike: email } } },
+              { emails: { additionalEmails: { ilike: `%${email}%` } } },
+            ],
+          },
+          first: 200,
+          ...(cursor ? { after: cursor } : {}),
+        },
+        edges: {
+          node: {
+            id: true,
+            emails: { primaryEmail: true, additionalEmails: true },
+          },
+        },
+        pageInfo: { hasNextPage: true, endCursor: true },
+      },
+    });
+    const { people } = z
+      .object({
+        people: z.object({
+          edges: z.array(
+            z.object({
+              node: z.object({
+                id: z.uuid(),
+                emails: z.object({
+                  primaryEmail: z.string().nullish(),
+                  additionalEmails: z.array(z.string()).nullish(),
+                }),
+              }),
+            }),
+          ),
+          pageInfo: z
+            .object({
+              hasNextPage: z.boolean(),
+              endCursor: z.string().nullish(),
+            })
+            .optional(),
+        }),
+      })
+      .parse(result);
+    // Additional emails expose LIKE filters only; verify every returned address exactly.
+    for (const { node } of people.edges) {
+      const addresses = [
+        node.emails.primaryEmail,
+        ...(node.emails.additionalEmails ?? []),
+      ];
+      if (addresses.some((address) => address?.trim().toLowerCase() === email))
+        matches.add(node.id);
+    }
+    if (!people.pageInfo?.hasNextPage) break;
+    const nextCursor = people.pageInfo.endCursor;
+    if (!nextCursor || nextCursor === cursor)
+      throw new Error('Person lookup pagination did not advance');
+    cursor = nextCursor;
+  } while (cursor);
+  if (matches.size > 1) {
+    await syncLead(lead, workspaceId, undefined, options.isFullLeadRecord);
+    throw new AmbiguousPersonMatchError();
   }
+  if (matches.size === 1) return linkPerson([...matches][0]);
   const personId = recordId('person', email);
   await createRecordIfMissing('people', personId, {
     name: { firstName: lead.first_name ?? '', lastName: lead.last_name ?? '' },
     emails: { primaryEmail: email, additionalEmails: [] },
     jobTitle: lead.job_title ?? '',
   });
-  if (mappingKey) await kv.set(mappingKey, personId);
-  return personId;
+  return linkPerson(personId);
+};
+
+export const syncLead = async (
+  lead: PlusvibeLead,
+  workspaceId: string,
+  personId?: string,
+  isFullLeadRecord = false,
+) => {
+  const externalId = lead.lead_id ?? lead._id;
+  if (!isNonEmptyString(externalId)) return;
+  const email = (lead.email ?? lead.lead_email)?.trim().toLowerCase();
+  if (!isNonEmptyString(email)) return;
+  const id = recordId('lead', workspaceId, externalId);
+  const sourceStatus = lead.status?.trim().toUpperCase();
+  const sourceFields = {
+    externalId,
+    workspaceId,
+    name:
+      [lead.first_name, lead.last_name].filter(isNonEmptyString).join(' ') ||
+      email,
+    emails: { primaryEmail: email, additionalEmails: [] },
+    ...(sourceStatus
+      ? {
+          status: z
+            .enum([
+              'NOT_CONTACTED',
+              'CONTACTED',
+              'REPLIED',
+              'COMPLETED',
+              'BOUNCED',
+              'UNSUBSCRIBED',
+              'SKIPPED',
+              'PAUSED',
+              'OTHER',
+            ])
+            .catch('OTHER')
+            .parse(sourceStatus),
+          statusRaw: lead.status,
+        }
+      : {}),
+    ...(lead.label !== undefined && lead.label !== null
+      ? { label: lead.label }
+      : {}),
+  };
+  const links: Record<string, unknown> = {
+    ...(personId ? { personId } : {}),
+    matchStatus: personId ? 'MATCHED' : 'NEEDS_REVIEW',
+    lastSyncedAt: new Date().toISOString(),
+  };
+  const workspaceRecordId = recordId('workspace', workspaceId);
+  if (await findRecord('plusvibeWorkspaces', workspaceRecordId))
+    links.workspaceRecordId = workspaceRecordId;
+  const campaignId = lead.campaign_id ?? lead.camp_id;
+  if (isNonEmptyString(campaignId)) {
+    const campaignRecordId = recordId('campaign', workspaceId, campaignId);
+    if (await findRecord('plusvibeCampaigns', campaignRecordId))
+      links.campaignRecordId = campaignRecordId;
+  }
+  await createRecordIfMissing('plusvibeLeads', id, {
+    ...sourceFields,
+    ...links,
+  });
+  await restClient().patch(`/rest/plusvibeLeads/${id}`, {
+    ...(isFullLeadRecord
+      ? sourceFields
+      : {
+          ...(sourceStatus
+            ? { status: sourceFields.status, statusRaw: lead.status }
+            : {}),
+          ...(lead.label !== undefined && lead.label !== null
+            ? { label: lead.label }
+            : {}),
+        }),
+    ...links,
+  });
+  return id;
 };
 
 export const syncCampaign = async ({

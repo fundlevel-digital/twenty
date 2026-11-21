@@ -54,6 +54,7 @@ vi.mock('src/logic-functions/lead-emails', () => ({
   enqueueLeadEmails,
 }));
 
+import { AmbiguousPersonMatchError } from 'src/logic-functions/errors/ambiguous-person-match.error';
 import { backfillHandler } from 'src/logic-functions/backfill';
 
 const WORKSPACE_ID = '65099a0dd96fae8ab61130c0';
@@ -88,6 +89,20 @@ beforeEach(() => {
 });
 
 describe('PlusVibe paginated import', () => {
+  it('continues lead discovery when a source Lead needs Person review', async () => {
+    plusvibeRequest.mockResolvedValueOnce({
+      data: [{ _id: 'lead-1', email: 'lead@example.com' }],
+      has_more: false,
+    });
+    syncPerson.mockRejectedValueOnce(new AmbiguousPersonMatchError());
+    expect(await backfillHandler(PAYLOAD, CONTEXT)).toEqual({ success: true });
+    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
+      phase: 'complete',
+      processed: 1,
+    });
+    expect(enqueueLeadEmails).not.toHaveBeenCalled();
+  });
+
   it('spaces out lead history jobs before starting another discovery page', async () => {
     findMailConnection.mockResolvedValue({ id: 'connection' });
     plusvibeRequest.mockResolvedValueOnce({

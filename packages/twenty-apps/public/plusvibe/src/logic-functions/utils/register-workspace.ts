@@ -38,10 +38,13 @@ const getWebhookUrl = (registrationId: string) => {
   return url.toString();
 };
 
-export const registerWorkspace = async (workspace: PlusvibeWorkspace) => {
+export const registerWorkspace = async (
+  workspace: PlusvibeWorkspace,
+  connectionId?: string,
+) => {
   const key = getRegistrationKey(workspace._id);
   let registration = await kv.get<PlusvibeRegistration>(key);
-  const apiKeyFingerprint = await getApiKeyFingerprint();
+  const apiKeyFingerprint = await getApiKeyFingerprint(undefined, connectionId);
 
   if (registration && registration.apiKeyFingerprint !== apiKeyFingerprint) {
     const selected = (await kv.get<string[]>(SELECTION_KEY)) ?? [];
@@ -65,6 +68,7 @@ export const registerWorkspace = async (workspace: PlusvibeWorkspace) => {
       workspaceId: workspace._id,
       workspaceName: workspace.name,
       apiKeyFingerprint,
+      accountConnectionId: connectionId,
     };
     // Save the destination before POST so an uncertain creation can be reconciled by URL.
     await kv.set(key, registration);
@@ -75,6 +79,7 @@ export const registerWorkspace = async (workspace: PlusvibeWorkspace) => {
   });
 
   const { hooks } = await plusvibeRequest('/hook/list', HOOKS_SCHEMA, {
+    connectionId,
     query: { workspace_id: workspace._id },
   });
   const existing = hooks.find((hook) => hook.url === registration.url);
@@ -89,6 +94,7 @@ export const registerWorkspace = async (workspace: PlusvibeWorkspace) => {
         '/workspace-settings/lead-labels',
         z.array(z.object({ key: z.string().min(1) })),
         {
+          connectionId,
           query: { workspace_id: workspace._id },
         },
       );
@@ -105,6 +111,7 @@ export const registerWorkspace = async (workspace: PlusvibeWorkspace) => {
           _id: z.string().min(1),
         }),
         {
+          connectionId,
           method: 'POST',
           body: {
             workspace_id: workspace._id,
@@ -122,6 +129,7 @@ export const registerWorkspace = async (workspace: PlusvibeWorkspace) => {
 
   await kv.set(key, {
     ...registration,
+    accountConnectionId: connectionId ?? registration.accountConnectionId,
     workspaceName: workspace.name,
     webhookId,
   });

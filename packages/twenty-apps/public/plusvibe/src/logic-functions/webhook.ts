@@ -31,7 +31,10 @@ export const webhookHandler = async (event: RoutePayload<unknown>) => {
       candidate?.registrationId === event.queryStringParameters.registrationId,
   );
   if (!registration) return { skipped: true };
-  if (registration.apiKeyFingerprint !== (await getApiKeyFingerprint()))
+  if (
+    registration.apiKeyFingerprint !==
+    (await getApiKeyFingerprint(registration.workspaceId))
+  )
     return { skipped: true };
   const rawBody =
     event.isBase64Encoded && event.rawBody

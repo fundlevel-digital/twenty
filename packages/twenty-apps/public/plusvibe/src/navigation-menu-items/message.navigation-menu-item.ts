@@ -17,5 +17,5 @@ export default defineNavigationMenuItem({
   targetObjectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
   viewUniversalIdentifier: MESSAGE_ALL_VIEW_UNIVERSAL_IDENTIFIER,
-  position: 4,
+  position: 5,
 });

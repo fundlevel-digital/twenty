@@ -6,6 +6,8 @@ import {
   ACCOUNT_CONNECTION_KEY,
   ACCOUNT_PROVIDER_NAME,
   SELECTION_KEY,
+  getRegistrationKey,
+  type PlusvibeRegistration,
 } from 'src/constants/plusvibe';
 import { z } from 'zod';
 import { startImport } from 'src/logic-functions/utils/start-import';
@@ -24,7 +26,16 @@ export const connectionOnConnectHandler = async (payload: unknown) => {
       connection.scope !== 'WORKSPACE'
     )
       throw new Error('Invalid PlusVibe account connection');
-    await kv.set(ACCOUNT_CONNECTION_KEY, connection.id);
+    if (!(await kv.get<string>(ACCOUNT_CONNECTION_KEY)))
+      await kv.set(ACCOUNT_CONNECTION_KEY, connection.id);
+    for (const workspaceId of (await kv.get<string[]>(SELECTION_KEY)) ?? []) {
+      const registration = await kv.get<PlusvibeRegistration>(
+        getRegistrationKey(workspaceId),
+      );
+      if (registration?.apiKeyFingerprint === connection.externalAccountId)
+        await startImport(workspaceId, true);
+    }
+    return { success: true };
   }
   for (const workspaceId of (await kv.get<string[]>(SELECTION_KEY)) ?? [])
     await startImport(workspaceId, true);

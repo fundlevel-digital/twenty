@@ -201,9 +201,88 @@ describe('PlusVibe settings', () => {
     await screen.findByText('Sync stopped. Existing records are kept.');
     expect(
       screen
-        .getByRole('button', { name: 'Connect PlusVibe' })
+        .getByRole('button', { name: 'Reconnect PlusVibe' })
         .hasAttribute('disabled'),
     ).toBe(false);
+  });
+
+  it('adds a second key while sync is active and saves each connection independently', async () => {
+    status = {
+      ...status,
+      accounts: [
+        {
+          id: 'connection-1',
+          name: 'PlusVibe #1',
+          hasAccountError: false,
+          isMailConnected: true,
+          workspaces: [status.workspaces[0]],
+          selectedWorkspaceIds: ['workspace-1'],
+        },
+        {
+          id: 'connection-2',
+          name: 'PlusVibe #2',
+          hasAccountError: false,
+          isMailConnected: true,
+          workspaces: [status.workspaces[1]],
+          selectedWorkspaceIds: [],
+        },
+      ],
+    };
+    const user = userEvent.setup();
+    renderSettings();
+    await screen.findByRole('button', { name: 'PlusVibe #2' });
+    await user.click(screen.getByRole('button', { name: 'Add connection' }));
+    expect(navigate).toHaveBeenCalledWith(
+      '/settings/*',
+      { '*': 'applications/app-1/connect/plusvibe' },
+      undefined,
+      expect.anything(),
+    );
+    await user.click(screen.getByRole('button', { name: 'PlusVibe #2' }));
+    await screen.findByText('Agency North America');
+    expect(screen.queryByText('Outbound sales')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Select' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sync' }));
+    expect(post).toHaveBeenCalledWith('/s/plusvibe/workspaces', {
+      accountConnectionId: 'connection-2',
+      workspaceIds: ['workspace-2'],
+    });
+  });
+
+  it('does not select an overlapping workspace for a second connection', async () => {
+    status = {
+      ...status,
+      accounts: [
+        {
+          id: 'connection-1',
+          name: 'PlusVibe #1',
+          hasAccountError: false,
+          isMailConnected: true,
+          workspaces: [status.workspaces[0]],
+          selectedWorkspaceIds: ['workspace-1'],
+        },
+        {
+          id: 'connection-2',
+          name: 'PlusVibe #2',
+          hasAccountError: false,
+          isMailConnected: true,
+          workspaces: [status.workspaces[0]],
+          selectedWorkspaceIds: [],
+        },
+      ],
+    };
+    renderSettings();
+    await screen.findByRole('button', { name: 'PlusVibe #2' });
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'PlusVibe #2' }));
+    expect(screen.getByRole('button', { name: 'Select' })).toBeDefined();
+    expect(
+      screen
+        .getByRole('button', { name: 'Enable sync' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    expect(post).not.toHaveBeenCalled();
   });
 
   it('allows retry after a failed settings request', async () => {

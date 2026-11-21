@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RestApiClientError } from 'twenty-client-sdk/rest';
 
-const { records, query, post, patch, mappings } = vi.hoisted(() => ({
-  records: new Set<string>(),
-  query: vi.fn(),
-  post: vi.fn(),
-  patch: vi.fn(),
-  mappings: new Map<string, unknown>(),
-}));
+const { records, recordValues, query, post, patch, mappings } = vi.hoisted(
+  () => ({
+    records: new Set<string>(),
+    recordValues: new Map<string, unknown>(),
+    query: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    mappings: new Map<string, unknown>(),
+  }),
+);
 vi.mock('twenty-client-sdk/core', () => ({
   CoreApiClient: class {
     query = query;
@@ -22,7 +25,7 @@ vi.mock('twenty-client-sdk/rest', async (importOriginal) => {
       get = vi.fn(async (path: string) => {
         if (!records.has(path))
           throw new original.RestApiClientError('Missing', { status: 404 });
-        return {};
+        return recordValues.get(path) ?? {};
       });
       post = post;
       patch = patch;
@@ -46,6 +49,7 @@ import {
   syncActivity,
   syncPerson,
   syncCampaign,
+  syncLead,
 } from 'src/logic-functions/utils/sync-records';
 import { syncSourceThread } from 'src/logic-functions/utils/sync-source-thread';
 
@@ -55,6 +59,7 @@ beforeEach(() => {
   post.mockReset();
   patch.mockReset();
   records.clear();
+  recordValues.clear();
   mappings.clear();
   query.mockResolvedValue({ people: { edges: [] } });
   post.mockImplementation(async (path: string, fields: { id: string }) => {
@@ -99,7 +104,16 @@ describe('Twenty record synchronization', () => {
   it('matches an existing person by normalized email without overwriting their data', async () => {
     const personId = recordId('existing');
     query.mockResolvedValueOnce({
-      people: { edges: [{ node: { id: personId } }] },
+      people: {
+        edges: [
+          {
+            node: {
+              id: personId,
+              emails: { primaryEmail: 'lead@example.com' },
+            },
+          },
+        ],
+      },
     });
     expect(
       await syncPerson(
@@ -111,13 +125,192 @@ describe('Twenty record synchronization', () => {
       expect.objectContaining({
         people: expect.objectContaining({
           __args: expect.objectContaining({
-            filter: { emails: { primaryEmail: { eq: 'lead@example.com' } } },
+            filter: {
+              or: [
+                { emails: { primaryEmail: { ilike: 'lead@example.com' } } },
+                {
+                  emails: { additionalEmails: { ilike: '%lead@example.com%' } },
+                },
+              ],
+            },
           }),
         }),
       }),
     );
     expect(post).not.toHaveBeenCalled();
     expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('matches an additional email case-insensitively and rejects substring candidates', async () => {
+    const personId = recordId('existing');
+    query.mockResolvedValueOnce({
+      people: {
+        edges: [
+          {
+            node: {
+              id: recordId('substring'),
+              emails: {
+                primaryEmail: 'other@example.com',
+                additionalEmails: ['prefixlead@example.com'],
+              },
+            },
+          },
+          {
+            node: {
+              id: personId,
+              emails: {
+                primaryEmail: 'primary@example.com',
+                additionalEmails: ['LEAD@EXAMPLE.COM'],
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(await syncPerson({ email: 'lead@example.com' }, 'workspace-1')).toBe(
+      personId,
+    );
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('keeps ambiguous leads for review without creating another Person', async () => {
+    query.mockResolvedValueOnce({
+      people: {
+        edges: [
+          {
+            node: {
+              id: recordId('first'),
+              emails: { primaryEmail: 'lead@example.com' },
+            },
+          },
+          {
+            node: {
+              id: recordId('second'),
+              emails: {
+                primaryEmail: 'other@example.com',
+                additionalEmails: ['lead@example.com'],
+              },
+            },
+          },
+        ],
+      },
+    });
+    await expect(
+      syncPerson(
+        { email: 'lead@example.com', lead_id: 'lead-1' },
+        'workspace-1',
+      ),
+    ).rejects.toThrow('Multiple People');
+    expect(post).toHaveBeenCalledWith(
+      '/rest/plusvibeLeads',
+      expect.objectContaining({ matchStatus: 'NEEDS_REVIEW' }),
+    );
+    expect(post.mock.calls.some(([path]) => path === '/rest/people')).toBe(
+      false,
+    );
+  });
+
+  it('checks later candidate pages before choosing a Person', async () => {
+    query
+      .mockResolvedValueOnce({
+        people: {
+          edges: [
+            {
+              node: {
+                id: recordId('first'),
+                emails: { primaryEmail: 'lead@example.com' },
+              },
+            },
+          ],
+          pageInfo: { hasNextPage: true, endCursor: 'page-2' },
+        },
+      })
+      .mockResolvedValueOnce({
+        people: {
+          edges: [
+            {
+              node: {
+                id: recordId('second'),
+                emails: { primaryEmail: 'lead@example.com' },
+              },
+            },
+          ],
+          pageInfo: { hasNextPage: false },
+        },
+      });
+    await expect(
+      syncPerson({ email: 'lead@example.com' }, 'workspace-1'),
+    ).rejects.toThrow('Multiple People');
+    expect(query).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        people: expect.objectContaining({
+          __args: expect.objectContaining({ after: 'page-2' }),
+        }),
+      }),
+    );
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('honors the selected Lead Person over a previous import mapping', async () => {
+    const selectedPersonId = recordId('selected-person');
+    const path = `/rest/plusvibeLeads/${recordId('lead', 'workspace-1', 'lead-1')}`;
+    records.add(path);
+    recordValues.set(path, {
+      data: { plusvibeLead: { personId: selectedPersonId } },
+    });
+    records.add(`/rest/people/${selectedPersonId}`);
+    mappings.set(
+      getLeadPersonKey('workspace-1', 'lead-1'),
+      recordId('old-person'),
+    );
+    expect(
+      await syncPerson(
+        { lead_id: 'lead-1', email: 'lead@example.com' },
+        'workspace-1',
+      ),
+    ).toBe(selectedPersonId);
+    expect(mappings.get(getLeadPersonKey('workspace-1', 'lead-1'))).toBe(
+      selectedPersonId,
+    );
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it('creates source Leads once per workspace and links the Person, Campaign and Workspace', async () => {
+    const workspaceId = recordId('workspace', 'workspace-1');
+    const campaignId = recordId('campaign', 'workspace-1', 'campaign-1');
+    records.add(`/rest/plusvibeWorkspaces/${workspaceId}`);
+    records.add(`/rest/plusvibeCampaigns/${campaignId}`);
+    const lead = {
+      lead_id: 'lead-1',
+      email: 'lead@example.com',
+      campaign_id: 'campaign-1',
+      first_name: 'Jane',
+      status: 'contacted',
+      label: 'INTERESTED',
+    };
+    await syncLead(lead, 'workspace-1', recordId('person'), true);
+    await syncLead(lead, 'workspace-1', recordId('person'), true);
+    await syncLead(lead, 'workspace-2', recordId('person'), true);
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(post).toHaveBeenCalledWith(
+      '/rest/plusvibeLeads',
+      expect.objectContaining({
+        status: 'CONTACTED',
+        name: 'Jane',
+        personId: recordId('person'),
+        campaignRecordId: campaignId,
+        workspaceRecordId: workspaceId,
+      }),
+    );
+    await syncLead(
+      { lead_id: 'lead-1', email: 'lead@example.com' },
+      'workspace-1',
+      recordId('person'),
+    );
+    expect(patch).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.not.objectContaining({ name: expect.anything() }),
+    );
   });
 
   it('creates the same person only once across PlusVibe workspaces', async () => {

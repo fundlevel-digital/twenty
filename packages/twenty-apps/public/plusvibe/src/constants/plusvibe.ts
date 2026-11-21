@@ -28,6 +28,7 @@ export type PlusvibeRegistration = {
   workspaceId: string;
   workspaceName: string;
   apiKeyFingerprint: string;
+  accountConnectionId?: string;
   webhookId?: string;
 };
 export type PlusvibeImportState = {
@@ -45,7 +46,16 @@ export type PlusvibeImportState = {
   processed: number;
   updatedAt: string;
 };
+export type PlusvibeAccountStatus = {
+  id: string;
+  name: string;
+  hasAccountError: boolean;
+  isMailConnected: boolean;
+  workspaces: PlusvibeWorkspace[];
+  selectedWorkspaceIds: string[];
+};
 export type PlusvibeSettingsStatus = {
+  accounts?: PlusvibeAccountStatus[];
   jobs?: {
     jobId: string;
     state: string;

@@ -1,7 +1,16 @@
 import { defineLogicFunction } from 'twenty-sdk/define';
-import { getJobs, kv, Response } from 'twenty-sdk/logic-function';
+import {
+  getJobs,
+  kv,
+  listConnections,
+  Response,
+} from 'twenty-sdk/logic-function';
 
 import {
+  ACCOUNT_PROVIDER_NAME,
+  getRegistrationKey,
+  type PlusvibeRegistration,
+  type PlusvibeAccountStatus,
   getEmailFailureKey,
   getImportKey,
   SELECTION_KEY,
@@ -10,10 +19,7 @@ import {
   type PlusvibeWorkspace,
 } from 'src/constants/plusvibe';
 import { STATUS_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
-import {
-  getAccountConnection,
-  listWorkspaces,
-} from 'src/logic-functions/utils/plusvibe-api';
+import { listWorkspaces } from 'src/logic-functions/utils/plusvibe-api';
 import { canManageApplication } from 'src/logic-functions/utils/require-application-manager';
 import { findMailConnection } from 'src/logic-functions/utils/native-email';
 
@@ -33,15 +39,59 @@ export const settingsStatusHandler = async () => {
       ]),
     ),
   );
-  const accountConnection = await getAccountConnection();
-  const isApiKeySet = accountConnection
-    ? accountConnection.authFailedAt === null
-    : Boolean(process.env.PLUSVIBE_API_KEY?.trim());
-  let workspaces: PlusvibeWorkspace[] = [];
-  let hasAccountError = Boolean(accountConnection?.authFailedAt);
-  if (isApiKeySet) {
+  const connections = await listConnections({
+    providerName: ACCOUNT_PROVIDER_NAME,
+    scope: 'WORKSPACE',
+  });
+  const registrations = await Promise.all(
+    selectedWorkspaceIds.map(async (workspaceId) => ({
+      workspaceId,
+      registration: await kv.get<PlusvibeRegistration>(
+        getRegistrationKey(workspaceId),
+      ),
+    })),
+  );
+  const accounts: PlusvibeAccountStatus[] = await Promise.all(
+    connections.map(async (connection) => {
+      let workspaces: PlusvibeWorkspace[] = [];
+      let hasAccountError = Boolean(connection.authFailedAt);
+      let isMailConnected = false;
+      if (!hasAccountError) {
+        try {
+          workspaces = await listWorkspaces(connection.id);
+          isMailConnected = Boolean(
+            await findMailConnection(undefined, connection.id),
+          );
+        } catch {
+          hasAccountError = true;
+        }
+      }
+      return {
+        id: connection.id,
+        name: connection.name || connection.handle || 'PlusVibe',
+        hasAccountError,
+        isMailConnected,
+        workspaces,
+        selectedWorkspaceIds: registrations
+          .filter(
+            ({ registration }) =>
+              registration?.apiKeyFingerprint === connection.externalAccountId,
+          )
+          .map(({ workspaceId }) => workspaceId),
+      };
+    }),
+  );
+  const isApiKeySet =
+    connections.length > 0 || Boolean(process.env.PLUSVIBE_API_KEY?.trim());
+  let workspaces: PlusvibeWorkspace[] = accounts.flatMap(
+    (account) => account.workspaces,
+  );
+  let hasAccountError = accounts.some((account) => account.hasAccountError);
+  let isMailConnected = accounts.some((account) => account.isMailConnected);
+  if (connections.length === 0 && isApiKeySet) {
     try {
       workspaces = await listWorkspaces();
+      isMailConnected = Boolean(await findMailConnection());
     } catch {
       hasAccountError = true;
     }
@@ -76,10 +126,11 @@ export const settingsStatusHandler = async () => {
   const jobs = jobIds.length > 0 ? await getJobs(jobIds) : [];
   const status: PlusvibeSettingsStatus = {
     isApiKeySet,
-    accountConnectionId: accountConnection?.id,
+    accounts,
+    accountConnectionId:
+      connections.length === 1 ? connections[0].id : undefined,
     hasAccountError,
-    isMailConnected:
-      isApiKeySet && !hasAccountError && Boolean(await findMailConnection()),
+    isMailConnected,
     emailFailures,
     workspaces,
     selectedWorkspaceIds,

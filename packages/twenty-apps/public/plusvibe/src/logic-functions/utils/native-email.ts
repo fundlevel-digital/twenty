@@ -46,8 +46,11 @@ export type NativeEmail = {
   label?: string;
 };
 
-export const findMailConnection = async () => {
-  const fingerprint = await getApiKeyFingerprint();
+export const findMailConnection = async (
+  workspaceId?: string,
+  connectionId?: string,
+) => {
+  const fingerprint = await getApiKeyFingerprint(workspaceId, connectionId);
   return (await listConnections({ scope: 'WORKSPACE' }))
     .sort(
       (first, second) =>
@@ -228,7 +231,7 @@ export const syncNativeEmail = async (email: NativeEmail) => {
   z.email().parse(email.leadEmail);
   if (!Number.isFinite(Date.parse(email.receivedAt)))
     throw new Error('Invalid PlusVibe email timestamp');
-  const connection = await findMailConnection();
+  const connection = await findMailConnection(email.workspaceId);
   if (!connection)
     throw new Error(
       'Connect PlusVibe emails in the app Connections tab before importing messages',
