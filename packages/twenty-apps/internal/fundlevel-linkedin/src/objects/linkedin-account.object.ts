@@ -1,6 +1,11 @@
 import { defineObject, FieldType } from 'twenty-sdk/define';
 
-import { ACCOUNT_FIELD, OBJECT, OPTION } from 'src/constants/universal-identifiers';
+import {
+  ACCOUNT_FIELD,
+  OBJECT,
+  OPTION,
+  REBUILD,
+} from 'src/constants/universal-identifiers';
 
 export default defineObject({
   universalIdentifier: OBJECT.ACCOUNT,
@@ -13,12 +18,31 @@ export default defineObject({
   labelIdentifierFieldMetadataUniversalIdentifier: ACCOUNT_FIELD.NAME,
   fields: [
     {
+      universalIdentifier: REBUILD.ACCOUNT_LEGACY_EXTERNAL_ID,
+      name: 'legacyUnipileAccountId',
+      label: 'Previous Unipile Account ID',
+      type: FieldType.TEXT,
+    },
+    {
+      universalIdentifier: REBUILD.ACCOUNT_CONNECTED_ID,
+      name: 'connectedAccountId',
+      label: 'Connected Account ID',
+      type: FieldType.TEXT,
+    },
+    {
+      universalIdentifier: REBUILD.ACCOUNT_OWNER_WORKSPACE_ID,
+      name: 'ownerUserWorkspaceId',
+      label: 'Owner User Workspace ID',
+      type: FieldType.TEXT,
+    },
+    {
       universalIdentifier: ACCOUNT_FIELD.NAME,
       type: FieldType.TEXT,
       name: 'name',
       label: 'Name',
       icon: 'IconAbc',
-      description: 'Display name of the LinkedIn account, as reported by Unipile.',
+      description:
+        'Display name of the LinkedIn account, as reported by Unipile.',
     },
     {
       universalIdentifier: ACCOUNT_FIELD.UNIPILE_ACCOUNT_ID,
@@ -58,11 +82,41 @@ export default defineObject({
       description:
         'Connection health reported by Unipile: Running, Degraded (one product down), Disconnected, Errored or Removed.',
       options: [
-        { id: OPTION.ACCOUNT_STATUS_RUNNING, value: 'RUNNING', label: 'Running', position: 0, color: 'green' },
-        { id: OPTION.ACCOUNT_STATUS_DEGRADED, value: 'DEGRADED', label: 'Degraded', position: 1, color: 'orange' },
-        { id: OPTION.ACCOUNT_STATUS_DISCONNECTED, value: 'DISCONNECTED', label: 'Disconnected', position: 2, color: 'red' },
-        { id: OPTION.ACCOUNT_STATUS_ERRORED, value: 'ERRORED', label: 'Errored', position: 3, color: 'red' },
-        { id: OPTION.ACCOUNT_STATUS_REMOVED, value: 'REMOVED', label: 'Removed', position: 4, color: 'gray' },
+        {
+          id: OPTION.ACCOUNT_STATUS_RUNNING,
+          value: 'RUNNING',
+          label: 'Running',
+          position: 0,
+          color: 'green',
+        },
+        {
+          id: OPTION.ACCOUNT_STATUS_DEGRADED,
+          value: 'DEGRADED',
+          label: 'Degraded',
+          position: 1,
+          color: 'orange',
+        },
+        {
+          id: OPTION.ACCOUNT_STATUS_DISCONNECTED,
+          value: 'DISCONNECTED',
+          label: 'Disconnected',
+          position: 2,
+          color: 'red',
+        },
+        {
+          id: OPTION.ACCOUNT_STATUS_ERRORED,
+          value: 'ERRORED',
+          label: 'Errored',
+          position: 3,
+          color: 'red',
+        },
+        {
+          id: OPTION.ACCOUNT_STATUS_REMOVED,
+          value: 'REMOVED',
+          label: 'Removed',
+          position: 4,
+          color: 'gray',
+        },
       ],
     },
     {
@@ -71,12 +125,37 @@ export default defineObject({
       name: 'products',
       label: 'Products',
       icon: 'IconApps',
-      description: 'LinkedIn products currently connected and running on this account.',
+      description:
+        'LinkedIn products currently connected and running on this account.',
       options: [
-        { id: OPTION.ACCOUNT_PRODUCT_CLASSIC, value: 'CLASSIC', label: 'Classic', position: 0, color: 'blue' },
-        { id: OPTION.ACCOUNT_PRODUCT_SALES_NAVIGATOR, value: 'SALES_NAVIGATOR', label: 'Sales Navigator', position: 1, color: 'sky' },
-        { id: OPTION.ACCOUNT_PRODUCT_RECRUITER, value: 'RECRUITER', label: 'Recruiter', position: 2, color: 'purple' },
-        { id: OPTION.ACCOUNT_PRODUCT_COMPANY_PAGES, value: 'COMPANY_PAGES', label: 'Company Pages', position: 3, color: 'gray' },
+        {
+          id: OPTION.ACCOUNT_PRODUCT_CLASSIC,
+          value: 'CLASSIC',
+          label: 'Classic',
+          position: 0,
+          color: 'blue',
+        },
+        {
+          id: OPTION.ACCOUNT_PRODUCT_SALES_NAVIGATOR,
+          value: 'SALES_NAVIGATOR',
+          label: 'Sales Navigator',
+          position: 1,
+          color: 'sky',
+        },
+        {
+          id: OPTION.ACCOUNT_PRODUCT_RECRUITER,
+          value: 'RECRUITER',
+          label: 'Recruiter',
+          position: 2,
+          color: 'purple',
+        },
+        {
+          id: OPTION.ACCOUNT_PRODUCT_COMPANY_PAGES,
+          value: 'COMPANY_PAGES',
+          label: 'Company Pages',
+          position: 3,
+          color: 'gray',
+        },
       ],
     },
     {
@@ -128,7 +207,8 @@ export default defineObject({
       label: 'Auto Proxy',
       icon: 'IconRobot',
       defaultValue: false,
-      description: "True when Unipile's automatic proxy is used instead of a custom proxy.",
+      description:
+        "True when Unipile's automatic proxy is used instead of a custom proxy.",
     },
     {
       universalIdentifier: ACCOUNT_FIELD.PROXY_USERNAME,
@@ -136,7 +216,8 @@ export default defineObject({
       name: 'proxyUsername',
       label: 'Proxy Username',
       icon: 'IconUser',
-      description: 'Username for the custom proxy. The password is never stored here.',
+      description:
+        'Username for the custom proxy. The password is never stored here.',
     },
     {
       universalIdentifier: ACCOUNT_FIELD.SYNC_STAGE,
@@ -147,13 +228,55 @@ export default defineObject({
       description:
         'Where the full sync of this account stands. Set it to Queued to start (or restart) a full sync of connections, chats and messages; set it to Paused to stop it. New and reconnected accounts are queued automatically.',
       options: [
-        { id: OPTION.ACCOUNT_SYNC_STAGE_QUEUED, value: 'QUEUED', label: 'Queued', position: 0, color: 'gray' },
-        { id: OPTION.ACCOUNT_SYNC_STAGE_CONNECTIONS, value: 'CONNECTIONS', label: 'Syncing Connections', position: 1, color: 'blue' },
-        { id: OPTION.ACCOUNT_SYNC_STAGE_CHATS, value: 'CHATS', label: 'Mapping Chats', position: 2, color: 'blue' },
-        { id: OPTION.ACCOUNT_SYNC_STAGE_MESSAGES, value: 'MESSAGES', label: 'Syncing Messages', position: 3, color: 'blue' },
-        { id: OPTION.ACCOUNT_SYNC_STAGE_COMPLETE, value: 'COMPLETE', label: 'Complete', position: 4, color: 'green' },
-        { id: OPTION.ACCOUNT_SYNC_STAGE_PAUSED, value: 'PAUSED', label: 'Paused', position: 5, color: 'yellow' },
-        { id: OPTION.ACCOUNT_SYNC_STAGE_FAILED, value: 'FAILED', label: 'Failed', position: 6, color: 'red' },
+        {
+          id: OPTION.ACCOUNT_SYNC_STAGE_QUEUED,
+          value: 'QUEUED',
+          label: 'Queued',
+          position: 0,
+          color: 'gray',
+        },
+        {
+          id: OPTION.ACCOUNT_SYNC_STAGE_CONNECTIONS,
+          value: 'CONNECTIONS',
+          label: 'Syncing Connections',
+          position: 1,
+          color: 'blue',
+        },
+        {
+          id: OPTION.ACCOUNT_SYNC_STAGE_CHATS,
+          value: 'CHATS',
+          label: 'Mapping Chats',
+          position: 2,
+          color: 'blue',
+        },
+        {
+          id: OPTION.ACCOUNT_SYNC_STAGE_MESSAGES,
+          value: 'MESSAGES',
+          label: 'Syncing Messages',
+          position: 3,
+          color: 'blue',
+        },
+        {
+          id: OPTION.ACCOUNT_SYNC_STAGE_COMPLETE,
+          value: 'COMPLETE',
+          label: 'Complete',
+          position: 4,
+          color: 'green',
+        },
+        {
+          id: OPTION.ACCOUNT_SYNC_STAGE_PAUSED,
+          value: 'PAUSED',
+          label: 'Paused',
+          position: 5,
+          color: 'yellow',
+        },
+        {
+          id: OPTION.ACCOUNT_SYNC_STAGE_FAILED,
+          value: 'FAILED',
+          label: 'Failed',
+          position: 6,
+          color: 'red',
+        },
       ],
     },
     {
@@ -171,7 +294,8 @@ export default defineObject({
       name: 'syncError',
       label: 'Sync Error',
       icon: 'IconAlertTriangle',
-      description: 'Last error the sync hit on this account. Cleared when a step succeeds.',
+      description:
+        'Last error the sync hit on this account. Cleared when a step succeeds.',
     },
     {
       universalIdentifier: ACCOUNT_FIELD.PROXY_PROTOCOL,
@@ -179,7 +303,8 @@ export default defineObject({
       name: 'proxyProtocol',
       label: 'Proxy Protocol',
       icon: 'IconServer',
-      description: 'Protocol of the proxy Unipile uses for this account (for example http or socks5).',
+      description:
+        'Protocol of the proxy Unipile uses for this account (for example http or socks5).',
     },
     {
       universalIdentifier: ACCOUNT_FIELD.PROXY_COUNTRY,
@@ -187,7 +312,8 @@ export default defineObject({
       name: 'proxyCountry',
       label: 'Proxy Country',
       icon: 'IconWorld',
-      description: 'Country of the proxy Unipile uses for this account, when Unipile reports one.',
+      description:
+        'Country of the proxy Unipile uses for this account, when Unipile reports one.',
     },
     {
       universalIdentifier: ACCOUNT_FIELD.ALLOW_COUNTRY_FALLBACK,
@@ -196,7 +322,8 @@ export default defineObject({
       label: 'Allow Country Fallback',
       icon: 'IconWorld',
       defaultValue: false,
-      description: 'True when Unipile may use a proxy in another country if none is free in the chosen one.',
+      description:
+        'True when Unipile may use a proxy in another country if none is free in the chosen one.',
     },
     {
       universalIdentifier: ACCOUNT_FIELD.CONNECTION_METHOD,
@@ -204,7 +331,8 @@ export default defineObject({
       name: 'connectionMethod',
       label: 'Connection Method',
       icon: 'IconPlug',
-      description: 'How the account was connected to Unipile (for example cookie or credentials).',
+      description:
+        'How the account was connected to Unipile (for example cookie or credentials).',
     },
     {
       universalIdentifier: ACCOUNT_FIELD.IS_LOCKED,
@@ -219,7 +347,7 @@ export default defineObject({
       universalIdentifier: ACCOUNT_FIELD.UNIPILE_CREATED_AT,
       type: FieldType.DATE_TIME,
       name: 'unipileCreatedAt',
-      label: 'Connected to Unipile At',
+      label: 'Connected To Unipile At',
       icon: 'IconCalendar',
       description: 'When this account was added to Unipile.',
     },

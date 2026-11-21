@@ -1,6 +1,11 @@
 import { defineObject, FieldType } from 'twenty-sdk/define';
 
-import { CONNECTION_FIELD, OBJECT, OPTION } from 'src/constants/universal-identifiers';
+import {
+  CONNECTION_FIELD,
+  OBJECT,
+  OPTION,
+  REBUILD,
+} from 'src/constants/universal-identifiers';
 
 export default defineObject({
   universalIdentifier: OBJECT.CONNECTION,
@@ -13,6 +18,35 @@ export default defineObject({
   icon: 'IconUsers',
   labelIdentifierFieldMetadataUniversalIdentifier: CONNECTION_FIELD.NAME,
   fields: [
+    {
+      universalIdentifier: REBUILD.RELATION_LAST_SEEN,
+      name: 'lastRelationSeenAt',
+      label: 'Last Relation Seen At',
+      type: FieldType.DATE_TIME,
+    },
+    {
+      universalIdentifier: REBUILD.CONNECTION_VISIBILITY,
+      name: 'visibility',
+      label: 'Visibility',
+      type: FieldType.SELECT,
+      defaultValue: "'WORKSPACE'",
+      options: [
+        {
+          id: REBUILD.VISIBILITY_WORKSPACE,
+          value: 'WORKSPACE',
+          label: 'Workspace',
+          position: 0,
+          color: 'blue',
+        },
+        {
+          id: REBUILD.VISIBILITY_OWNER,
+          value: 'OWNER',
+          label: 'Owner Only',
+          position: 1,
+          color: 'gray',
+        },
+      ],
+    },
     {
       universalIdentifier: CONNECTION_FIELD.NAME,
       type: FieldType.TEXT,
@@ -30,14 +64,62 @@ export default defineObject({
       description:
         'Where the relationship stands: Not Connected (we only have a chat), Request Sent, Request Received, Connected, Withdrawn, Declined, Removed, or Ignored.',
       options: [
-        { id: OPTION.CONNECTION_STATUS_NOT_CONNECTED, value: 'NOT_CONNECTED', label: 'Not Connected', position: 0, color: 'gray' },
-        { id: OPTION.CONNECTION_STATUS_REQUEST_SENT, value: 'REQUEST_SENT', label: 'Request Sent', position: 1, color: 'sky' },
-        { id: OPTION.CONNECTION_STATUS_REQUEST_RECEIVED, value: 'REQUEST_RECEIVED', label: 'Request Received', position: 2, color: 'purple' },
-        { id: OPTION.CONNECTION_STATUS_CONNECTED, value: 'CONNECTED', label: 'Connected', position: 3, color: 'green' },
-        { id: OPTION.CONNECTION_STATUS_WITHDRAWN, value: 'WITHDRAWN', label: 'Withdrawn', position: 4, color: 'orange' },
-        { id: OPTION.CONNECTION_STATUS_DECLINED, value: 'DECLINED', label: 'Declined', position: 5, color: 'red' },
-        { id: OPTION.CONNECTION_STATUS_REMOVED, value: 'REMOVED', label: 'Removed', position: 6, color: 'red' },
-        { id: OPTION.CONNECTION_STATUS_IGNORED, value: 'IGNORED', label: 'Ignored', position: 7, color: 'gray' },
+        {
+          id: OPTION.CONNECTION_STATUS_NOT_CONNECTED,
+          value: 'NOT_CONNECTED',
+          label: 'Not Connected',
+          position: 0,
+          color: 'gray',
+        },
+        {
+          id: OPTION.CONNECTION_STATUS_REQUEST_SENT,
+          value: 'REQUEST_SENT',
+          label: 'Request Sent',
+          position: 1,
+          color: 'sky',
+        },
+        {
+          id: OPTION.CONNECTION_STATUS_REQUEST_RECEIVED,
+          value: 'REQUEST_RECEIVED',
+          label: 'Request Received',
+          position: 2,
+          color: 'purple',
+        },
+        {
+          id: OPTION.CONNECTION_STATUS_CONNECTED,
+          value: 'CONNECTED',
+          label: 'Connected',
+          position: 3,
+          color: 'green',
+        },
+        {
+          id: OPTION.CONNECTION_STATUS_WITHDRAWN,
+          value: 'WITHDRAWN',
+          label: 'Withdrawn',
+          position: 4,
+          color: 'orange',
+        },
+        {
+          id: OPTION.CONNECTION_STATUS_DECLINED,
+          value: 'DECLINED',
+          label: 'Declined',
+          position: 5,
+          color: 'red',
+        },
+        {
+          id: OPTION.CONNECTION_STATUS_REMOVED,
+          value: 'REMOVED',
+          label: 'Removed',
+          position: 6,
+          color: 'red',
+        },
+        {
+          id: OPTION.CONNECTION_STATUS_IGNORED,
+          value: 'IGNORED',
+          label: 'Ignored',
+          position: 7,
+          color: 'gray',
+        },
       ],
     },
     {
@@ -49,10 +131,34 @@ export default defineObject({
       description:
         'Who started it: We Invited, They Invited, Inbound Message (they messaged us without a connection), or Unknown (LinkedIn does not say for older connections).',
       options: [
-        { id: OPTION.CONNECTION_DIRECTION_WE_INVITED, value: 'WE_INVITED', label: 'We Invited', position: 0, color: 'blue' },
-        { id: OPTION.CONNECTION_DIRECTION_THEY_INVITED, value: 'THEY_INVITED', label: 'They Invited', position: 1, color: 'purple' },
-        { id: OPTION.CONNECTION_DIRECTION_INBOUND_MESSAGE, value: 'INBOUND_MESSAGE', label: 'Inbound Message', position: 2, color: 'turquoise' },
-        { id: OPTION.CONNECTION_DIRECTION_UNKNOWN, value: 'UNKNOWN', label: 'Unknown', position: 3, color: 'gray' },
+        {
+          id: OPTION.CONNECTION_DIRECTION_WE_INVITED,
+          value: 'WE_INVITED',
+          label: 'We Invited',
+          position: 0,
+          color: 'blue',
+        },
+        {
+          id: OPTION.CONNECTION_DIRECTION_THEY_INVITED,
+          value: 'THEY_INVITED',
+          label: 'They Invited',
+          position: 1,
+          color: 'purple',
+        },
+        {
+          id: OPTION.CONNECTION_DIRECTION_INBOUND_MESSAGE,
+          value: 'INBOUND_MESSAGE',
+          label: 'Inbound Message',
+          position: 2,
+          color: 'turquoise',
+        },
+        {
+          id: OPTION.CONNECTION_DIRECTION_UNKNOWN,
+          value: 'UNKNOWN',
+          label: 'Unknown',
+          position: 3,
+          color: 'gray',
+        },
       ],
     },
     {
@@ -71,7 +177,8 @@ export default defineObject({
       name: 'memberId',
       label: 'LinkedIn Member ID',
       icon: 'IconId',
-      description: "The member's permanent classic LinkedIn member ID (ACoA...). The same across all our accounts.",
+      description:
+        "The member's permanent classic LinkedIn member ID (ACoA...). The same across all our accounts.",
     },
     {
       universalIdentifier: CONNECTION_FIELD.SALES_NAVIGATOR_USER_ID,
@@ -79,7 +186,8 @@ export default defineObject({
       name: 'salesNavigatorUserId',
       label: 'Sales Navigator ID',
       icon: 'IconId',
-      description: "The member's Sales Navigator ID (ACwA...), filled when a Sales Navigator chat reveals it.",
+      description:
+        "The member's Sales Navigator ID (ACwA...), filled when a Sales Navigator chat reveals it.",
     },
     {
       universalIdentifier: CONNECTION_FIELD.NUMERIC_MEMBER_ID,
@@ -87,7 +195,8 @@ export default defineObject({
       name: 'numericMemberId',
       label: 'Numeric Member ID',
       icon: 'IconId',
-      description: "The member's numeric LinkedIn ID, filled only when a sync reveals it.",
+      description:
+        "The member's numeric LinkedIn ID, filled only when a sync reveals it.",
     },
     {
       universalIdentifier: CONNECTION_FIELD.PUBLIC_IDENTIFIER,
@@ -104,7 +213,8 @@ export default defineObject({
       name: 'profileLink',
       label: 'Profile Link',
       icon: 'IconLink',
-      description: "The member's LinkedIn profile URL. Present even when no CRM person is linked.",
+      description:
+        "The member's LinkedIn profile URL. Present even when no CRM person is linked.",
     },
     {
       universalIdentifier: CONNECTION_FIELD.REQUESTED_AT,
@@ -152,7 +262,8 @@ export default defineObject({
       name: 'lastMessageSentAt',
       label: 'Last Message Sent At',
       icon: 'IconSend',
-      description: 'When we last messaged this member from this account, on any channel.',
+      description:
+        'When we last messaged this member from this account, on any channel.',
     },
     {
       universalIdentifier: CONNECTION_FIELD.LAST_REPLY_AT,
@@ -160,7 +271,8 @@ export default defineObject({
       name: 'lastReplyAt',
       label: 'Last Reply At',
       icon: 'IconMessageReply',
-      description: 'When this member last messaged this account, on any channel.',
+      description:
+        'When this member last messaged this account, on any channel.',
     },
     {
       universalIdentifier: CONNECTION_FIELD.LAST_MESSAGE_SYNCED_AT,
@@ -168,7 +280,8 @@ export default defineObject({
       name: 'lastMessageSyncedAt',
       label: 'Last Message Synced At',
       icon: 'IconRefresh',
-      description: 'Timestamp of the newest stored message. Later syncs only fetch what came after.',
+      description:
+        'Timestamp of the newest stored message. Later syncs only fetch what came after.',
     },
     {
       universalIdentifier: CONNECTION_FIELD.NEEDS_ATTENTION,
@@ -185,7 +298,8 @@ export default defineObject({
       name: 'unipileChatIds',
       label: 'Unipile Chat IDs',
       icon: 'IconMessages',
-      description: 'Unipile chat IDs for this pair, across classic, Sales Navigator and InMail inboxes.',
+      description:
+        'Unipile chat IDs for this pair, across classic, Sales Navigator and InMail inboxes.',
     },
     {
       universalIdentifier: CONNECTION_FIELD.MESSAGE_SYNC_STATE,
@@ -203,7 +317,8 @@ export default defineObject({
       label: 'Message History Complete',
       icon: 'IconChecks',
       defaultValue: false,
-      description: 'True once every chat with this member has been read back to its first message.',
+      description:
+        'True once every chat with this member has been read back to its first message.',
     },
     {
       universalIdentifier: CONNECTION_FIELD.HEADLINE,
@@ -219,7 +334,8 @@ export default defineObject({
       name: 'profilePictureUrl',
       label: 'Profile Picture URL',
       icon: 'IconPhoto',
-      description: "URL of the member's LinkedIn profile picture. LinkedIn picture URLs expire; the sync rewrites it when it sees a newer one.",
+      description:
+        "URL of the member's LinkedIn profile picture. LinkedIn picture URLs expire; the sync rewrites it when it sees a newer one.",
     },
     {
       universalIdentifier: CONNECTION_FIELD.MEMBER_TYPE,
@@ -227,7 +343,8 @@ export default defineObject({
       name: 'memberType',
       label: 'Member Type',
       icon: 'IconUserCircle',
-      description: 'Kind of LinkedIn account the member is, as Unipile reports it.',
+      description:
+        'Kind of LinkedIn account the member is, as Unipile reports it.',
     },
     {
       universalIdentifier: CONNECTION_FIELD.UNIPILE_RELATION_ID,
@@ -235,7 +352,8 @@ export default defineObject({
       name: 'unipileRelationId',
       label: 'Unipile Relation ID',
       icon: 'IconKey',
-      description: "Unipile's ID for the connection itself, set once the member is connected.",
+      description:
+        "Unipile's ID for the connection itself, set once the member is connected.",
     },
   ],
 });

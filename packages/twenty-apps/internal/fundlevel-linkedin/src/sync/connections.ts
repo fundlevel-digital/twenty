@@ -1,4 +1,10 @@
-import { links, memberDetails, memberRef, syncKey, type MemberRef } from 'src/lib/mappers';
+import {
+  links,
+  memberDetails,
+  memberRef,
+  syncKey,
+  type MemberRef,
+} from 'src/lib/mappers';
 import { findAll, upsertMany } from 'src/lib/twenty';
 import { fillPersonIds, matchPeople } from 'src/sync/people';
 import type { AccountRow } from 'src/sync/accounts';
@@ -11,15 +17,21 @@ type ExistingConnection = {
   status: string | null;
   direction: string | null;
   personId: string | null;
+  lastRelationSeenAt: string | null;
 };
 
-const CONNECTION_SELECTION = 'id syncKey status direction personId';
+const CONNECTION_SELECTION =
+  'id syncKey status direction personId lastRelationSeenAt';
 
 export const findConnectionsByKey = async (keys: string[]) => {
   const out = new Map<string, ExistingConnection>();
   for (let index = 0; index < keys.length; index += 100) {
     const chunk = keys.slice(index, index + 100);
-    for (const row of await findAll<ExistingConnection>('linkedinConnections', { syncKey: { in: chunk } }, CONNECTION_SELECTION)) {
+    for (const row of await findAll<ExistingConnection>(
+      'linkedinConnections',
+      { syncKey: { in: chunk } },
+      CONNECTION_SELECTION,
+    )) {
       out.set(row.syncKey, row);
     }
   }
@@ -28,8 +40,19 @@ export const findConnectionsByKey = async (keys: string[]) => {
 
 // Writes one page of relations or connection requests. Connected always wins over a pending
 // state, existing person links are never replaced, and people are never created.
-export const upsertRelations = async (account: AccountRow, entries: { kind: RelationKind; entry: any }[]) => {
-  const items = new Map<string, { kind: RelationKind; entry: any; ref: MemberRef }>();
+export const upsertRelations = async (
+  account: AccountRow,
+  entries: { kind: RelationKind; entry: any }[],
+  ownership: {
+    ownerId?: string | null;
+    visibility?: 'WORKSPACE' | 'OWNER';
+    lastRelationSeenAt?: string;
+  } = {},
+) => {
+  const items = new Map<
+    string,
+    { kind: RelationKind; entry: any; ref: MemberRef }
+  >();
   for (const { kind, entry } of entries) {
     const ref = memberRef(entry.user ?? entry);
     const key = syncKey(account.linkedinUserId, ref);
@@ -40,12 +63,15 @@ export const upsertRelations = async (account: AccountRow, entries: { kind: Rela
   if (items.size === 0) return { written: 0, linked: 0 };
 
   const existing = await findConnectionsByKey([...items.keys()]);
-  const unlinked = [...items].filter(([key]) => !existing.get(key)?.personId).map(([, item]) => item.ref);
+  const unlinked = [...items]
+    .filter(([key]) => !existing.get(key)?.personId)
+    .map(([, item]) => item.ref);
   const people = await matchPeople(unlinked);
 
   const records = [...items].map(([key, { kind, entry, ref }]) => {
     const current = existing.get(key);
     const record: Record<string, unknown> = {
+      ...ownership,
       syncKey: key,
       name: ref.name,
       memberId: ref.memberId,
@@ -54,13 +80,18 @@ export const upsertRelations = async (account: AccountRow, entries: { kind: Rela
       accountId: account.id,
       ...memberDetails(entry.user ?? entry),
     };
-    if (ref.salesNavigatorUserId) record.salesNavigatorUserId = ref.salesNavigatorUserId;
+    if (ref.salesNavigatorUserId)
+      record.salesNavigatorUserId = ref.salesNavigatorUserId;
     if (!current) record.messageHistoryComplete = true; // no chats known yet; chat mapping reopens it
     const person = people.get(ref);
     if (person && !current?.personId) record.personId = person.id;
 
-    const keepConnected = current?.status === 'CONNECTED';
-    const directionUnset = !current?.direction || current.direction === 'UNKNOWN';
+    const keepConnected =
+      current?.status === 'CONNECTED' &&
+      (!ownership.lastRelationSeenAt ||
+        current.lastRelationSeenAt === ownership.lastRelationSeenAt);
+    const directionUnset =
+      !current?.direction || current.direction === 'UNKNOWN';
     if (kind === 'connected') {
       record.status = 'CONNECTED';
       if (entry.created_at) record.connectedAt = entry.created_at;
@@ -84,6 +115,8 @@ export const upsertRelations = async (account: AccountRow, entries: { kind: Rela
 
   await upsertMany('linkedinConnection', 'linkedinConnections', records);
   const fills = [...people].map(([ref, person]) => ({ ref, person }));
-  await fillPersonIds(fills);
+  const failures = await fillPersonIds(fills);
+  if (failures.length > 0)
+    throw new Error(`Could not fill LinkedIn person IDs: ${failures[0].error}`);
   return { written: records.length, linked: people.size };
 };

@@ -6,7 +6,11 @@ import {
   STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS,
 } from 'twenty-sdk/define';
 
-import { ACCOUNT_FIELD, OBJECT, WORKSPACE_MEMBER_FIELD } from 'src/constants/universal-identifiers';
+import {
+  ACCOUNT_FIELD,
+  OBJECT,
+  WORKSPACE_MEMBER_FIELD,
+} from 'src/constants/universal-identifiers';
 
 export default defineField({
   universalIdentifier: ACCOUNT_FIELD.OWNER,
@@ -15,10 +19,11 @@ export default defineField({
   name: 'owner',
   label: 'Owner',
   icon: 'IconUserCircle',
-  description: 'Workspace member this LinkedIn account belongs to. Set by hand.',
+  description: 'Workspace member who authenticated this LinkedIn connection.',
   relationTargetObjectMetadataUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember.universalIdentifier,
-  relationTargetFieldMetadataUniversalIdentifier: WORKSPACE_MEMBER_FIELD.LINKEDIN_ACCOUNTS,
+  relationTargetFieldMetadataUniversalIdentifier:
+    WORKSPACE_MEMBER_FIELD.LINKEDIN_ACCOUNTS,
   universalSettings: {
     relationType: RelationType.MANY_TO_ONE,
     onDelete: OnDeleteAction.SET_NULL,

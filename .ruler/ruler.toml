@@ -1,0 +1,15 @@
+# Skills live in .agents/skills; existing MCP configuration stays in .mcp.json.
+default_agents = ["codex", "cursor", "claude", "pi", "opencode"]
+nested = true
+
+[gitignore]
+enabled = true
+
+[backup]
+enabled = false
+
+[mcp]
+enabled = false
+
+[agents.copilot]
+enabled = false

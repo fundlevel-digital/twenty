@@ -1,6 +1,9 @@
 // Minimal Twenty GraphQL client for logic functions: bulk upserts, batched updates, paged reads.
 // Talks to the core API with the app's own token, so it needs no generated client.
 
+import { RestApiClient } from 'twenty-client-sdk/rest';
+import { getLinkedinRecordSharing } from 'src/logic-functions/utils/get-linkedin-record-sharing.util';
+
 const CREATE_CHUNK = 60;
 const UPDATE_CHUNK = 25;
 const PAGE_SIZE = 200;
@@ -30,7 +33,7 @@ export const graphql = async <T = any>(
   variables: Record<string, unknown> = {},
   { allowPartial = false }: { allowPartial?: boolean } = {},
 ): Promise<{ data: T; errors: GraphqlError[] }> => {
-  const response = await fetch(`${process.env.TWENTY_API_URL}/graphql`, {
+  const response = await fetch(new RestApiClient().resolveUrl('/graphql'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken()}` },
     body: JSON.stringify({ query, variables }),
@@ -89,12 +92,22 @@ export const upsertMany = async (
   records: Record<string, unknown>[],
 ): Promise<string[]> => {
   const ids: string[] = [];
-  const mutation = `mutation Upsert($data: [${pascal(nameSingular)}CreateInput!]!) {
-    create${pascal(namePlural)}(data: $data, upsert: true) { id }
+  const mutation = `mutation Upsert($data: [${pascal(nameSingular)}CreateInput!]!, $shareWith: [ShareWithInput!]) {
+    create${pascal(namePlural)}(data: $data, upsert: true, shareWith: $shareWith) { id }
   }`;
   for (let index = 0; index < records.length; index += CREATE_CHUNK) {
-    const { data } = await graphql<any>(mutation, { data: records.slice(index, index + CREATE_CHUNK) });
-    for (const record of data[`create${pascal(namePlural)}`] ?? []) ids.push(record.id);
+    const groups = new Map<string, Record<string, unknown>[]>();
+    for (const record of records.slice(index, index + CREATE_CHUNK)) {
+      const key = JSON.stringify([record.ownerId, record.visibility]);
+      groups.set(key, [...(groups.get(key) ?? []), record]);
+    }
+    for (const group of groups.values()) {
+      const shareWith = ['linkedinAccount', 'linkedinConnection'].includes(nameSingular)
+        ? await getLinkedinRecordSharing(group[0], nameSingular === 'linkedinAccount' || group[0].visibility === 'OWNER')
+        : undefined;
+      const { data } = await graphql<Record<string, { id: string }[]>>(mutation, { data: group, shareWith });
+      for (const record of data[`create${pascal(namePlural)}`] ?? []) ids.push(record.id);
+    }
   }
   return ids;
 };

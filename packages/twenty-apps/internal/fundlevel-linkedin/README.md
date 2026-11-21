@@ -1,61 +1,158 @@
 # LinkedIn Sync (Fundlevel)
 
-Syncs our LinkedIn accounts into Twenty through [Unipile](https://www.unipile.com) (API v2). Read-only: it never sends a message, invite or InMail.
+LinkedIn conversations in Twenty's native messaging, with member sign-in, privacy,
+connections and invitations. The existing app identifier is preserved. Decisions
+are indexed in [root docs](../../../../docs/decisions/linkedin/DECISIONS.md);
+[HANDOFF.md](HANDOFF.md) records the verified preview and deployment state.
 
-## What it adds
+## Behavior
 
-| Object | One record per | Notes |
-| --- | --- | --- |
-| **LinkedIn Account** | Connected LinkedIn account | Matched on the LinkedIn User ID, so a re-link in Unipile updates the same record. **Sync Stage** drives the full sync. |
-| **LinkedIn Connection** | Account and LinkedIn member pair | Connections, pending requests (sent and received) and people we only chat with (**Not Connected**). Unique **Sync Key** = `<account LinkedIn User ID>:<member ID>`. Linked to a Person only on an exact match. |
-| **LinkedIn Message** | Message | Unique on the Unipile message ID, so a message is never stored twice. |
+- Hosted Unipile sign-in lets the member choose a proxy and country at login.
+- Each member gets a native channel. Replies and opt-in mark-as-read use its messaging provider.
+- Messages default to **Metadata** sharing. Connections default to **Workspace**, with an
+  independent **Only Me** setting after native privacy setup and access verification.
+- History supports None, 10, 20, 50 and **All**; default All. Jobs are resumable,
+  cancellable and recoverable after rate limits or lost queue deliveries.
+- Sales Navigator and InMail can be selected separately; both default on. Turning
+  off an inbox stops future imports without deleting already imported messages.
+- Contact creation supports **None**, **Sent**, and **Sent and Received**; default None.
+  Deterministic Person IDs prevent duplicate creation on retries. Matching tries
+  stable member ID, exact primary/secondary profile URL, then optional unique-name fallback.
+- Like native email/calendar, recognized self/workspace members do not become new
+  People. Existing People may be linked by exact identity; Workspace Member attribution
+  is also retained. Known employees skip name fallback. Matching uses owned account
+  identities/profile/channel handles. Names or `linkedin.com` alone cannot identify coworkers.
+- Five-minute catch-up imports missed webhooks with frozen chat pages and per-chat
+  watermarks. With history disabled it does not import pre-connection conversations.
+- Three-hour connection/invitation polling reconciles absent entries only after a
+  complete snapshot. A missing pending request becomes Not Connected; absence does
+  not establish withdrawal versus rejection. Bulk reconciliation respects the 200-record API limit.
+- Database-backed leases arbitrate jobs and space provider calls at least 2.1 seconds apart.
+- D1 is not used. Disconnect/uninstall release local resources without explicitly
+  deleting the upstream provider account.
 
-On **People** it adds the reverse **LinkedIn Connections** relation and three ID fields filled as the sync reveals them, never fetched on purpose: **LinkedIn Member ID** (unique), **LinkedIn Sales Navigator ID**, **LinkedIn Numeric Member ID** (unique).
+## Objects And Migration Stages
 
-The **LinkedIn conversation** widget, for People record pages, shows the chat bubbles, with one tab per account plus **All**.
+The final app defines `linkedinAccount`, `linkedinConnection` and internal
+`linkedinSyncLease`. Native messaging replaces the old custom Chat/Message objects
+and old Person LinkedIn tab. Accounts and leases are private; connection records
+have owner/visibility fields.
 
-## How it runs
+**Do not apply the final app with pruning to an unmigrated workspace.** Build the
+migration-stage app first using `scripts/prepare-migration-stage.mjs`. It restores
+legacy definitions and migration read permissions from `migration/**/*.template`.
+These templates are not SDK-discovered source files. The migration preserves legacy
+rows until a separate, explicit final prune.
 
-| Function | Trigger | What it does |
-| --- | --- | --- |
-| `linkedin-unipile-webhook` | `POST /s/linkedin/unipile-webhook` | Checks the `unipile-signature` header, then handles the event. Account events upsert the account, and add or reconnect queues a full sync. Message, receipt and reaction events re-read that chat and store new or changed messages, flagging **Needs Attention** on a new reply. `relation.new` stores the new connection. |
-| `linkedin-sync-tick` | Every 5 minutes | Advances the full sync of every account whose **Sync Stage** is Queued or in progress: connections, then sent and received requests, then every inbox (chat map), then message history. Progress is saved after every page, so a timeout or deploy loses nothing. |
-| `linkedin-refresh-accounts` | Every 3 hours | Re-reads all accounts (status, products, proxy). Profile URL, picture and Sales Navigator ID are refreshed at 09:00 UTC only. |
-| `linkedin-link-created-person`, `linkedin-link-updated-person` | Person created, or Person LinkedIn link / Member ID changed | Links unlinked connections that match the person exactly, and fills their LinkedIn IDs. |
+Core ingestion cannot represent every legacy reaction, receipt or provider field.
+Export full source rows before pruning. Empty legacy chats do not create empty
+native threads. Never assign an unowned legacy account to a person by inference.
 
-**Matching rules.** A Person is linked by exact LinkedIn Member ID first, then by exact profile slug. A slug shared by several people links nobody. Existing links are never replaced, and people are never created.
+## Native Privacy Prerequisites
 
-**Rate limits.** Calls are spaced 2.1 s apart per account, about 28 a minute, so the account stays under a 30-per-minute Unipile limit. A 429 is waited out while the run has time. One account is synced at a time.
+The server must contain the fix in
+`get-permissions-principals-share-keys.util.ts`: embedded application/agent shares
+must not expand the caller's private-record access. Include it in both server and
+worker images. Native private records and record sharing must be available/enabled.
+The installer uses administrator access to the server container and does not edit
+built-in roles or replace unrelated role overrides.
 
-**Full sync of an account.** Set **Sync Stage** to **Queued**. Set it to **Paused** to stop. After 5 consecutive errors it moves to **Failed**, and **Sync Error** holds the last error. A chat that fails 3 times is skipped, and its error is kept in the connection's **Message Sync State**.
+```sh
+docker exec <server> yarn command:prod feature-flag:update -w <workspace-id> --flag IS_PRIVATE_RECORDS_ENABLED --value true
+docker exec <server> yarn command:prod feature-flag:update -w <workspace-id> --flag IS_RECORD_LEVEL_SHARING_ENABLED --value true
+node scripts/configure-connection-privacy.mjs --container <server> --workspace-id <workspace-id>
+node scripts/configure-connection-privacy.mjs --container <server> --workspace-id <workspace-id> --apply
+```
 
-## Raw data archive (`worker/`)
+The first installer command is a dry run. Existing incompatible shares or non-owner
+creators stop installation for review. It uses native private-record/share services
+and preserves compatible grants. It grants the application's **grant role**, not
+its default function role, access to internal records, and gives real owners their
+account/connection shares. It records object/role IDs in internal app KV.
 
-Every raw Unipile payload is kept in Cloudflare D1 by the `fundlevel-unipile-archive` Worker:
+Verify shared/private access as two different members, another administrator, and
+with embedded front-component tokens before setting `CONNECTION_PRIVACY_READY=true`.
+New records carry native shares at creation. Visibility updates use the member's
+native sharing authority; they restrict before labeling records private and publish
+after recording Workspace. Large accounts may take over a minute because the native
+API updates privacy per record. Settings/connection sync share a lease while this runs.
 
-- **Webhooks.** Unipile's webhook endpoint is the Worker's `POST /unipile/webhook`. The Worker checks the signature, stores the event in `unipile_event`, then forwards the original request to the app's route. If Twenty does not accept an event (unreachable or a 5xx), the Worker's 10-minute cron re-sends it, re-signed, up to 5 times within a day.
-- **Objects.** After every Unipile read, the app sends the raw objects to `POST /objects`. That covers accounts, profiles, relations, requests, chats and messages, including LinkedIn event messages. `unipile_object` keeps the latest version per kind and Unipile ID.
-- **Archiving is at-least-once.** A failed archive call is retried, then fails the sync step, so the page or conversation is re-read on the next run instead of leaving a gap.
-- **Reading it back.** `GET /events?type=&account_id=&before_id=&limit=` and `GET /objects/<kind>/<unipile id>`, both with the bearer token. Or run `wrangler d1 execute unipile-archive --remote --command "<sql>"`.
+## Configuration
 
-Secrets live in Infisical (project `fundlevel`, `prod`):
-- `/shared/unipile` holds the two values both sides use: `UNIPILE_WEBHOOK_SECRET` (the Unipile endpoint's signing secret) and `UNIPILE_ARCHIVE_INGEST_TOKEN`.
-- `/apps/unipile-archive` is the Worker's contract: `UNIPILE_WEBHOOK_SECRET` and `INGEST_TOKEN`, both references to `/shared/unipile`. `npm run secrets` in `worker/` copies them to Cloudflare. Run it after any rotation; Cloudflare keeps its own copy.
-- `/apps/twenty-linkedin-sync` is the app's contract: `UNIPILE_API_KEY`, `ARCHIVE_URL`, and references for `UNIPILE_WEBHOOK_SECRET` and `ARCHIVE_TOKEN`. Copy them into the app's settings after a rotation.
+Use the existing Infisical Unipile key and signing secret; never print them.
 
-Run `npm run migrate` after adding a file to `worker/migrations`.
+- Workspace variables: `UNIPILE_API_KEY`, `UNIPILE_WEBHOOK_SECRET`.
+- Developer registration server variables: the same names, for hosted sign-in and
+  server-wide webhook resolution. Configure these as well as workspace variables.
+- `CONNECTION_PRIVACY_READY`: false until native setup and access checks pass.
 
-## Setup
+The Cloudflare archive variables are obsolete. Keep the direct webhook signing
+secret even after retiring archive-only configuration.
 
-1. `yarn install`, then deploy with the `twenty` CLI to the workspace.
-2. In the app's settings, set:
-   - `UNIPILE_API_KEY`: a Unipile v2 key
-   - `UNIPILE_WEBHOOK_SECRET`: the signing secret of the webhook endpoint created in step 3
-   - `ARCHIVE_URL` and `ARCHIVE_TOKEN`: the Worker's URL and its `INGEST_TOKEN`
-3. Deploy the Worker (`cd worker && npm run migrate && npm run deploy`, then set its secrets). In Unipile, add a webhook endpoint at `https://fundlevel-unipile-archive.fundlevel.workers.dev/unipile/webhook` for the account, message, receipt, reaction and relation events. The Worker forwards events to `https://<twenty-workspace>/s/linkedin/unipile-webhook`.
-4. Queue a full sync per account by setting its **Sync Stage** to **Queued**.
+## Build And Checks
 
-## Development
+Run from this package in the cloud:
 
-- `yarn typecheck`
-- `yarn test`: unit tests for mapping and the webhook signature
+```sh
+corepack yarn install --immutable
+./node_modules/.bin/tsgo --noEmit -p tsconfig.spec.json
+corepack yarn test
+corepack yarn lint
+npx -y twenty@2.59.0 --no-input app build
+```
+
+The SDK, client and Unipile SDK are pinned to 2.59.0. Verification covers jobs,
+leases, policy parsing, employee matching, ownership, privacy ordering and migration
+acknowledgement/attachment guards. See the handoff for runtime evidence and limits.
+
+## Staged Cutover
+
+The preview completed these stages; the rebuilt app has **not** been deployed to
+the production CRM. A future cutover needs the following sequence:
+
+1. Prepare a separate migration-stage directory outside this app:
+
+   ```sh
+   node scripts/prepare-migration-stage.mjs --output /tmp/linkedin-migration-stage
+   npx -y twenty@2.59.0 --remote <target> --no-input app apply --path /tmp/linkedin-migration-stage --no-prune
+   ```
+
+2. Configure variables and native privacy using the prerequisites above. Test actual
+   member and embedded-token access before enabling owner-only sharing.
+3. Each member connects in app preferences. Adoption requires matching ownership;
+   the original provider account ID is preserved for migration attachment downloads.
+   Resolve unassigned accounts without guessing their human owner.
+4. Inspect migration destinations, then run each account until Completed:
+
+   ```sh
+   npx -y twenty@2.59.0 --remote <target> app exec --name linkedin-migration-status --payload '{}'
+   npx -y twenty@2.59.0 --remote <target> app exec --name linkedin-migrate-messages --payload '{"connectedAccountId":"<id>"}'
+   ```
+
+   Function execution requires a signed-in workspace user; the preview's API-key
+   remote cannot execute functions by itself. Native signed-user GraphQL execution
+   was used for preview checks.
+
+   Every page must be acknowledged before its cursor advances. Default mode
+   downloads supported original attachments and stops if any expected file is missing.
+   Explicit `savedDataOnly:true` preserves available attachment metadata in clearly
+   named JSON files, without contacting Unipile. It is an accepted missing-original
+   exception, not an original-file import. Keep the same mode when resuming.
+5. Export complete source rows and reconcile counts, original IDs, text, timestamps,
+   participants, attachments and privacy. Check replies, read acknowledgements,
+   invitations and catch-up after withholding a webhook. Preserve exported legacy
+   fields with no native equivalent. Only then review and apply final pruning:
+
+   ```sh
+   npx -y twenty@2.59.0 --remote <target> --no-input app plan --prune
+   npx -y twenty@2.59.0 --remote <target> app apply --prune
+   ```
+
+6. Configure Unipile direct delivery to the registration webhook URL shown by Twenty
+   (`/webhooks/server/<registration-id>/<resolver-universal-id>`), then verify signed
+   delivery. The signed compatibility route `/s/linkedin/unipile-webhook` remains.
+   The deployed old Worker/D1 were deleted at the owner's request on 2026-11-21.
+7. Uninstall the separate official LinkedIn app only with its destructive hook behavior
+   accounted for. Its original disconnect/uninstall deletes upstream accounts; our
+   replacement does not alter that app's code. The preview disabled those cloned
+   hooks before uninstalling. Production removal is still pending.

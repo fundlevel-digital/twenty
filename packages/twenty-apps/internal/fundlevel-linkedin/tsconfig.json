@@ -16,16 +16,24 @@
     "alwaysStrict": true,
     "noImplicitAny": true,
     "strictBindCallApply": false,
-    "target": "es2018",
+    "target": "es2020",
     "module": "esnext",
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "resolveJsonModule": true,
+    "noUncheckedSideEffectImports": false,
     "paths": {
       "src/*": ["./src/*"],
       "~/*": ["./*"]
     }
   },
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "worker"]
+  "exclude": [
+    "**/__tests__/**",
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.integration-test.ts"
+  ]
 }
