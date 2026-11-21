@@ -133,3 +133,32 @@ describe('computeAnalytics', () => {
     ).toBeNull();
   });
 });
+
+it('changes recent-video metrics with the configured window and preserves the 60-day window', () => {
+  const videos = Array.from({ length: 30 }, (_, index) => ({
+    videoId: `video-${index}`,
+    publishedAt: new Date(Date.UTC(2026, 7, 30 - index)).toISOString(),
+    durationSeconds: 600,
+    liveBroadcastContent: 'none',
+    views: (index + 1) * 100,
+    likes: 10,
+    comments: 0,
+  }));
+  const calculate = (lookback: number) =>
+    computeAnalytics({
+      videos,
+      subscriberCount: 1000,
+      asOf: '2026-08-31T00:00:00Z',
+      lookback,
+      recentWindowDays: 60,
+    });
+
+  const narrow = calculate(2);
+  const wide = calculate(30);
+
+  expect(narrow?.averageViews).toBe(150);
+  expect(wide?.averageViews).toBe(1550);
+  expect(narrow?.averageViewRate).toBe(15);
+  expect(wide?.averageViewRate).toBe(155);
+  expect(narrow?.averageViews60d).toBe(wide?.averageViews60d);
+});

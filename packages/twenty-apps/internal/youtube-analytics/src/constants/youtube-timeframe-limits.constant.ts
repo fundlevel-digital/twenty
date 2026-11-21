@@ -1,0 +1,3 @@
+export const MIN_YOUTUBE_TIMEFRAME_DAYS = 1;
+export const MAX_YOUTUBE_TIMEFRAME_DAYS = 366;
+export const MAX_YOUTUBE_TIMEFRAMES = 10;

@@ -1,5 +1,4 @@
 import { CALCULATION_STATUS } from 'src/logic-functions/constants/calculation-status.constant';
-import { type AnalyticsEntry } from 'src/logic-functions/types/analytics-entry.type';
 import { type ComputedAnalytics } from 'src/logic-functions/types/computed-analytics.type';
 import { isDefined } from 'src/utils/is-defined';
 
@@ -10,16 +9,12 @@ const toUtcDate = (isoTimestamp: string | null): string | null =>
     : null;
 
 export const buildAnalyticsEntrySuccessUpdate = ({
-  entry,
   metrics,
   asOf,
 }: {
-  entry: AnalyticsEntry;
   metrics: ComputedAnalytics;
   asOf: string;
 }): Record<string, unknown> => {
-  const influencerName = entry.influencer?.name;
-
   return {
     ...metrics,
     lastPostDate: toUtcDate(metrics.lastPostDate),
@@ -27,8 +22,5 @@ export const buildAnalyticsEntrySuccessUpdate = ({
     lastCalculatedAt: asOf,
     calculationStatus: CALCULATION_STATUS.ready,
     calculationError: '',
-    ...(!isDefined(entry.name) && isDefined(influencerName)
-      ? { name: `Influencer YouTube Analytics — ${influencerName}` }
-      : {}),
   };
 };

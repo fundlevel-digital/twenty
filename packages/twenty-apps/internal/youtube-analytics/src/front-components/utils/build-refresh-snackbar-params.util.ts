@@ -9,14 +9,14 @@ export const buildRefreshSnackbarParams = ({
 }: RefreshYoutubeAnalyticsResult): EnqueueSnackbarParams => {
   if (entriesSelected === 0) {
     return {
-      message: 'No YouTube analytics entries found for the selection.',
+      message: 'No YouTube channels found for the selection.',
       variant: 'warning',
     };
   }
 
   if (entriesFailed === 0) {
     return {
-      message: `Refreshed YouTube analytics for ${entriesSelected} ${entriesSelected === 1 ? 'entry' : 'entries'}.`,
+      message: `Refreshed YouTube analytics for ${entriesSelected} ${entriesSelected === 1 ? 'channel' : 'channels'}.`,
       variant: 'success',
     };
   }
@@ -32,7 +32,7 @@ export const buildRefreshSnackbarParams = ({
   }
 
   return {
-    message: `Could not refresh ${entriesFailed} of ${entriesSelected} YouTube analytics entries.`,
+    message: `Could not refresh ${entriesFailed} of ${entriesSelected} YouTube channels.`,
     variant: 'warning',
     detailedMessage: firstFailureReason,
   };
