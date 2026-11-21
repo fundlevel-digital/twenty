@@ -3,9 +3,11 @@
 Owner decisions for the PlusVibe application in Twenty. Read this index before
 changing its data model, connections, privacy, import behavior or preferences.
 
-All records were backfilled on 2026-11-21. The implementation is installed in an
-isolated VM preview. Production deployment and existing-data migration remain
-pending. Do not infer merge/deployment status from a local commit reference.
+All records were backfilled on 2026-11-21. The app is now installed in production
+with native message associations migrated and legacy fields retained. Source
+Lead/history refresh and final pruning remain pending. See the
+[rollout handoff](../../../../../handoffs/2026-11-21-live-crm-rollout.md) and
+[repository decision 0005](../../../../../decisions/0005-roll-out-six-sessions-to-live-crm.md).
 
 | #                                                                   | Date       | Decision                                                     | Status   |
 | ------------------------------------------------------------------- | ---------- | ------------------------------------------------------------ | -------- |

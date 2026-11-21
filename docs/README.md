@@ -1,5 +1,7 @@
 # Twenty Engineering Notes
 
+- [Live CRM Rollout](handoffs/2026-11-21-live-crm-rollout.md): deployed core/apps, migration recovery, PlusVibe reconciliation and pending LinkedIn/Slack activation.
+
 - [LinkedIn Sync Handoff](../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md): native messaging rebuild, preview verification and deployment status.
 - [Decision Index](DECISIONS.md): owner choices, their exchanges and supporting evidence.
 - [Slack Sync](slack-sync.md): implementation, native preferences, sharing and live rollout requirements.

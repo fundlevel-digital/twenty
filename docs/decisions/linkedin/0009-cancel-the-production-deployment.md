@@ -1,7 +1,7 @@
 # 0009. Cancel The Production Deployment
 
 - Date: 2026-11-21
-- Status: accepted
+- Status: superseded by repository 0005
 - Decided by: Kareem
 - Area: LinkedIn
 - Related: [0008](0008-merge-main-and-deploy-to-production.md)

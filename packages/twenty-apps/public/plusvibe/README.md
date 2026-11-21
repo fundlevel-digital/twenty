@@ -210,3 +210,34 @@ Reply parsing pins the CommonJS 2.2.1 parser: newer ESM releases initialize
 
 The app role reads Workspace Members only to check employee email addresses; it
 cannot create or update member records. Failed employee lookups stop creation.
+
+## Migrate Existing Native Messages
+
+Apply the app with `--no-prune` first. Pause its import worker while migrating.
+Run the administrator script from a checkout against the Twenty server container:
+
+```sh
+docker exec -i <server> node - <workspace-id> < scripts/migrate-existing-records.cjs
+docker exec -i <server> node - <workspace-id> --apply < scripts/migrate-existing-records.cjs
+```
+
+The dry run rejects missing or ambiguous channel ownership. Apply uses native
+channel services and a workspace ORM transaction to populate sender/source-thread
+relations and move existing associations without ingesting copies. Existing
+outgoing campaign messages use outreach channels; other messages use Unibox
+channels. Unibox visibility follows saved connection preferences, defaulting to
+Metadata. Legacy mixed channels are restricted before their messages move.
+
+The script preserves native message and conversation IDs, content, timestamps and
+provider IDs, verifies a content digest, and can be rerun. Messages without a
+provider thread ID retain that absence. It does not invent source Lead IDs or
+prune legacy fields. Verify provider history and source Lead links before final
+pruning or a full history refresh.
+
+On 2026-11-21, the app and this association migration were deployed to Fundlevel:
+1,475 messages across 807 native conversations were preserved. The isolated-copy
+replay reported zero associations left to move. A member-owned API-key connection
+was created after its fingerprint matched the existing mail connection, retaining
+that connection's owner. No full history refresh was started. Legacy fields remain
+available for reconciliation; this supersedes the earlier preview-only deployment
+status in this README, while its source-history and pruning cautions remain.
