@@ -49,9 +49,12 @@ jobs:
       - name: Build the image
         run: |
           docker build --file "$DOCKERFILE" --target twenty \
-            --tag "$IMAGE:$GITHUB_SHA" --tag "$IMAGE:main" .
+            --tag "$IMAGE:$GITHUB_SHA" .
 
       - name: Publish the image
         run: |
           docker push "$IMAGE:$GITHUB_SHA"
-          docker push "$IMAGE:main"
+          if [ "$GITHUB_REF" = 'refs/heads/main' ]; then
+            docker tag "$IMAGE:$GITHUB_SHA" "$IMAGE:main"
+            docker push "$IMAGE:main"
+          fi

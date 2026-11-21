@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
+import {
+  getDisallowedSystemFieldUpdateProperties,
+  SYSTEM_FIELD_ALLOWED_UPDATE_PROPERTIES,
+} from 'src/engine/metadata-modules/flat-field-metadata/validators/utils/get-disallowed-system-field-update-properties.util';
+
 import { msg } from '@lingui/core/macro';
 import { ALL_METADATA_NAME } from 'twenty-shared/metadata';
 import {
@@ -92,23 +97,11 @@ export class FlatFieldMetadataValidatorService {
         flatFieldMetadataToValidate.objectMetadataUniversalIdentifier,
     };
 
-    const SYSTEM_FIELD_ALLOWED_UPDATE_PROPERTIES = [
-      'universalSettings',
-      'isActive',
-    ] as const satisfies (keyof UniversalFlatFieldMetadata)[];
-
     if (
       !buildOptions.isSystemBuild &&
       existingFlatFieldMetadataToUpdate.isSystem
     ) {
       const { overrides: updatedOverrides, ...columnUpdate } = flatEntityUpdate;
-
-      const disallowedColumnProperties = Object.keys(columnUpdate).filter(
-        (property) =>
-          !SYSTEM_FIELD_ALLOWED_UPDATE_PROPERTIES.includes(
-            property as (typeof SYSTEM_FIELD_ALLOWED_UPDATE_PROPERTIES)[number],
-          ),
-      );
 
       const callerEntry = isDefined(updatedOverrides)
         ? readAuthoredOverrideEntry<Record<string, unknown>>({
@@ -120,21 +113,15 @@ export class FlatFieldMetadataValidatorService {
               buildOptions.applicationUniversalIdentifier,
           })
         : undefined;
-      const disallowedOverriddenProperties = Object.keys(
-        callerEntry ?? {},
-      ).filter((property) => property !== 'isActive');
-
-      const disallowedProperties = [
-        ...new Set([
-          ...disallowedColumnProperties,
-          ...disallowedOverriddenProperties,
-        ]),
-      ];
+      const disallowedProperties = getDisallowedSystemFieldUpdateProperties({
+        columnUpdate,
+        overrideEntry: callerEntry,
+      });
 
       if (disallowedProperties.length > 0) {
         validationResult.errors.push({
           code: FieldMetadataExceptionCode.FIELD_MUTATION_NOT_ALLOWED,
-          message: `System fields only allow updating: ${SYSTEM_FIELD_ALLOWED_UPDATE_PROPERTIES.join(', ')}. Forbidden properties: ${disallowedProperties.join(', ')}`,
+          message: `System fields only allow updating: ${[...SYSTEM_FIELD_ALLOWED_UPDATE_PROPERTIES, 'translations'].join(', ')}. Forbidden properties: ${disallowedProperties.join(', ')}`,
           userFriendlyMessage: msg`System fields cannot be updated`,
         });
       }

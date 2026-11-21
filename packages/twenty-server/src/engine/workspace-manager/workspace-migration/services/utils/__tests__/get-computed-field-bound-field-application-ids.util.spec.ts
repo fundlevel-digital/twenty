@@ -74,4 +74,53 @@ describe('getComputedFieldBoundFieldApplicationIds', () => {
       }),
     ).toEqual([]);
   });
+
+  it('loads every dependency of a computation that reads an edited stored field', () => {
+    expect(
+      getComputedFieldBoundFieldApplicationIds({
+        flatFieldMetadataMaps: {
+          byUniversalIdentifier: {
+            'contact-relation': { applicationId: 'custom', computation: null },
+            'last-contact': {
+              applicationId: 'last-contact-app',
+              computation: null,
+            },
+            streak: { applicationId: 'companion-app', computation: null },
+            rollup: {
+              applicationId: 'rollup-app',
+              computation: {
+                kind: 'ROLLUP',
+                relationFieldName: 'contactLinks',
+                operation: 'LATEST',
+                expression: 'person.streak',
+                orderBy: 'person.lastContact',
+                bindings: {
+                  contactLinks: 'contact-relation',
+                  'contactLinks.person.lastContact': 'last-contact',
+                  'contactLinks.person.streak': 'streak',
+                },
+              },
+            },
+          },
+        },
+        fieldMetadataOperations: {
+          flatEntityToCreate: {},
+          flatEntityToUpdate: { 'contact-relation': { computation: null } },
+        },
+      }),
+    ).toEqual(['rollup-app', 'custom', 'last-contact-app', 'companion-app']);
+  });
+
+  it('loads dependent computations when their source field is deleted', () => {
+    expect(
+      getComputedFieldBoundFieldApplicationIds({
+        flatFieldMetadataMaps,
+        fieldMetadataOperations: {
+          flatEntityToCreate: {},
+          flatEntityToUpdate: {},
+          flatEntityToDelete: { 'price-field': {} },
+        },
+      }),
+    ).toEqual(['other-application', 'pricing-application']);
+  });
 });

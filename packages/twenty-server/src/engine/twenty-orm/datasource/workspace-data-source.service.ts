@@ -52,6 +52,7 @@ export class WorkspaceDataSourceService {
       workspaceId: workspaceContext.authContext.workspace.id,
       flatObjectMetadataMaps: workspaceContext.flatObjectMetadataMaps,
       flatFieldMetadataMaps: workspaceContext.flatFieldMetadataMaps,
+      flatFieldMetadataOptionMaps: workspaceContext.flatFieldMetadataOptionMaps,
       flatIndexMaps: workspaceContext.flatIndexMaps,
       flatValidationRuleMaps: workspaceContext.flatValidationRuleMaps,
       objectIdByNameSingular: workspaceContext.objectIdByNameSingular,

@@ -11,6 +11,7 @@ import { configurableViewFilterOperands } from '@/object-record/object-filter-dr
 import { FormFieldInput } from '@/object-record/record-field/ui/components/FormFieldInput';
 import { FormBooleanFieldInput } from '@/object-record/record-field/ui/form-types/components/FormBooleanFieldInput';
 import { FormMultiSelectFieldInput } from '@/object-record/record-field/ui/form-types/components/FormMultiSelectFieldInput';
+import { FormMultiRecordPicker } from '@/object-record/record-field/ui/form-types/components/FormMultiRecordPicker';
 import { FormRelativeDatePicker } from '@/object-record/record-field/ui/form-types/components/FormRelativeDatePicker';
 import { FormTextFieldInput } from '@/object-record/record-field/ui/form-types/components/FormTextFieldInput';
 import { FormWorkspaceMemberFilterValueInput } from '@/object-record/record-field/ui/form-types/components/FormWorkspaceMemberFilterValueInput';
@@ -33,7 +34,11 @@ import {
   StandardObjectNameSingular,
   FieldMetadataType,
 } from 'twenty-shared/types';
-import { isDefined, type RelativeDateFilter } from 'twenty-shared/utils';
+import {
+  isDefined,
+  jsonRelationFilterValueSchema,
+  type RelativeDateFilter,
+} from 'twenty-shared/utils';
 import { parseBooleanFromStringValue } from 'twenty-shared/workflow';
 import { type JsonValue } from 'type-fest';
 
@@ -233,6 +238,28 @@ export const AdvancedFilterSidePanelValueFormInput = ({
         defaultValue={recordFilter.value}
         onChange={handleChange}
         onClear={handleClear}
+        readonly={readonly}
+        VariablePicker={VariablePicker}
+      />
+    );
+  }
+
+  if (isFieldRelationManyToOne(field)) {
+    const relationFilterValue = jsonRelationFilterValueSchema.safeParse(
+      recordFilter.value,
+    );
+
+    return (
+      <FormMultiRecordPicker
+        key={`${recordFilter.fieldMetadataId}-${recordFilter.relationTargetFieldMetadataId ?? ''}`}
+        label=""
+        defaultValue={
+          relationFilterValue.success
+            ? relationFilterValue.data.selectedRecordIds
+            : recordFilter.value
+        }
+        objectNameSingular={field.metadata.relationObjectMetadataNameSingular}
+        onChange={handleChange}
         readonly={readonly}
         VariablePicker={VariablePicker}
       />

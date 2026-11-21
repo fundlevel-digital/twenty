@@ -4,4 +4,5 @@ export const FIELD_METADATA_ROLLUP_OPERATIONS = [
   'AVG',
   'MIN',
   'MAX',
+  'LATEST',
 ] as const;

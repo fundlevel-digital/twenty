@@ -266,8 +266,8 @@ The side panel is where secondary work happens: record previews, AI chat outside
 
 ## Copy
 
-- Sentence case, short and specific: "Open company", not "Open". Cut filler: "Create company", not "Create new company"; "Name", not "Result name".
-- Use the product's words. Say relation and related, not link or linked. Say can see and can't see, not hidden or visible. Share levels are Can view, Can edit and Full access; relation types are Has many and Belongs to one. One concept keeps one name across the UI and docs: say sidebar, not navigation drawer or navbar. Before inventing a label, search the Lingui catalogs for an existing one. All UI strings go through Lingui.
+- Title Case for UI labels and titles: "Open Company", "Create Company", "Name". Keep explanatory sentences in sentence case. Preserve acronyms and brand casing; connector words such as "of" and "in" may remain lowercase in the middle of a label. Keep labels short and specific, and cut filler.
+- Use the product's words. Say relation and related, not link or linked. Say can see and can't see, not hidden or visible. Share levels are Can View, Can Edit and Full Access; relation types are Has Many and Belongs to One. One concept keeps one name across the UI and docs: say sidebar, not navigation drawer or navbar. Before inventing a label, search the Lingui catalogs for an existing one. All UI strings go through Lingui.
 - Labels say exactly what they act on. Replace vague ones such as "This view", "Action" or "Workspace default".
 - Placeholders show a concrete example for the exact case, without "e.g.". Friendly names come first; technical names go in a tooltip.
 - Join a name and its qualifier with a middle dot, qualifier in tertiary: "GPT-6 Luna · Medium". Slashes are for breadcrumbs only.
