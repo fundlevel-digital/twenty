@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { type ObjectRecordsOperationType } from 'twenty-shared/types';
 import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
 
-import { type AccessGroupWithoutCompactId } from 'src/engine/permissions/internal/access-group/types/access-group.type';
+import { type AccessGroupWithoutCompactId } from 'src/engine/permissions/internal/access-group/types/access-group-without-compact-id.type';
 import { buildPrincipalsRelatedRecordPathAccessGroupsOrThrow } from 'src/engine/permissions/internal/access-group/utils/build-principals-related-record-path-access-groups-or-throw.util';
 import { buildRoleAccessGroupsOrThrow } from 'src/engine/permissions/internal/access-group/utils/build-role-access-groups-or-throw.util';
 import { type PermissionsObjectAccessRequest } from 'src/engine/permissions/internal/combine/types/permissions-access-request.type';
@@ -36,7 +36,7 @@ export class AccessGroupReadService {
     objectMetadataId: string;
     operationType: ObjectRecordsOperationType;
   }): Promise<number[]> {
-    const { workspaceId, mainPrincipal } = principals;
+    const { workspaceId } = principals;
     const { featureFlagsMap, rolesPermissions, flatFieldMetadataMaps } =
       await this.workspaceCacheService.getOrRecompute(workspaceId, [
         'featureFlagsMap',
@@ -44,18 +44,22 @@ export class AccessGroupReadService {
         'flatFieldMetadataMaps',
       ]);
 
+    const workspaceMember = await this.findPrincipalWorkspaceMember(principals);
+    const workspaceMembers = [workspaceMember].filter(isDefined);
+
     return this.findCompactIds({
       workspaceId,
-      accessGroups: buildRoleAccessGroupsOrThrow({
-        roleId: mainPrincipal.roleId,
-        objectMetadataId,
-        objectRecordsPermissions:
-          rolesPermissions[mainPrincipal.roleId]?.objects[objectMetadataId],
-        operationTypes: [operationType],
-        workspaceMembers: await this.findPrincipalsWorkspaceMembers(principals),
-        flatFieldMetadataMaps,
-        isRelationHopEnabled: isRlsRelationHopEnabled(featureFlagsMap),
-      }),
+      accessGroups: principals.mainPrincipal.roleIds.flatMap((roleId) =>
+        buildRoleAccessGroupsOrThrow({
+          objectMetadataId,
+          objectRecordsPermissions:
+            rolesPermissions[roleId]?.objects[objectMetadataId],
+          operationTypes: [operationType],
+          workspaceMembers,
+          flatFieldMetadataMaps,
+          isRelationHopEnabled: isRlsRelationHopEnabled(featureFlagsMap),
+        }),
+      ),
     });
   }
 
@@ -76,33 +80,30 @@ export class AccessGroupReadService {
       workspaceId,
       accessGroups: buildPrincipalsRelatedRecordPathAccessGroupsOrThrow({
         request,
-        workspaceMembers: await this.findPrincipalsWorkspaceMembers(
-          request.principals,
-        ),
+        workspaceMembers: [
+          await this.findPrincipalWorkspaceMember(request.principals),
+        ].filter(isDefined),
         flatFieldMetadataMaps,
       }),
     });
   }
 
-  private async findPrincipalsWorkspaceMembers({
+  private async findPrincipalWorkspaceMember({
     workspaceId,
     mainPrincipal,
   }: Pick<
     PermissionsPrincipalsWithRolesContext,
     'workspaceId' | 'mainPrincipal'
-  >): Promise<RlsWorkspaceMember[]> {
+  >): Promise<RlsWorkspaceMember | undefined> {
     if (!isPermissionMainPrincipalWorkspaceMember(mainPrincipal)) {
-      return [];
+      return undefined;
     }
 
     const { flatWorkspaceMemberMaps } =
       await this.workspaceCacheService.getOrRecompute(workspaceId, [
         'flatWorkspaceMemberMaps',
       ]);
-    const workspaceMember =
-      flatWorkspaceMemberMaps.byId[mainPrincipal.workspaceMemberId];
-
-    return isDefined(workspaceMember) ? [workspaceMember] : [];
+    return flatWorkspaceMemberMaps.byId[mainPrincipal.workspaceMemberId];
   }
 
   private async findCompactIds({

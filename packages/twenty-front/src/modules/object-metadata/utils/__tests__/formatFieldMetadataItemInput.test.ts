@@ -4,6 +4,22 @@ import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { formatFieldMetadataItemInput } from '@/object-metadata/utils/formatFieldMetadataItemInput';
 
 describe('formatFieldMetadataItemInput', () => {
+  it('preserves a calculation and clears settings that require stored values', () => {
+    const computation = { kind: 'FORMULA', expression: 'budget * 2' } as const;
+
+    expect(
+      formatFieldMetadataItemInput({
+        computation,
+        defaultValue: 10,
+        isUnique: true,
+      }),
+    ).toMatchObject({
+      computation,
+      defaultValue: null,
+      isUnique: false,
+      isSearchable: false,
+    });
+  });
   it('should format the field metadata item input correctly', () => {
     const options: FieldMetadataItemOption[] = [
       {

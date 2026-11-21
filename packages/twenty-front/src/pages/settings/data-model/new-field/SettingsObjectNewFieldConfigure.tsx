@@ -1,3 +1,4 @@
+import { SettingsDataModelFieldComputationForm } from '@/settings/data-model/fields/forms/components/SettingsDataModelFieldComputationForm';
 import { WorkspaceRouteUnavailable } from '@/ui/layout/page/components/WorkspaceRouteUnavailable';
 import { isDDLLockedState } from '@/client-config/states/isDDLLockedState';
 import { useFieldMetadataItem } from '@/object-metadata/hooks/useFieldMetadataItem';
@@ -75,6 +76,7 @@ export const SettingsObjectNewFieldConfigure = () => {
       icon: FIELD_TYPE_DEFAULT_ICONS[fieldType] ?? DEFAULT_ICON_FOR_NEW_FIELD,
       label: '',
       name: '',
+      computation: null,
     },
   });
 
@@ -247,17 +249,26 @@ export const SettingsObjectNewFieldConfigure = () => {
               isCreationMode={true}
             />
           </Section.Root>
-          <Section.Root>
-            <Section.Header
-              title={t`Customization`}
-              description={t`Customize field settings`}
-            />
-            <SettingsDataModelFieldSettingsFormCard
-              fieldType={fieldType}
-              existingFieldMetadataId=""
-              objectNameSingular={activeObjectMetadataItem.nameSingular}
-            />
-          </Section.Root>
+          <SettingsDataModelFieldComputationForm
+            objectMetadataItem={activeObjectMetadataItem}
+            fieldType={fieldType}
+            isCreationMode
+            disabled={isDDLLocked || isSaving}
+          />
+          {(!isDefined(formConfig.watch('computation')) ||
+            fieldType === FieldMetadataType.SELECT) && (
+            <Section.Root>
+              <Section.Header
+                title={t`Customization`}
+                description={t`Customize field settings`}
+              />
+              <SettingsDataModelFieldSettingsFormCard
+                fieldType={fieldType}
+                existingFieldMetadataId=""
+                objectNameSingular={activeObjectMetadataItem.nameSingular}
+              />
+            </Section.Root>
+          )}
         </SettingsPageContainer>
       </SettingsPageLayout>
     </FormProvider>

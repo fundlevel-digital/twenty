@@ -6,6 +6,7 @@ import { useIcons } from 'twenty-ui/icon/provider';
 import { themeCssVariables } from 'twenty-ui/theme';
 
 import { SettingsValidationRuleHelperDetails } from '@/validation-rules/components/SettingsValidationRuleHelperDetails';
+import { type ExpressionEditorMode } from '@/validation-rules/types/ExpressionEditorMode';
 import { type ValidationRuleEditorField } from '@/validation-rules/types/ValidationRuleEditorField';
 import { type ValidationRuleHelperItem } from '@/validation-rules/types/ValidationRuleHelperItem';
 import { getValidationRuleHelperItemIcon } from '@/validation-rules/utils/getValidationRuleHelperItemIcon';
@@ -37,6 +38,7 @@ const getItemKey = (item: ValidationRuleHelperItem) =>
     : `${item.kind}:${item.definition.name}`;
 
 type SettingsValidationRuleHelperPanelProps = {
+  mode?: ExpressionEditorMode;
   items: ValidationRuleHelperItem[];
   highlightedIndex: number;
   isFocused: boolean;
@@ -46,6 +48,7 @@ type SettingsValidationRuleHelperPanelProps = {
 };
 
 export const SettingsValidationRuleHelperPanel = ({
+  mode = 'condition',
   items,
   highlightedIndex,
   isFocused,
@@ -76,7 +79,7 @@ export const SettingsValidationRuleHelperPanel = ({
               role="option"
               aria-selected={isFocusedItem}
               ref={
-                isHighlighted
+                isFocusedItem
                   ? (element: HTMLElement | null) =>
                       element?.scrollIntoView({ block: 'nearest' })
                   : undefined
@@ -95,6 +98,7 @@ export const SettingsValidationRuleHelperPanel = ({
       </StyledList>
       {isDefined(highlightedItem) ? (
         <SettingsValidationRuleHelperDetails
+          mode={mode}
           item={highlightedItem}
           editorFields={editorFields}
         />

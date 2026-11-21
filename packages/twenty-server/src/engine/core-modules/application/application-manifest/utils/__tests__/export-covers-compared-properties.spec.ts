@@ -160,6 +160,7 @@ const VIEW_SORT_MANIFEST: ViewSortManifest = {
   fieldMetadataUniversalIdentifier: FIELD_UID,
   direction: ViewSortDirection.DESC,
   subFieldName: 'primaryLinkUrl',
+  relationTargetFieldMetadataUniversalIdentifier: FIELD_UID,
 };
 
 const VIEW_MANIFEST: ViewManifest = {
@@ -238,6 +239,7 @@ const NAVIGATION_MENU_ITEM_MANIFEST: Required<
   position: 12,
   link: 'https://example.com/pets',
   nativePageKey: 'workflows',
+  builtInSectionKey: 'favorites',
   parentUniversalIdentifier: '88888888-8888-4888-8888-888888888888',
   viewUniversalIdentifier: VIEW_UID,
   targetObjectUniversalIdentifier: OBJECT_UID,
@@ -398,6 +400,7 @@ const exportWorkflowManifestOrThrow = (manifest: WorkflowManifest) => {
       ...flatUniversalWorkflowVersion,
       workspaceId: 'workspace-id',
       applicationId: 'application-id',
+      coreWorkflowId: universalFlatWorkflow.id,
     },
     references,
   });
@@ -664,7 +667,7 @@ const EXPORTED_KINDS: ExportedKind[] = [
       }),
     ),
     renamedProperties: {},
-    workspaceLocalProperties: [],
+    workspaceLocalProperties: WORKSPACE_LOCAL_PROPERTIES,
     knownGaps: {},
   },
   {
@@ -926,8 +929,6 @@ const EXPORTED_KINDS: ExportedKind[] = [
     workspaceLocalProperties: ['visibility', 'createdByUserWorkspaceId'],
     knownGaps: {
       isSystem: 'system workflows are reported as excluded',
-      jobConfig:
-        'no manifest slot yet, every application workflow gets the default',
       lastPublishedVersionId:
         'legacy workspace version pointer, kept while the active version matches the definition',
       lastPublishedCoreWorkflowVersionId:
@@ -938,7 +939,11 @@ const EXPORTED_KINDS: ExportedKind[] = [
     metadataName: 'agent',
     emittedProperties: Object.keys(EXPORTED_AGENT_MANIFEST),
     renamedProperties: {},
-    workspaceLocalProperties: WORKSPACE_LOCAL_PROPERTIES,
+    workspaceLocalProperties: [
+      ...WORKSPACE_LOCAL_PROPERTIES,
+      'isPrivate',
+      'createdByUserWorkspaceId',
+    ],
     knownGaps: {
       modelConfiguration:
         'no manifest slot; an agent with one is reported as unsupported',
@@ -958,6 +963,8 @@ const EXPORTED_KINDS: ExportedKind[] = [
         'API key role assignments are reported as excluded, only agent roles are exported',
       webhookUniversalIdentifier:
         'webhook role assignments are reported as excluded, only agent roles are exported',
+      isSystemSideEffect:
+        'only the system holds a role for a member this way, and member role assignments are reported as excluded',
     },
   },
   {

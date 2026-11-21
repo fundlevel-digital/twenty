@@ -221,7 +221,7 @@ export class RecordPermissionsReadService {
               getPermissionsPrincipalsRecordsPermissions({
                 principals: buildRolePermissionsPrincipals({
                   workspaceId,
-                  roleId,
+                  roleIds: [roleId],
                 }),
                 metadataMaps,
               }).objects[objectMetadataId],
@@ -723,7 +723,6 @@ export class RecordPermissionsReadService {
       buildEntrySQLCondition: (entry) =>
         this.buildEntrySQLCondition({
           principals,
-          metadataMaps,
           operationType,
           ...entry,
           hypotheticalRecordShareAccessLevel:

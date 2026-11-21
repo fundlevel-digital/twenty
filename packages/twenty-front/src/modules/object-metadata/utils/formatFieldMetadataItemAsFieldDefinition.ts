@@ -1,3 +1,4 @@
+import { isComputedField } from 'twenty-shared/utils';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { type FieldDefinition } from '@/object-record/record-field/ui/types/FieldDefinition';
 import { type FieldMetadata } from '@/object-record/record-field/ui/types/FieldMetadata';
@@ -50,7 +51,7 @@ export const formatFieldMetadataItemAsFieldDefinition = ({
     settings: field.settings,
     isNullable: field.isNullable,
     applicationId: field.applicationId,
-    isUIEditable: field.isUIEditable ?? true,
+    isUIEditable: !isComputedField(field) && (field.isUIEditable ?? true),
   };
 
   return {

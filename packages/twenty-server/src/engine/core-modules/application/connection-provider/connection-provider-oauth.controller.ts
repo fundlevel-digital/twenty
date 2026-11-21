@@ -9,7 +9,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { isNonEmptyString } from '@sniptt/guards';
 import { type Request, type Response } from 'express';
 import { ApiPath } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -29,6 +28,7 @@ import {
 import { buildOAuthDiscoveryClientMetadataUrl } from 'src/engine/core-modules/application/connection-provider/oauth-discovery/utils/build-oauth-discovery-client-metadata-url.util';
 import { buildOAuthDiscoveryClientMetadata } from 'src/engine/core-modules/application/connection-provider/oauth-discovery/utils/build-oauth-discovery-client-metadata.util';
 import { TransientTokenService } from 'src/engine/core-modules/auth/token/services/transient-token.service';
+import { DomainServerConfigService } from 'src/engine/core-modules/domain/domain-server-config/services/domain-server-config.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserSessionCookieService } from 'src/engine/core-modules/user-session/services/user-session-cookie.service';
 import { UserSessionService } from 'src/engine/core-modules/user-session/services/user-session.service';
@@ -52,6 +52,7 @@ export class ConnectionProviderOAuthController {
     private readonly userSessionCookieService: UserSessionCookieService,
     private readonly userSessionService: UserSessionService,
     private readonly twentyConfigService: TwentyConfigService,
+    private readonly domainServerConfigService: DomainServerConfigService,
     @InjectRepository(WorkspaceEntity)
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
     @InjectRepository(UserWorkspaceEntity)
@@ -66,7 +67,10 @@ export class ConnectionProviderOAuthController {
 
     return res.json({
       client_id: buildOAuthDiscoveryClientMetadataUrl(serverUrl),
-      ...buildOAuthDiscoveryClientMetadata(serverUrl),
+      ...buildOAuthDiscoveryClientMetadata({
+        serverUrl,
+        frontendUrl: this.domainServerConfigService.getFrontUrl().toString(),
+      }),
     });
   }
 
@@ -194,20 +198,17 @@ export class ConnectionProviderOAuthController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const browserNonces = this.flowCookieService.readBrowserNonces(req);
+    const workspaceHostCallbackUrl =
+      await this.flowRedirectService.findWorkspaceHostCallbackUrl({
+        request: req,
+        state,
+      });
 
-    if (browserNonces.length === 0 && isNonEmptyString(state)) {
-      const workspaceHostCallbackUrl =
-        await this.flowRedirectService.findWorkspaceHostCallbackUrl({
-          state,
-          requestHost: req.get('host'),
-          requestOriginalUrl: req.originalUrl,
-        });
-
-      if (isDefined(workspaceHostCallbackUrl)) {
-        return res.redirect(workspaceHostCallbackUrl);
-      }
+    if (isDefined(workspaceHostCallbackUrl)) {
+      return res.redirect(workspaceHostCallbackUrl);
     }
+
+    const browserNonces = this.flowCookieService.readBrowserNonces(req);
 
     if (errorParam) {
       return this.flowRedirectService.redirectToErrorFromState({

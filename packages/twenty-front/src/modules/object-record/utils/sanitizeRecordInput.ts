@@ -2,6 +2,7 @@ import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/Enriche
 import { isManyToOneRelationField } from '@/object-metadata/utils/isManyToOneRelationField';
 import { isCompositeFieldType } from '@/object-record/object-filter-dropdown/utils/isCompositeFieldType';
 import { isFieldMorphRelation } from '@/object-record/record-field/ui/types/guards/isFieldMorphRelation';
+import { type FieldFilesValue } from '@/object-record/record-field/ui/types/FieldMetadata';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { isSystemSearchVectorField } from '@/object-record/utils/isSystemSearchVectorField';
 import { removeTypenamesFromCompositeFieldValue } from '@/object-record/utils/removeTypenamesFromCompositeFieldValue';
@@ -9,6 +10,7 @@ import {
   computeMorphRelationGqlFieldName,
   computeRelationGqlFieldJoinColumnName,
   isDefined,
+  isComputedField,
 } from 'twenty-shared/utils';
 import { doNotTranslate } from 'twenty-shared/i18n';
 import { FieldMetadataType, RelationType } from '~/generated-metadata/graphql';
@@ -66,6 +68,13 @@ export const sanitizeRecordInput = ({
           return undefined;
         }
 
+        if (
+          isDefined(fieldMetadataItem) &&
+          isComputedField(fieldMetadataItem)
+        ) {
+          return undefined;
+        }
+
         if (fieldMetadataItem?.isNullable === false && fieldValue == null) {
           return undefined;
         }
@@ -92,10 +101,12 @@ export const sanitizeRecordInput = ({
           fieldMetadataItem.type === FieldMetadataType.FILES &&
           Array.isArray(fieldValue)
         ) {
-          const cleanedFiles = fieldValue.map((file: any) => ({
-            fileId: file.fileId,
-            label: file.label,
-          }));
+          const cleanedFiles = fieldValue.map(
+            (file: Pick<FieldFilesValue, 'fileId' | 'label'>) => ({
+              fileId: file.fileId,
+              label: file.label,
+            }),
+          );
           return [fieldName, cleanedFiles];
         }
 

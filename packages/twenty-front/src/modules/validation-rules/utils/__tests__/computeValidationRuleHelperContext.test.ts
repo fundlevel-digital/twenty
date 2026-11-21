@@ -90,4 +90,28 @@ describe('computeValidationRuleHelperContext', () => {
   it('should offer everything right after a field chip', () => {
     expect(compute('amount', true).names).toContain('isDefined');
   });
+
+  it('suggests calculation functions and constants without condition-only syntax', () => {
+    const { items } = computeValidationRuleHelperContext({
+      textBeforeCursor: '',
+      isCursorAfterField: false,
+      fields: [],
+      mode: 'calculation',
+    });
+    const names = items.map(getItemName);
+
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'round',
+        'concat',
+        'if',
+        'daysSince',
+        'today',
+        'now',
+      ]),
+    );
+    expect(names).not.toContain('previous');
+    expect(names).not.toContain('isNonEmptyString');
+    expect(names).not.toContain('dateDiff');
+  });
 });

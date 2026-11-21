@@ -7,11 +7,12 @@ import Text from '@tiptap/extension-text';
 import { Placeholder } from '@tiptap/extensions/placeholder';
 import { UndoRedo } from '@tiptap/extensions/undo-redo';
 import { type Editor, EditorContent, useEditor } from '@tiptap/react';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type ValidationRuleFieldDescriptor } from 'twenty-shared/types';
 import {
   compileValidationRuleExpression,
   isDefined,
+  parseComputedFieldExpressionOrThrow,
 } from 'twenty-shared/utils';
 import { Field } from 'twenty-ui/primitives/input';
 import { Card } from 'twenty-ui/primitives/surfaces';
@@ -107,16 +108,25 @@ const StyledEditor = styled.div<{ hasError: boolean }>`
 
 type ValidationRuleExpressionEditorProps = {
   value: string;
-  fields: ValidationRuleFieldDescriptor[];
   editorFields: ValidationRuleEditorField[];
   onChange: (expression: string) => void;
-};
+  onBlur?: () => void;
+  label?: string;
+  disabled?: boolean;
+} & (
+  | { mode?: 'condition'; fields: ValidationRuleFieldDescriptor[] }
+  | { mode: 'calculation'; fields?: never }
+);
 
 export const ValidationRuleExpressionEditor = ({
   value,
-  fields,
+  fields = [],
   editorFields,
   onChange,
+  onBlur,
+  mode = 'condition',
+  label,
+  disabled = false,
 }: ValidationRuleExpressionEditorProps) => {
   const { t } = useLingui();
 
@@ -126,55 +136,63 @@ export const ValidationRuleExpressionEditor = ({
         textBeforeCursor: '',
         isCursorAfterField: false,
         fields: editorFields,
+        mode,
       }),
     );
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [isHelperFocused, setIsHelperFocused] = useState(false);
+  const [isEditorFocused, setIsEditorFocused] = useState(false);
 
-  const getFieldNodeAttributes = (
-    path: string,
-  ): ValidationRuleFieldNodeAttributes | null => {
-    const field = editorFields.find((candidate) => candidate.path === path);
+  const getFieldNodeAttributes = useCallback(
+    (path: string): ValidationRuleFieldNodeAttributes | null => {
+      const field = editorFields.find((candidate) => candidate.path === path);
 
-    return isDefined(field)
-      ? {
-          path,
-          label: getValidationRuleEditorFieldChipLabel(field),
-          iconName: field.iconName,
-        }
-      : null;
-  };
+      return isDefined(field)
+        ? {
+            path,
+            label: getValidationRuleEditorFieldChipLabel(field),
+            iconName: field.iconName,
+          }
+        : null;
+    },
+    [editorFields],
+  );
 
   const refreshHelperContext = (editor: Editor) => {
     setHelperContext(
       computeValidationRuleHelperContextAtCursor({
         editor,
         fields: editorFields,
+        mode,
       }),
     );
     setHighlightedIndex(0);
     setIsHelperFocused(false);
   };
 
-  const initialContent: JSONContent = {
-    type: 'doc',
-    content: [
-      {
-        type: 'paragraph',
-        content: buildValidationRuleEditorParagraphContent({
-          segments: computeValidationRuleEditorSegments({
-            expression: value,
-            isFieldPath: (path) => isDefined(getFieldNodeAttributes(path)),
-            cursorOffset: null,
-            fieldRanges: [],
+  const content = useMemo<JSONContent>(
+    () => ({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: buildValidationRuleEditorParagraphContent({
+            segments: computeValidationRuleEditorSegments({
+              expression: value,
+              isFieldPath: (path) => isDefined(getFieldNodeAttributes(path)),
+              cursorOffset: null,
+              fieldRanges: [],
+            }),
+            getFieldNodeAttributes,
           }),
-          getFieldNodeAttributes,
-        }),
-      },
-    ],
-  };
+        },
+      ],
+    }),
+    [value, getFieldNodeAttributes],
+  );
 
   const editor = useEditor({
+    editable: !disabled,
     extensions: [
       SingleParagraphDocument,
       Paragraph,
@@ -184,19 +202,29 @@ export const ValidationRuleExpressionEditor = ({
         placeholder: t`Type a field name or a function`,
       }),
       ValidationRuleFieldNode,
-      ValidationRuleExpressionExtension.configure({ getFieldNodeAttributes }),
+      ValidationRuleExpressionExtension.configure({
+        getFieldNodeAttributes,
+        mode,
+      }),
     ],
-    content: initialContent,
+    content,
     onUpdate: ({ editor: updatedEditor }) => {
       onChange(getValidationRuleEditorText(updatedEditor.state.doc));
       refreshHelperContext(updatedEditor);
     },
     onSelectionUpdate: ({ editor: updatedEditor }) =>
       refreshHelperContext(updatedEditor),
+    onFocus: () => setIsEditorFocused(true),
+    onBlur: () => {
+      setIsEditorFocused(false);
+      setIsHelperFocused(false);
+      onBlur?.();
+    },
     editorProps: {
       attributes: {
         role: 'textbox',
-        'aria-label': t`Condition`,
+        'aria-label': label ?? t`Condition`,
+        'aria-readonly': String(disabled),
         spellcheck: 'false',
       },
       handleKeyDown: (_view, event) => handleEditorKeyDown(event),
@@ -207,8 +235,24 @@ export const ValidationRuleExpressionEditor = ({
     injectCSS: false,
   });
 
+  // Tiptap preserves editability when React updates editor options.
+  useEffect(() => {
+    editor?.setEditable(!disabled, false);
+  }, [editor, disabled]);
+
+  useEffect(() => {
+    if (
+      isDefined(editor) &&
+      !isEditorFocused &&
+      !editor.isFocused &&
+      getValidationRuleEditorText(editor.state.doc) !== value
+    ) {
+      editor.commands.setContent(content, { emitUpdate: false });
+    }
+  }, [editor, content, value, isEditorFocused]);
+
   const insertHelperItem = (item: ValidationRuleHelperItem) => {
-    if (!isDefined(editor)) {
+    if (!isDefined(editor) || disabled) {
       return;
     }
 
@@ -218,12 +262,17 @@ export const ValidationRuleExpressionEditor = ({
       replaceFromOffset: computeValidationRuleHelperContextAtCursor({
         editor,
         fields: editorFields,
+        mode,
       }).replaceFromOffset,
       getFieldNodeAttributes,
     });
   };
 
   const handleEditorKeyDown = (event: KeyboardEvent): boolean => {
+    if (disabled) {
+      return false;
+    }
+
     const { items } = helperContext;
 
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -258,24 +307,43 @@ export const ValidationRuleExpressionEditor = ({
     return true;
   };
 
-  const compilationResult = compileValidationRuleExpression({
-    expression: value,
-    fields,
-  });
-  const errorMessage =
-    value.trim().length > 0 && !compilationResult.isValid
-      ? getValidationRuleErrorMessage(compilationResult)
-      : null;
+  const getErrorMessage = () => {
+    if (value.trim().length === 0) {
+      return null;
+    }
+
+    if (mode === 'calculation') {
+      try {
+        parseComputedFieldExpressionOrThrow(value);
+
+        return null;
+      } catch {
+        return t`Enter a valid expression`;
+      }
+    }
+
+    const compilationResult = compileValidationRuleExpression({
+      expression: value,
+      fields,
+    });
+
+    return compilationResult.isValid
+      ? null
+      : getValidationRuleErrorMessage(compilationResult);
+  };
+  const errorMessage = getErrorMessage();
 
   return (
     <>
-      <Card.Content divider>
+      <Card.Content divider={!disabled}>
         <Field.Root>
           <StyledEditor hasError={isDefined(errorMessage)}>
             <EditorContent editor={editor} />
-            <StyledAskAiButtonContainer>
-              <SettingsValidationRuleAskAiButton />
-            </StyledAskAiButtonContainer>
+            {mode === 'condition' && !disabled && (
+              <StyledAskAiButtonContainer>
+                <SettingsValidationRuleAskAiButton />
+              </StyledAskAiButtonContainer>
+            )}
           </StyledEditor>
           {isDefined(errorMessage) && (
             <Field.Error match role="alert">
@@ -284,14 +352,17 @@ export const ValidationRuleExpressionEditor = ({
           )}
         </Field.Root>
       </Card.Content>
-      <SettingsValidationRuleHelperPanel
-        items={helperContext.items}
-        highlightedIndex={highlightedIndex}
-        isFocused={isHelperFocused}
-        editorFields={editorFields}
-        onHighlight={setHighlightedIndex}
-        onSelect={insertHelperItem}
-      />
+      {!disabled && (
+        <SettingsValidationRuleHelperPanel
+          mode={mode}
+          items={helperContext.items}
+          highlightedIndex={highlightedIndex}
+          isFocused={isHelperFocused}
+          editorFields={editorFields}
+          onHighlight={setHighlightedIndex}
+          onSelect={insertHelperItem}
+        />
+      )}
     </>
   );
 };

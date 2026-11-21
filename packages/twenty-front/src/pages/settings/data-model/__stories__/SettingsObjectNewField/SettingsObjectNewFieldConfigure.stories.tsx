@@ -41,6 +41,7 @@ const meta: Meta<PageDecoratorArgs> = {
             data: {
               createOneField: {
                 ...fieldMetadataItem,
+                computation: variables.input.field.computation ?? null,
                 description: variables.input.field.description ?? null,
                 icon: variables.input.field.icon ?? null,
                 isUnique: variables.input.field.isUnique ?? null,

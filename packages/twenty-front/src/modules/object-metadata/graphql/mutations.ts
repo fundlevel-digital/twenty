@@ -44,6 +44,7 @@ export const CREATE_ONE_OBJECT_METADATA_ITEM = gql`
         isSearchable
         createdAt
         updatedAt
+        computation
         defaultValue
         options
         settings
@@ -113,6 +114,7 @@ export const CREATE_ONE_FIELD_METADATA_ITEM = gql`
       createdAt
       updatedAt
       settings
+      computation
       defaultValue
       options
       isLabelSyncedWithName
@@ -185,6 +187,7 @@ export const UPDATE_ONE_FIELD_METADATA_ITEM = gql`
       createdAt
       updatedAt
       settings
+      computation
       isLabelSyncedWithName
       applicationId
       object {

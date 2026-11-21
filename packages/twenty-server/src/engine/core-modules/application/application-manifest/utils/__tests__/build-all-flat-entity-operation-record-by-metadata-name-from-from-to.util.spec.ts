@@ -55,6 +55,7 @@ const ROLE_TARGET: FlatRoleTarget = {
   universalIdentifier: 'role-target-universal-identifier',
   roleId: 'role-id',
   roleUniversalIdentifier: 'role-universal-identifier',
+  isSystemSideEffect: false,
   userWorkspaceId: null,
   agentId: null,
   agentUniversalIdentifier: null,
@@ -122,6 +123,7 @@ const NAVIGATION_MENU_ITEM: FlatNavigationMenuItem = {
   name: 'App link',
   link: 'https://example.com',
   nativePageKey: null,
+  builtInSectionKey: null,
   icon: null,
   color: null,
   parentId: null,
@@ -135,6 +137,8 @@ const NAVIGATION_MENU_ITEM: FlatNavigationMenuItem = {
   agentId: null,
   agentUniversalIdentifier: null,
   position: 0,
+  isActive: true,
+  overrides: null,
 };
 
 const WORKSPACE_CUSTOM_APPLICATION_UNIVERSAL_IDENTIFIER =
@@ -157,6 +161,8 @@ const AGENT: FlatAgent = {
   triggers: [],
   isSystem: true,
   isActive: true,
+  isPrivate: false,
+  createdByUserWorkspaceId: null,
   overrides: null,
   navigationMenuItemIds: [],
   navigationMenuItemUniversalIdentifiers: [],
@@ -289,6 +295,7 @@ describe('buildAllFlatEntityOperationRecordByMetadataNameFromFromTo', () => {
     const result = inferDeletionOf(
       withRoleTarget({
         ...ROLE_TARGET,
+        isSystemSideEffect: false,
         userWorkspaceId: 'a-member-user-workspace-id',
       }),
     );
