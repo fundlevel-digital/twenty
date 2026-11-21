@@ -15,7 +15,8 @@
     "twenty": "twenty",
     "typecheck": "tsgo --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "lint": "oxlint src"
+    "lint": "oxlint src",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@sniptt/guards": "^0.2.0",
