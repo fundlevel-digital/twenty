@@ -9,8 +9,12 @@ const mocks = vi.hoisted(() => ({
   get: vi.fn(),
   set: vi.fn(),
   updateMessageChannel: vi.fn(),
+  syncMessageFolders: vi.fn(),
+  enqueueJobs: vi.fn(),
 }));
 vi.mock('twenty-sdk/logic-function', () => ({
+  syncMessageFolders: mocks.syncMessageFolders,
+  enqueueJobs: mocks.enqueueJobs,
   listConnections: mocks.listConnections,
   listMessageChannels: mocks.listMessageChannels,
   listMessageFolders: mocks.listMessageFolders,
@@ -119,5 +123,122 @@ describe('member Slack app preferences', () => {
       },
     });
     vi.unstubAllEnvs();
+  });
+});
+
+describe('bulk conversation selection', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mocks.listConnections.mockResolvedValue([
+      { id: 'own', accessToken: 'test-token' },
+    ]);
+    mocks.listMessageChannels.mockResolvedValue([
+      { id: 'channel', isSyncEnabled: true },
+    ]);
+    mocks.listMessageFolders.mockResolvedValue([
+      { externalId: 'C1', name: 'Sales', isSynced: true },
+      { externalId: 'D1', name: 'Alex', isSynced: false },
+      { externalId: 'D2', name: 'Sam', isSynced: false },
+    ]);
+    mocks.get.mockResolvedValue(null);
+    mocks.enqueueJobs.mockResolvedValue({ enqueued: true });
+  });
+  const request = (conversationIds: string[], connectedAccountId = 'own') =>
+    ({
+      userWorkspaceId: 'viewer',
+      body: {
+        conversationSelections: [{ connectedAccountId, conversationIds }],
+        history: 'ALL',
+      },
+    }) as Parameters<typeof settings>[0];
+  it('shows unsynced DMs and channels so they can be selected', async () => {
+    const result = await settings({ userWorkspaceId: 'viewer' } as Parameters<
+      typeof settings
+    >[0]);
+    expect(result).toMatchObject({
+      accounts: [
+        {
+          folders: [
+            { id: 'C1', isSynced: true, kind: 'CHANNEL' },
+            { id: 'D1', isSynced: false, kind: 'DM' },
+            { id: 'D2', isSynced: false, kind: 'DM' },
+          ],
+        },
+      ],
+    });
+  });
+  it('saves multiple selections and queues their full history in one batch', async () => {
+    await settings(request(['D1', 'D2']));
+    expect(mocks.syncMessageFolders).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        folders: [
+          { externalId: 'C1', name: 'Sales', isSynced: false },
+          { externalId: 'D1', name: 'Alex', isSynced: true },
+          { externalId: 'D2', name: 'Sam', isSynced: true },
+        ],
+      }),
+    );
+    expect(mocks.enqueueJobs).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        jobs: [
+          {
+            payload: expect.objectContaining({ channelId: 'D1', oldest: '0' }),
+          },
+          {
+            payload: expect.objectContaining({ channelId: 'D2', oldest: '0' }),
+          },
+        ],
+      }),
+    );
+    expect(mocks.set).toHaveBeenCalledWith('sync-history:own', 'ALL');
+  });
+  it('rejects another member connection before changing any selections', async () => {
+    expect(await settings(request(['D1'], 'someone-else'))).toMatchObject({
+      status: 403,
+    });
+    expect(mocks.syncMessageFolders).not.toHaveBeenCalled();
+    expect(mocks.enqueueJobs).not.toHaveBeenCalled();
+  });
+  it('rejects an unknown conversation before saving', async () => {
+    expect(await settings(request(['unknown']))).toMatchObject({ status: 400 });
+    expect(mocks.syncMessageFolders).not.toHaveBeenCalled();
+  });
+  it('supports clearing all selections without queuing a history import', async () => {
+    await settings(request([]));
+    expect(mocks.syncMessageFolders).toHaveBeenCalledWith(
+      expect.objectContaining({
+        folders: expect.arrayContaining([
+          expect.objectContaining({ externalId: 'C1', isSynced: false }),
+          expect.objectContaining({ externalId: 'D1', isSynced: false }),
+        ]),
+      }),
+    );
+    expect(mocks.enqueueJobs).not.toHaveBeenCalled();
+  });
+  it('retries a history request after selection was saved but the queue failed', async () => {
+    mocks.listMessageFolders.mockResolvedValue([
+      { externalId: 'D1', name: 'Alex', isSynced: true },
+    ]);
+    mocks.enqueueJobs.mockResolvedValueOnce({ enqueued: false });
+    await expect(settings(request(['D1']))).rejects.toThrow(
+      'could not be queued',
+    );
+    expect(mocks.set).not.toHaveBeenCalledWith(
+      'sync-history-queued:own',
+      expect.anything(),
+    );
+    mocks.enqueueJobs.mockResolvedValueOnce({ enqueued: true });
+    await settings(request(['D1']));
+    expect(mocks.enqueueJobs).toHaveBeenCalledTimes(2);
+    expect(mocks.set).toHaveBeenCalledWith('sync-history-queued:own', {
+      D1: 'ALL',
+    });
+  });
+  it('does not queue history again for unchanged sync settings', async () => {
+    mocks.get.mockImplementation(async (key) =>
+      key === 'sync-history-queued:own' ? { C1: 'ALL' } : null,
+    );
+    await settings(request(['C1']));
+    expect(mocks.enqueueJobs).not.toHaveBeenCalled();
   });
 });

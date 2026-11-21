@@ -18,5 +18,6 @@ Owner decisions for the Slack application, conversation views, test data and con
 | [0009](0009-native-preferences-ui.md)                         | 2026-11-21 | Replace the plain Slack preferences form with native settings controls | accepted |
 | [0013](0013-open-slack-pull-request.md)                       | 2026-11-21 | Open the Slack work for review                                         | accepted |
 | [0014](0014-integrate-main-and-push.md)                       | 2026-11-21 | Integrate remote main, resolve conflicts, commit and push              | accepted |
+| [0015](0015-bulk-dm-and-channel-sync-settings.md) | 2026-11-21 | Choose DMs and channels together with readable names and bulk sync settings | accepted |
 
 [Repository decision 0005](../0005-roll-out-six-sessions-to-live-crm.md) records the live core/app rollout and Kareem’s instruction to leave Slack OAuth pending.

@@ -141,3 +141,20 @@ Use the grant role for private-record application shares, never the function rol
 Hindsight was unavailable in this workspace because its private profile was absent.
 No memory retention is claimed. The decision records, source and private verification
 evidence are the handoff sources.
+
+## App-Managed Webhook Follow-Up (2026-11-21)
+
+The previous one-time administrator helper did not meet Kareem's automation
+request. The app now configures/repairs its webhook during the native settings
+save health check and retries every five minutes. The only workspace credential
+is **Unipile Service Key**; the manual signing-secret variable was removed.
+Secrets stay at Unipile and are retrieved for signature checks. The retired
+operator wrapper fails with guidance to save the Service Key instead.
+
+Endpoint discovery handles both public app domains and Twenty's workspace URLs.
+Only exact workspace URLs or an explicitly scoped legacy endpoint are adopted;
+unrelated and other-workspace endpoints are preserved. Sign-in, native privacy
+verification and the 821-message history migration remain deferred. See
+[decision 0011](../../../../docs/decisions/linkedin/0011-app-managed-webhooks-and-service-key.md)
+and the [rollout handoff](../../../../docs/handoffs/2026-11-21-live-crm-rollout.md)
+for live verification.

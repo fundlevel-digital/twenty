@@ -79,9 +79,9 @@ API updates privacy per record. Settings/connection sync share a lease while thi
 
 ## Configuration
 
-Use the existing Infisical Unipile key and signing secret; never print them.
+Use the existing Unipile Service Key from private runtime configuration; never print it. The app retrieves the webhook signing secret from Unipile automatically.
 
-- Workspace variables: `UNIPILE_API_KEY`, `UNIPILE_WEBHOOK_SECRET`.
+- Workspace variable: **Unipile Service Key** (`UNIPILE_API_KEY`), with webhook-management permissions.
 - Developer registration server variables: the same names, for hosted sign-in and
   server-wide webhook resolution. Configure these as well as workspace variables.
 - Internal app KV `linkedin-private-records-ready`: false until native setup and access checks pass; this is not a user-editable application variable.
@@ -148,9 +148,8 @@ the production CRM. A future cutover needs the following sequence:
    npx -y twenty@2.59.0 --remote <target> app apply --prune
    ```
 
-6. Configure Unipile direct delivery to the registration webhook URL shown by Twenty
-   (`/webhooks/server/<registration-id>/<resolver-universal-id>`), then verify signed
-   delivery. The signed compatibility route `/s/linkedin/unipile-webhook` remains.
+6. Save the Unipile Service Key and verify the automatic webhook health check.
+   Delivery uses the app-managed workspace route; no signing secret is entered.
    The deployed old Worker/D1 were deleted at the owner's request on 2026-11-21.
 7. Uninstall the separate official LinkedIn app only with its destructive hook behavior
    accounted for. Its original disconnect/uninstall deletes upstream accounts; our
@@ -159,19 +158,21 @@ the production CRM. A future cutover needs the following sequence:
 
 ## Automatic Webhook Configuration
 
-After saving the Unipile API key, the administrator can configure delivery and
-its generated secret without copying credentials through the UI:
+Saving the **Unipile Service Key** runs the app's native health check, which
+creates or repairs its webhook. A scheduled app function retries every five
+minutes. No administrator command or manual signing-secret input is required.
+The app stores only the endpoint ID in internal KV and retrieves its signing
+secret directly from Unipile when verifying delivery.
 
-```sh
-node scripts/configure-webhook.mjs --container <server> --workspace-id <workspace-id>
-node scripts/configure-webhook.mjs --container <server> --workspace-id <workspace-id> --apply
-```
+Setup reuses this workspace's exact callback URL, preserves unrelated endpoints,
+and verifies the public route before changing delivery. On installations without
+a separate public function domain, it uses Twenty's workspace URL. The
+former registration endpoint is adopted only when an operator explicitly scopes
+its known endpoint ID to this workspace during the upgrade. Another workspace's
+shared server endpoint is not adopted implicitly.
 
-The first command is a dry run. Apply reuses an endpoint matching this app’s
-registration URL or creates one, subscribes to the supported message/account
-events, stores its secret through Twenty’s encrypted variable services, and tests
-signed acceptance and unsigned rejection. It leaves unrelated endpoints alone.
-The helper completed on production on 2026-11-21; LinkedIn sign-in can happen later.
+The old `configure-webhook.mjs` command is retired. LinkedIn sign-in and legacy
+history migration remain deferred until the owner is ready.
 
 Archive URL/token variables and the manual privacy-readiness toggle were removed
 from production. Readiness is an internal app KV value, set only after native

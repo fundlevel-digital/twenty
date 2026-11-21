@@ -1,7 +1,7 @@
 # 0010. Automate Webhook Setup And Remove Obsolete Configuration
 
 - Date: 2026-11-21
-- Status: accepted
+- Status: superseded by 0011 (webhook setup mechanism only)
 - Decided by: Kareem
 - Area: LinkedIn
 - Related: [Archive removal](0003-drop-and-delete-the-archive-worker.md), [Deferred connection](../0006-connect-linkedin-after-the-rollout.md)

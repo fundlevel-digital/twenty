@@ -18,6 +18,10 @@ import {
   type SlackConversation,
 } from 'src/utils/slack';
 import { enqueue } from 'src/utils/queue';
+import {
+  conversationDetailsKey,
+  conversationLabel,
+} from 'src/utils/conversation-label';
 
 export const discover = async ({
   connectedAccountId,
@@ -37,6 +41,10 @@ export const discover = async ({
   const connection = await getConnection(connectedAccountId);
   const [channel] = await listMessageChannels({ connectedAccountId });
   if (!connection.accessToken || !channel?.isSyncEnabled) return;
+  await kv.set(`discovery:${connectedAccountId}`, {
+    isRunning: true,
+    updatedAt: Date.now(),
+  });
   try {
     const page = await slackRequest<{
       channels: SlackConversation[];
@@ -62,18 +70,24 @@ export const discover = async ({
         channel: conversation.id,
       });
       const teamId = connection.externalAccountId?.split(':')[0];
+      const label = await conversationLabel(
+        connection.accessToken,
+        teamId ?? '',
+        detail,
+      );
       const applicationRecordId = teamId
-        ? await upsertSlackChannel(teamId, detail)
+        ? await upsertSlackChannel(teamId, { ...detail, name: label.name })
         : undefined;
+      await kv.set(conversationDetailsKey(connectedAccountId, detail.id), {
+        kind: label.kind,
+      });
       const current = existing.find(
         (folder) => folder.externalId === detail.id,
       );
       folders.push({
         externalId: detail.id,
         ...(applicationRecordId ? { applicationRecordId } : {}),
-        name:
-          detail.name ??
-          (detail.is_im ? `DM ${detail.user ?? detail.id}` : detail.id),
+        name: label.name,
         ...(current ? {} : { isSynced: detail.is_ext_shared === true }),
       });
     }
@@ -98,6 +112,11 @@ export const discover = async ({
       await enqueue(DISCOVER_UNIVERSAL_IDENTIFIER, {
         connectedAccountId,
         cursor: page.response_metadata.next_cursor,
+      });
+    else
+      await kv.set(`discovery:${connectedAccountId}`, {
+        isRunning: false,
+        updatedAt: Date.now(),
       });
   } catch (error) {
     if (!(error instanceof SlackRateLimitError)) throw error;
