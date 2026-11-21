@@ -1,7 +1,7 @@
 # 0004. Defer Production Deployment
 
 - Date: 2026-11-21
-- Status: accepted
+- Status: superseded by 0005
 - Decided by: Kareem
 - Area: release operations
 - Related: [0002](0002-preview-before-production-deployment.md)

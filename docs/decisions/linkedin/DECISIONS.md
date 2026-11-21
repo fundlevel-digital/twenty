@@ -16,8 +16,10 @@ choices are identified separately from Kareem's decisions.
 | [0006](0006-configurable-contact-creation-and-employees.md) | 2026-11-21 | Make contact creation configurable and follow email/calendar's treatment of employees | accepted |
 | [0007](0007-open-the-rebuild-pull-request.md) | 2026-11-21 | Commit and open the complete rebuild for review against main | superseded by 0008 (deployment restriction only) |
 | [0008](0008-merge-main-and-deploy-to-production.md) | 2026-11-21 | Merge main, commit/push and deploy the rebuild to the live CRM | superseded by 0009 (deployment authorization only) |
-| [0009](0009-cancel-the-production-deployment.md) | 2026-11-21 | Cancel deployment while retaining the completed merge and push | accepted |
+| [0009](0009-cancel-the-production-deployment.md) | 2026-11-21 | Cancel deployment while retaining the completed merge and push | superseded by repository 0005 |
 
 See the [app handoff](../../../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md)
 for verified completion, preview limitations and production status. Record 0009 cancels the production deployment authorization from 0008;
 the rebuild remains preview-only.
+
+[Repository decision 0005](../0005-roll-out-six-sessions-to-live-crm.md) resumes production rollout on 2026-11-21.
