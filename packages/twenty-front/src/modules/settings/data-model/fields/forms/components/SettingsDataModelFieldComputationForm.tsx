@@ -1,4 +1,7 @@
-import { COMPUTED_FIELD_VALUE_TYPES } from 'twenty-shared/constants';
+import {
+  COMPUTED_FIELD_VALUE_TYPES,
+  VALIDATION_RULE_PREVIOUS_VARIABLE_NAME,
+} from 'twenty-shared/constants';
 import { Text } from 'twenty-ui/primitives/typography';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme';
@@ -6,13 +9,17 @@ import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/Enriche
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { isOneToManyRelationField } from '@/object-metadata/utils/isOneToManyRelationField';
 import { Select } from '@/ui/input/components/Select';
+import { ValidationRuleExpressionEditor } from '@/validation-rules/components/ValidationRuleExpressionEditor';
+import { buildValidationRuleEditorFields } from '@/validation-rules/utils/buildValidationRuleEditorFields';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { useLingui } from '@lingui/react/macro';
+import { useEffect } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { type FieldMetadataComputation } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isFieldMetadataNumericKind } from 'twenty-shared/utils';
 import { Section } from 'twenty-ui/components/layout';
-import { Field, Textarea } from 'twenty-ui/primitives/input';
+import { Field } from 'twenty-ui/primitives/input';
+import { Card } from 'twenty-ui/primitives/surfaces';
 import {
   FeatureFlagKey,
   FieldMetadataType,
@@ -23,6 +30,7 @@ type SettingsDataModelFieldComputationFormProps = {
   fieldType: FieldMetadataType;
   isCreationMode: boolean;
   disabled?: boolean;
+  storedComputation?: FieldMetadataComputation | null;
 };
 
 const StyledFields = styled.div`
@@ -40,9 +48,15 @@ export const SettingsDataModelFieldComputationForm = ({
   fieldType,
   isCreationMode,
   disabled = false,
+  storedComputation,
 }: SettingsDataModelFieldComputationFormProps) => {
   const { t } = useLingui();
-  const { control, watch } = useFormContext<ComputationFormValues>();
+  const {
+    control,
+    watch,
+    resetField,
+    formState: { dirtyFields },
+  } = useFormContext<ComputationFormValues>();
   const computation = watch('computation');
   const { objectMetadataItems } = useObjectMetadataItems();
   const isEnabled = useIsFeatureEnabled(
@@ -56,6 +70,16 @@ export const SettingsDataModelFieldComputationForm = ({
     FieldMetadataType.DATE_TIME,
     FieldMetadataType.SELECT,
   ].includes(fieldType);
+
+  useEffect(() => {
+    if (
+      !isCreationMode &&
+      isDefined(storedComputation) &&
+      !Boolean(dirtyFields.computation)
+    ) {
+      resetField('computation', { defaultValue: storedComputation });
+    }
+  }, [isCreationMode, storedComputation, dirtyFields.computation, resetField]);
 
   if (
     !isDefined(computation) &&
@@ -105,62 +129,48 @@ export const SettingsDataModelFieldComputationForm = ({
               value?.kind === 'FORMULA'
                 ? value.expression
                 : (value?.[property] ?? '');
+            const editorFields = isDefined(expressionObject)
+              ? buildValidationRuleEditorFields({
+                  objectMetadataItem: expressionObject,
+                  objectMetadataItems,
+                }).filter(
+                  (field) =>
+                    !field.path.startsWith(
+                      `${VALIDATION_RULE_PREVIOUS_VARIABLE_NAME}.`,
+                    ) &&
+                    (field.hasMembers ||
+                      isFieldMetadataNumericKind(field.type) ||
+                      field.type === FieldMetadataType.SELECT ||
+                      field.type === FieldMetadataType.UUID ||
+                      COMPUTED_FIELD_VALUE_TYPES.some(
+                        (type) => type === field.type,
+                      )),
+                )
+              : [];
 
             return (
               <Field.Root>
                 <Field.Label>{label}</Field.Label>
-                <Textarea
-                  aria-label={label}
-                  value={
-                    value?.kind === 'FORMULA'
-                      ? property === 'expression'
-                        ? value.expression
-                        : ''
-                      : (value?.[property] ?? '')
-                  }
-                  disabled={disabled}
-                  onBlur={onBlur}
-                  rows={2}
-                  onChange={(event) =>
-                    onChange({
-                      ...value,
-                      [property]:
-                        property === 'filter' && !event.target.value
-                          ? undefined
-                          : event.target.value,
-                    })
-                  }
-                />
-                <Select
-                  dropdownId={`field-computation-insert-${property}`}
-                  value=""
-                  disabled={disabled}
-                  options={[
-                    { value: '', label: t`Insert Field` },
-                    ...(expressionObject?.fields ?? [])
-                      .filter(
-                        (field) =>
-                          field.isActive &&
-                          (field.type === FieldMetadataType.SELECT ||
-                            field.type === FieldMetadataType.UUID ||
-                            COMPUTED_FIELD_VALUE_TYPES.some(
-                              (type) => type === field.type,
-                            )),
-                      )
-                      .map((field) => ({
-                        value: field.name,
-                        label: field.label,
-                      })),
-                  ]}
-                  onChange={(fieldName) => {
-                    if (fieldName) {
+                <Card.Root fullWidth>
+                  <ValidationRuleExpressionEditor
+                    key={`${value?.kind}-${expressionObject?.id}-${property}`}
+                    mode="calculation"
+                    label={label}
+                    value={expression}
+                    editorFields={editorFields}
+                    disabled={disabled}
+                    onBlur={onBlur}
+                    onChange={(expression) =>
                       onChange({
                         ...value,
-                        [property]: `${expression}${fieldName}`,
-                      });
+                        [property]:
+                          property === 'filter' && !expression
+                            ? undefined
+                            : expression,
+                      })
                     }
-                  }}
-                />
+                  />
+                </Card.Root>
                 <Field.Description>{description}</Field.Description>
               </Field.Root>
             );

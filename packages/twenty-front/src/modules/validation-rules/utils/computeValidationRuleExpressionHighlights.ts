@@ -1,22 +1,21 @@
-import { VALIDATION_RULE_FUNCTIONS } from 'twenty-shared/constants';
 import { type ValidationRuleExpressionToken } from 'twenty-shared/types';
 import {
   isDefined,
   tokenizeValidationRuleExpression,
 } from 'twenty-shared/utils';
 
-import { VALIDATION_RULE_KEYWORDS } from '@/validation-rules/constants/ValidationRuleKeywords';
+import { type ExpressionEditorMode } from '@/validation-rules/types/ExpressionEditorMode';
+import { getExpressionEditorSyntax } from '@/validation-rules/utils/getExpressionEditorSyntax';
 import {
   type ValidationRuleExpressionHighlight,
   type ValidationRuleExpressionHighlightKind,
 } from '@/validation-rules/types/ValidationRuleExpressionHighlight';
 
-const FUNCTION_NAMES = Object.keys(VALIDATION_RULE_FUNCTIONS);
-const KEYWORD_NAMES = VALIDATION_RULE_KEYWORDS.map(({ name }) => name);
 const OPERATOR_CHARACTERS = '=!<>+-*/%?:|&';
 
 const getHighlightKind = (
   token: ValidationRuleExpressionToken,
+  { functions, keywords }: ReturnType<typeof getExpressionEditorSyntax>,
 ): ValidationRuleExpressionHighlightKind | null => {
   switch (token.type) {
     case 'string':
@@ -25,11 +24,13 @@ const getHighlightKind = (
     case 'number':
       return 'number';
     case 'path':
-      if (FUNCTION_NAMES.includes(token.text)) {
+      if (functions.some(({ name }) => name === token.text)) {
         return 'function';
       }
 
-      return KEYWORD_NAMES.includes(token.text) ? 'keyword' : null;
+      return keywords.some(({ name }) => name === token.text)
+        ? 'keyword'
+        : null;
     case 'symbol':
       return OPERATOR_CHARACTERS.includes(token.text) ? 'operator' : null;
     default:
@@ -39,11 +40,15 @@ const getHighlightKind = (
 
 export const computeValidationRuleExpressionHighlights = (
   expression: string,
-): ValidationRuleExpressionHighlight[] =>
-  tokenizeValidationRuleExpression(expression).flatMap((token) => {
-    const kind = getHighlightKind(token);
+  mode: ExpressionEditorMode = 'condition',
+): ValidationRuleExpressionHighlight[] => {
+  const syntax = getExpressionEditorSyntax(mode);
+
+  return tokenizeValidationRuleExpression(expression).flatMap((token) => {
+    const kind = getHighlightKind(token, syntax);
 
     return isDefined(kind)
       ? [{ kind, start: token.start, end: token.end }]
       : [];
   });
+};

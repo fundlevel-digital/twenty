@@ -418,6 +418,7 @@ export const SettingsObjectFieldEdit = () => {
               objectMetadataItem={objectMetadataItem}
               fieldType={fieldMetadataItem.type}
               isCreationMode={false}
+              storedComputation={fieldMetadataItem.computation}
               disabled={isFieldPropertiesReadonly || !isCustomField}
             />
             {!isReverseJunctionRelation &&
