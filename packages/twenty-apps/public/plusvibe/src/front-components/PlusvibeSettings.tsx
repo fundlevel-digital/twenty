@@ -456,7 +456,7 @@ export const PlusvibeSettings = () => {
           <Section.Header
             title={t('3. Enable sync')}
             description={t(
-              'Import contacts, campaigns, sent emails and replies. Imported emails are shared with your Twenty workspace.',
+              'Import contacts, campaigns, sent emails and replies. Outreach is fully shared; Unibox uses your sharing preference.',
             )}
           />
           <StyledStack>
