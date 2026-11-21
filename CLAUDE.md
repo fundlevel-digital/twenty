@@ -87,7 +87,8 @@ continue independent work. Connection details and CLI fallback are in the
 # Agent Configuration Sources
 
 Ruler owns repository rules in `.ruler/*.md`. Edit those sources, then run
-`yarn ruler:apply` from the repository root. The generated root `AGENTS.md` and
+`bash scripts/ruler-apply.sh` from the repository root
+(or `yarn ruler:apply` after root dependencies are installed). The generated root `AGENTS.md` and
 `CLAUDE.md` stay tracked so fresh checkouts have instructions before installation.
 Do not edit generated rules directly. Scoped rules may use `<area>/.ruler/*.md`.
 Keep the root outputs as regular files: Ruler refuses the former `AGENTS.md` →
@@ -119,6 +120,10 @@ settled choices unless Kareem changes them; record reversals by supersession.
 
 For setting up, restoring or diagnosing a remote Twenty preview, use the
 [Twenty remote preview skill](.agents/skills/twenty-remote-preview/SKILL.md).
+
+LinkedIn's index is `docs/decisions/linkedin/DECISIONS.md`; implementation and
+operating details remain in `packages/twenty-apps/internal/fundlevel-linkedin/`.
+Distinguish source implementation, preview verification and production changes.
 
 
 

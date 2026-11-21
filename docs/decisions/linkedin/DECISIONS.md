@@ -1,0 +1,23 @@
+# Decisions: LinkedIn
+
+Fundlevel's LinkedIn app, its native messaging rebuild, privacy and preview cutover.
+Records were backfilled on 2026-11-21 from the supplied Claude transcript and this
+Conductor conversation. Historical transcript timestamps are retained where
+available; current exchange dates use this session's date. Agent implementation
+choices are identified separately from Kareem's decisions.
+
+| # | Date | Decision | Status |
+| --- | --- | --- | --- |
+| [0001](0001-keep-our-app-and-use-native-messaging.md) | 2026-11-21 | Keep LinkedIn Sync, adopt native messages and member connections, migrate before retiring legacy objects | accepted |
+| [0002](0002-configurable-workspace-connection-sharing.md) | 2026-11-21 | Connections are shared workspace-wide by default, with configurable privacy | accepted |
+| [0003](0003-drop-and-delete-the-archive-worker.md) | 2026-11-21 | Simplify by dropping D1 and delete the deployed archive Worker/database | accepted |
+| [0004](0004-cloud-preview-and-simulated-provider-checks.md) | 2026-11-21 | Rebuild in a cloud CRM preview and finish using saved data and simulated provider responses | superseded by 0008 (deployment restriction only) |
+| [0005](0005-linkedin-groups-labels-and-app-cleanup.md) | 2026-11-21 | Add Home field groups, remove obsolete fields, use Title Case and remove the separate official app | accepted |
+| [0006](0006-configurable-contact-creation-and-employees.md) | 2026-11-21 | Make contact creation configurable and follow email/calendar's treatment of employees | accepted |
+| [0007](0007-open-the-rebuild-pull-request.md) | 2026-11-21 | Commit and open the complete rebuild for review against main | superseded by 0008 (deployment restriction only) |
+| [0008](0008-merge-main-and-deploy-to-production.md) | 2026-11-21 | Merge main, commit/push and deploy the rebuild to the live CRM | superseded by 0009 (deployment authorization only) |
+| [0009](0009-cancel-the-production-deployment.md) | 2026-11-21 | Cancel deployment while retaining the completed merge and push | accepted |
+
+See the [app handoff](../../../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md)
+for verified completion, preview limitations and production status. Record 0009 cancels the production deployment authorization from 0008;
+the rebuild remains preview-only.

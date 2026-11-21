@@ -1,7 +1,8 @@
 # Agent Configuration Sources
 
 Ruler owns repository rules in `.ruler/*.md`. Edit those sources, then run
-`yarn ruler:apply` from the repository root. The generated root `AGENTS.md` and
+`bash scripts/ruler-apply.sh` from the repository root
+(or `yarn ruler:apply` after root dependencies are installed). The generated root `AGENTS.md` and
 `CLAUDE.md` stay tracked so fresh checkouts have instructions before installation.
 Do not edit generated rules directly. Scoped rules may use `<area>/.ruler/*.md`.
 Keep the root outputs as regular files: Ruler refuses the former `AGENTS.md` →

@@ -8,3 +8,7 @@ settled choices unless Kareem changes them; record reversals by supersession.
 
 For setting up, restoring or diagnosing a remote Twenty preview, use the
 [Twenty remote preview skill](.agents/skills/twenty-remote-preview/SKILL.md).
+
+LinkedIn's index is `docs/decisions/linkedin/DECISIONS.md`; implementation and
+operating details remain in `packages/twenty-apps/internal/fundlevel-linkedin/`.
+Distinguish source implementation, preview verification and production changes.

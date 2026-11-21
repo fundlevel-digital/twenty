@@ -1,0 +1,9 @@
+/node_modules
+.yarn
+generated
+/dist/
+.twenty
+.DS_Store
+.env*
+*.tsbuildinfo
+*.d.ts

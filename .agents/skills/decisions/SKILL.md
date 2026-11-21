@@ -22,6 +22,7 @@ All decision records and indexes live in the repository root's `docs` directory:
 | ----------------- | ----------------------------------------------- | ------------------------------ |
 | Repository        | `docs/DECISIONS.md`                             | `docs/decisions/NNNN-title.md` |
 | YouTube Analytics | `docs/decisions/youtube-analytics/DECISIONS.md` | Same directory                 |
+| LinkedIn Sync | `docs/decisions/linkedin/DECISIONS.md` | Same directory |
 | PlusVibe | `docs/decisions/packages/twenty-apps/public/plusvibe/DECISIONS.md` | Same directory |
 | New area          | `docs/decisions/<area>/DECISIONS.md`            | Same directory                 |
 
