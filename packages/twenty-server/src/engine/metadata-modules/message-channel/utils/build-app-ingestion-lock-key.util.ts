@@ -1,8 +1,14 @@
-// per channel because dedup never spans channels; workspace-qualified so one workspace's ingestion cannot stall another's
 export const buildAppIngestionLockKey = ({
   workspaceId,
   messageChannelId,
+  applicationId,
+  deduplicateAcrossConnections = false,
 }: {
   workspaceId: string;
   messageChannelId: string;
-}): string => `app-message-ingestion:${workspaceId}:${messageChannelId}`;
+  applicationId?: string;
+  deduplicateAcrossConnections?: boolean;
+}): string =>
+  deduplicateAcrossConnections
+    ? `app-message-ingestion:${workspaceId}:application:${applicationId}`
+    : `app-message-ingestion:${workspaceId}:${messageChannelId}`;

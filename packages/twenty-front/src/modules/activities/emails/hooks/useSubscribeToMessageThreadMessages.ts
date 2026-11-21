@@ -92,7 +92,7 @@ export const useSubscribeToMessageThreadMessages = ({
   useListenToObjectRecordOperationBrowserEvent({
     onObjectRecordOperationBrowserEvent: handleMessageOperation,
     objectMetadataItemId: messageMetadataItem.id,
-    operationTypes: ['create-one', 'create-many'],
+    operationTypes: ['create-one', 'create-many', 'update-one', 'update-many'],
   });
 
   const isListeningToAttachments =

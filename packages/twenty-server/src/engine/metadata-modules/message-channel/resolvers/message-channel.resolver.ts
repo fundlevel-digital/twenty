@@ -94,6 +94,17 @@ export class MessageChannelResolver {
     private readonly messagingProcessGroupEmailActionsService: MessagingProcessGroupEmailActionsService,
   ) {}
 
+  @ResolveField('canSendMessages', () => Boolean)
+  async canSendMessages(
+    @Parent() messageChannel: MessageChannelDTO,
+    @AuthWorkspace() workspace: WorkspaceEntity,
+  ): Promise<boolean> {
+    return this.applicationMessageChannelsService.canSendMessages({
+      workspaceId: workspace.id,
+      messageChannel,
+    });
+  }
+
   @ResolveField('importProgress', () => Int, { nullable: true })
   async importProgress(
     @Parent() messageChannel: MessageChannelDTO,

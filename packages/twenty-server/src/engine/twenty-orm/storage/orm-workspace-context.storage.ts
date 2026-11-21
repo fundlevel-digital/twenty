@@ -1,3 +1,4 @@
+import { type FlatMessagingProviderMaps } from 'src/engine/metadata-modules/flat-messaging-provider/types/flat-messaging-provider-maps.type';
 import { type PermissionsPrincipalsWithRolesContext } from 'src/engine/permissions/principal/types/permissions-principals-with-roles-context.type';
 import { AsyncLocalStorage } from 'async_hooks';
 
@@ -19,6 +20,7 @@ export type ORMWorkspaceContext = {
   flatFieldMetadataMaps: FlatEntityMaps<OrmFlatFieldMetadata>;
   flatFieldMetadataOptionMaps: FlatFieldMetadataOptionMaps;
   flatIndexMaps: FlatEntityMaps<FlatIndexMetadata>;
+  flatMessagingProviderMaps: FlatMessagingProviderMaps;
   objectIdByNameSingular: Record<string, string>;
   featureFlagsMap: Record<FeatureFlagKey, boolean>;
   billingEntitlements: BillingEntitlements;

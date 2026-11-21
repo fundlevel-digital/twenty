@@ -12,3 +12,5 @@ For setting up, restoring or diagnosing a remote Twenty preview, use the
 LinkedIn's index is `docs/decisions/linkedin/DECISIONS.md`; implementation and
 operating details remain in `packages/twenty-apps/internal/fundlevel-linkedin/`.
 Distinguish source implementation, preview verification and production changes.
+
+For Slack work, read `docs/slack-sync.md` and `docs/decisions/slack/DECISIONS.md`. Keep the distinction between the local snapshot, native Slack OAuth, and live deployment explicit.

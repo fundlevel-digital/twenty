@@ -8,6 +8,7 @@ import { type EmailThreadMessageParticipant } from '@/activities/emails/types/Em
 import { type EmailThreadMessageWithSender } from '@/activities/emails/types/EmailThreadMessageWithSender';
 import { type MessageChannelMessageAssociation } from '@/activities/emails/types/MessageChannelMessageAssociation';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
+import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useFindOneRecord } from '@/object-record/hooks/useFindOneRecord';
 import { useMyMessageChannels } from '@/settings/accounts/hooks/useMyMessageChannels';
 import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useUpsertRecordsInStore';
@@ -23,6 +24,10 @@ import { FeatureFlagKey } from '~/generated-metadata/graphql';
 
 export const useEmailThread = (threadId: string | null) => {
   const { upsertRecordsInStore } = useUpsertRecordsInStore();
+  const { objectMetadataItem: messageObjectMetadataItem } =
+    useObjectMetadataItem({
+      objectNameSingular: StandardObjectNameSingular.Message,
+    });
   const { channels: viewerMessageChannels } = useMyMessageChannels();
   const [lastMessageId, setLastMessageId] = useState<string | null>(null);
   const [isMessagesFetchComplete, setIsMessagesFetchComplete] = useState(false);
@@ -49,10 +54,13 @@ export const useEmailThread = (threadId: string | null) => {
     fetchAllThreadMessagesOperationSignatureFactory({
       messageThreadId: threadId,
       isMessageAttachmentEnabled,
+      isProviderMetadataAvailable: messageObjectMetadataItem.fields.some(
+        (fieldMetadata) => fieldMetadata.name === 'providerMetadata',
+      ),
     });
 
   const {
-    records: messages,
+    records: allMessages,
     loading: messagesLoading,
     fetchMoreRecords,
     hasNextPage,
@@ -67,6 +75,10 @@ export const useEmailThread = (threadId: string | null) => {
     recordGqlFields: FETCH_ALL_MESSAGES_OPERATION_SIGNATURE.fields,
     skip: !threadId,
   });
+
+  const messages = allMessages.filter(
+    (message) => message.providerMetadata?.hidden !== true,
+  );
 
   const isFetchingMoreRecords = useAtomFamilyStateValue(
     isFetchingMoreRecordsFamilyState,

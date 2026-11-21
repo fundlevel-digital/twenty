@@ -6,6 +6,7 @@ import { MessageChannelEntity } from 'src/engine/metadata-modules/message-channe
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { ApplyAttachmentsVisibilityRestrictionsService } from 'src/modules/messaging/common/query-hooks/attachment/apply-attachments-visibility-restrictions.service';
 import { ApplyMessagesVisibilityRestrictionsService } from 'src/modules/messaging/common/query-hooks/message/apply-messages-visibility-restrictions.service';
+import { ApplyMessageThreadsVisibilityRestrictionsService } from 'src/modules/messaging/common/query-hooks/message-thread/apply-message-threads-visibility-restrictions.service';
 import { MessageThreadTargetCreateManyPreQueryHook } from 'src/modules/messaging/common/query-hooks/message-thread-target/message-thread-target-create-many.pre-query-hook';
 import { MessageThreadTargetCreateOnePreQueryHook } from 'src/modules/messaging/common/query-hooks/message-thread-target/message-thread-target-create-one.pre-query-hook';
 
@@ -15,8 +16,10 @@ import { MessageThreadTargetCreateOnePreQueryHook } from 'src/modules/messaging/
     CommonRecordVisibilityModule,
     TypeOrmModule.forFeature([MessageChannelEntity]),
   ],
+  exports: [ApplyMessagesVisibilityRestrictionsService],
   providers: [
     ApplyMessagesVisibilityRestrictionsService,
+    ApplyMessageThreadsVisibilityRestrictionsService,
     ApplyAttachmentsVisibilityRestrictionsService,
     MessageThreadTargetCreateOnePreQueryHook,
     MessageThreadTargetCreateManyPreQueryHook,

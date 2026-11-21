@@ -1,7 +1,11 @@
+import { getFlatMessagingProviderMock } from 'src/engine/metadata-modules/flat-messaging-provider/__mocks__/get-flat-messaging-provider.mock';
+import { type FlatMessagingProviderMaps } from 'src/engine/metadata-modules/flat-messaging-provider/types/flat-messaging-provider-maps.type';
+import { STANDARD_OBJECTS } from 'twenty-shared/metadata';
 import { FeatureFlagKey, FieldMetadataType } from 'twenty-shared/types';
 import { DataSource } from 'typeorm';
 
 import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
+import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { createEmptyFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/constant/create-empty-flat-entity-maps.constant';
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
 import { getFlatFieldMetadataMock } from 'src/engine/metadata-modules/flat-field-metadata/__mocks__/get-flat-field-metadata.mock';
@@ -96,24 +100,71 @@ const buildRepository = ({
   shouldBypassPermissionChecks = true,
   shouldSkipEventEmission,
   statementResultsByKind = {},
+  objectNameSingular = 'delivery',
+  hasProviderMetadata = false,
+  withMessagingRelation = false,
+  authContext,
+  flatMessagingProviderMaps = createEmptyFlatEntityMaps(),
 }: {
   shouldBypassPermissionChecks?: boolean;
   shouldSkipEventEmission: boolean;
   statementResultsByKind?: Record<string, Record<string, unknown>[][]>;
+  objectNameSingular?: string;
+  hasProviderMetadata?: boolean;
+  withMessagingRelation?: boolean;
+  authContext?: WorkspaceAuthContext;
+  flatMessagingProviderMaps?: FlatMessagingProviderMaps;
 }) => {
   const executedStatements: CompiledStatement[] = [];
+  const repositoryObjectMetadata = {
+    ...flatObjectMetadata,
+    nameSingular: objectNameSingular,
+  };
+  const repositoryTableShape: WorkspaceTableShape = {
+    ...tableShape,
+    nameSingular: objectNameSingular,
+    tableName: objectNameSingular,
+    relationShapeByFieldName: withMessagingRelation
+      ? {
+          reply: {
+            fieldName: 'reply',
+            fieldMetadataId: 'reply-field-id',
+            relationType: RelationType.MANY_TO_ONE,
+            targetObjectMetadataId: OBJECT_METADATA_ID,
+            targetFieldMetadataId: 'replies-field-id',
+            joinColumnName: 'replyId',
+          },
+        }
+      : {},
+  };
+  const providerMetadata = getFlatFieldMetadataMock({
+    name: 'providerMetadata',
+    universalIdentifier:
+      STANDARD_OBJECTS.message.fields.providerMetadata.universalIdentifier,
+    type: FieldMetadataType.RAW_JSON,
+    objectMetadataId: OBJECT_METADATA_ID,
+  });
   const emitDatabaseBatchEvent = jest.fn();
 
   const repository = new WorkspaceRepository({
-    tableShape,
-    flatObjectMetadata,
+    tableShape: repositoryTableShape,
+    flatObjectMetadata: repositoryObjectMetadata,
     internalContext: {
-      workspaceId: 'workspace-id',
+      workspaceId: '20202020-1c25-4d02-bf25-6aeccf7ea419',
       featureFlagsMap: DISABLED_FEATURE_FLAGS_MAP,
       billingEntitlements: {},
       flatObjectMetadataMaps,
-      flatFieldMetadataMaps,
+      flatFieldMetadataMaps: {
+        ...flatFieldMetadataMaps,
+        byUniversalIdentifier: {
+          ...flatFieldMetadataMaps.byUniversalIdentifier,
+          ...(hasProviderMetadata
+            ? { [providerMetadata.universalIdentifier]: providerMetadata }
+            : {}),
+        },
+      },
       flatIndexMaps: createEmptyFlatEntityMaps(),
+      flatMessagingProviderMaps,
       permissionsPrincipals: undefined,
       recordPermissions: {
         isReadDisabled: jest.fn().mockResolvedValue(false),
@@ -143,11 +194,13 @@ const buildRepository = ({
       coreDataSource: new DataSource({ type: 'postgres' }),
       recordReadRestrictions: NO_RECORD_READ_RESTRICTIONS,
     },
-    authContext: {
-      type: 'apiKey',
-      apiKey: { id: API_KEY_ID },
-      workspace: { id: 'workspace-id' },
-    } as WorkspaceAuthContext,
+    authContext:
+      authContext ??
+      ({
+        type: 'apiKey',
+        apiKey: { id: API_KEY_ID },
+        workspace: { id: '20202020-1c25-4d02-bf25-6aeccf7ea419' },
+      } as WorkspaceAuthContext),
     executor: {
       execute: async (statement: CompiledStatement) => {
         executedStatements.push(statement);
@@ -158,7 +211,7 @@ const buildRepository = ({
       },
     },
     permissionsPrincipals: {
-      workspaceId: 'workspace-id',
+      workspaceId: '20202020-1c25-4d02-bf25-6aeccf7ea419',
       mainPrincipal: {
         type: 'apiKey',
         apiKeyId: 'api-key-id',
@@ -168,8 +221,8 @@ const buildRepository = ({
     },
     shouldBypassPermissionChecks,
     shouldSkipEventEmission,
-    tableShapeByObjectMetadataId: () => tableShape,
-    flatObjectMetadataByObjectMetadataId: () => flatObjectMetadata,
+    tableShapeByObjectMetadataId: () => repositoryTableShape,
+    flatObjectMetadataByObjectMetadataId: () => repositoryObjectMetadata,
     getRepositoryForObjectMetadataId: jest.fn(),
     isTransactional: false,
     runInNewTransaction: jest.fn(),
@@ -178,7 +231,12 @@ const buildRepository = ({
   const getExecutedStatementKinds = () =>
     executedStatements.map(getStatementKind);
 
-  return { repository, getExecutedStatementKinds, emitDatabaseBatchEvent };
+  return {
+    repository,
+    getExecutedStatementKinds,
+    executedStatements,
+    emitDatabaseBatchEvent,
+  };
 };
 
 describe('WorkspaceRepository mutations', () => {
@@ -369,5 +427,171 @@ describe('WorkspaceRepository mutations', () => {
 
       expect(getExecutedStatementKinds()).toEqual(['SELECT', 'DELETE']);
     });
+  });
+});
+
+describe('WorkspaceRepository messaging privacy', () => {
+  const buildMessageRepository = (options = {}) =>
+    buildRepository({
+      shouldSkipEventEmission: true,
+      shouldBypassPermissionChecks: false,
+      objectNameSingular: 'message',
+      hasProviderMetadata: true,
+      ...options,
+    });
+
+  it('filters deleted internal messages before search, pagination, and count', async () => {
+    const { repository, executedStatements } = buildMessageRepository();
+    const queryBuilder = repository.createQueryBuilder('message');
+
+    queryBuilder
+      .where('"message"."state" ILIKE :search', { search: '%client%' })
+      .orWhere('"message"."id" = :id', { id: 'known-id' })
+      .take(10);
+    await queryBuilder.getMany();
+    await queryBuilder.getCount();
+
+    for (const statement of executedStatements) {
+      expect(statement.text).toContain(
+        '("message"."state" ILIKE $1) OR ("message"."id" = $2)',
+      );
+      expect(statement.text).toContain(
+        `"providerMetadata"->>'deletedAt' IS NULL`,
+      );
+      expect(statement.text).toContain(
+        '"deletedMessageSender"."workspaceMemberId" IS DISTINCT FROM $3',
+      );
+      expect(statement.values.slice(0, 3)).toEqual([
+        '%client%',
+        'known-id',
+        null,
+      ]);
+    }
+    expect(
+      executedStatements[0].text.indexOf('"providerMetadata"'),
+    ).toBeLessThan(executedStatements[0].text.indexOf('LIMIT'));
+    expect(executedStatements[1].text).toContain('COUNT(');
+  });
+
+  it('filters a nested message relation in its join condition', async () => {
+    const { repository, executedStatements } = buildMessageRepository({
+      withMessagingRelation: true,
+    });
+    await repository
+      .createQueryBuilder('message')
+      .leftJoinAndSelect('message.reply', 'reply')
+      .getMany();
+    const statement = executedStatements[0].text;
+    const joinCondition = statement.slice(statement.indexOf('LEFT JOIN'));
+    expect(joinCondition).toContain(
+      `"reply"."providerMetadata"->>'deletedAt' IS NULL`,
+    );
+    expect(joinCondition).toContain(
+      '"deletedMessageSender"."messageId" = "reply"."id"',
+    );
+    expect(statement).toContain(
+      `"message"."providerMetadata"->>'deletedAt' IS NULL`,
+    );
+  });
+
+  it('uses the authenticated viewer for the sender exception', async () => {
+    const { repository, executedStatements } = buildMessageRepository({
+      authContext: {
+        type: 'user',
+        workspace: { id: '20202020-1c25-4d02-bf25-6aeccf7ea419' },
+        workspaceMemberId: 'sender-id',
+      } as WorkspaceAuthContext,
+    });
+    await repository.find({ select: { id: true } });
+    expect(executedStatements[0].values).toContain('sender-id');
+  });
+
+  it.each([
+    { hasProviderMetadata: false },
+    { shouldBypassPermissionChecks: true },
+    { objectNameSingular: 'delivery' },
+  ])(
+    'preserves pre-upgrade, system ingestion, and other object reads: %j',
+    async (options) => {
+      const { repository, executedStatements } =
+        buildMessageRepository(options);
+      await repository.find({ select: { id: true } });
+      expect(executedStatements[0].text).not.toContain('deletedMessageSender');
+    },
+  );
+
+  it('omits threads with only hidden messages in list and count', async () => {
+    const { repository, executedStatements } = buildMessageRepository({
+      objectNameSingular: 'messageThread',
+    });
+    await repository.find({ select: { id: true }, take: 5 });
+    await repository.count();
+    for (const { text } of executedStatements) {
+      expect(text).toContain(
+        '"providerVisibleThreadMessage"."messageThreadId" = "messageThread"."id"',
+      );
+      expect(text).toContain('"providerAnyThreadMessage"."deletedAt" IS NULL');
+      expect(text).toContain('deletedMessageSender');
+    }
+  });
+});
+
+describe('WorkspaceRepository app conversation privacy', () => {
+  const provider = getFlatMessagingProviderMock({
+    applicationId: flatObjectMetadata.applicationId,
+    channelObjectUniversalIdentifier: OBJECT_METADATA_ID,
+  });
+  const buildConversationRepository = (authContext?: WorkspaceAuthContext) =>
+    buildRepository({
+      shouldSkipEventEmission: true,
+      shouldBypassPermissionChecks: false,
+      objectNameSingular: 'conversation',
+      withMessagingRelation: true,
+      authContext,
+      flatMessagingProviderMaps: {
+        byUniversalIdentifier: { [provider.universalIdentifier]: provider },
+        universalIdentifierById: {
+          [provider.id]: provider.universalIdentifier,
+        },
+        universalIdentifiersByApplicationId: {},
+      },
+    });
+
+  it('restricts custom channel lists and counts before pagination', async () => {
+    const { repository, executedStatements } = buildConversationRepository();
+    await repository.find({ select: { id: true }, take: 5 });
+    await repository.count();
+    for (const { text, values } of executedStatements) {
+      expect(text).toContain(
+        '"appConversationFolder"."applicationRecordId" = "conversation"."id"',
+      );
+      expect(text).toContain('"appConversationAccount"."applicationId" =');
+      expect(values).toContainEqual([provider.universalIdentifier]);
+      expect(values).toContain(provider.applicationId);
+    }
+    expect(
+      executedStatements[0].text.indexOf('applicationRecordId'),
+    ).toBeLessThan(executedStatements[0].text.indexOf('LIMIT'));
+  });
+
+  it('restricts custom channels reached through a nested relation', async () => {
+    const { repository, executedStatements } = buildConversationRepository();
+    await repository
+      .createQueryBuilder('conversation')
+      .leftJoinAndSelect('conversation.reply', 'nestedChannel')
+      .getMany();
+    expect(executedStatements[0].text).toContain(
+      '"appConversationFolder"."applicationRecordId" = "nestedChannel"."id"',
+    );
+  });
+
+  it('lets the background owning app read unbound channels for synchronization', async () => {
+    const { repository, executedStatements } = buildConversationRepository({
+      type: 'application',
+      application: { id: provider.applicationId },
+      workspace: { id: provider.workspaceId },
+    } as WorkspaceAuthContext);
+    await repository.find({ select: { id: true } });
+    expect(executedStatements[0].text).not.toContain('appConversationFolder');
   });
 });

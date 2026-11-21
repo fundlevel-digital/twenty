@@ -74,5 +74,23 @@ export const defineMessagingProvider: DefineEntity<
     );
   }
 
+  if (
+    isDefined(config.deduplicateAcrossConnections) &&
+    typeof config.deduplicateAcrossConnections !== 'boolean'
+  ) {
+    errors.push(
+      'Messaging provider deduplicateAcrossConnections must be a boolean',
+    );
+  }
+
+  if (
+    isDefined(config.channelObject) &&
+    !isValidPostgresUuid(config.channelObject.universalIdentifier)
+  ) {
+    errors.push(
+      'Messaging provider channelObject.universalIdentifier must be the UUID of an object in this app',
+    );
+  }
+
   return createValidationResult({ config, errors });
 };

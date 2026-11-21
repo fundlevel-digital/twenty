@@ -7,6 +7,7 @@ supersession. Operational instructions stay with their package or skill.
 
 | Area | Index | Implementation And Handoff |
 | --- | --- | --- |
+| Slack Sync | [Decisions](decisions/slack/DECISIONS.md) | [Implementation](slack-sync.md) |
 | LinkedIn Sync | [Decisions](decisions/linkedin/DECISIONS.md) | [App README](../packages/twenty-apps/internal/fundlevel-linkedin/README.md), [handoff](../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md) |
 | YouTube Analytics | [Decisions](decisions/youtube-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/youtube-analytics/README.md), [handoff](../packages/twenty-apps/internal/youtube-analytics/HANDOFF.md) |
 | PlusVibe | [Decisions](decisions/packages/twenty-apps/public/plusvibe/DECISIONS.md) | [App README](../packages/twenty-apps/public/plusvibe/README.md) |

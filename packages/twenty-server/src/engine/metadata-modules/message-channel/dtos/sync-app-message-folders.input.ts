@@ -35,10 +35,20 @@ export class AppMessageFolderInput {
   @IsOptional()
   @IsBoolean()
   isSynced?: boolean;
+
+  @Field(() => UUIDScalarType, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  applicationRecordId?: string;
 }
 
 @InputType('SyncAppMessageFoldersInput')
 export class SyncAppMessageFoldersInput {
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  isPartial?: boolean;
+
   @Field(() => UUIDScalarType)
   @IsUUID()
   @IsNotEmpty()

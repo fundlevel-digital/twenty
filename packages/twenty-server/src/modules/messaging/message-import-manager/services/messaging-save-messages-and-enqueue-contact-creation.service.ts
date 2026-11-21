@@ -267,7 +267,11 @@ export class MessagingSaveMessagesAndEnqueueContactCreationService {
         { lite: true },
       );
 
-    if (messageChannel.isContactAutoCreationEnabled && savedMessagesResult) {
+    if (
+      messageChannel.type !== MessageChannelType.APP &&
+      messageChannel.isContactAutoCreationEnabled &&
+      savedMessagesResult
+    ) {
       const contactsToCreate =
         savedMessagesResult.participantsWithMessageId.filter(
           (participant) => participant.shouldCreateContact,

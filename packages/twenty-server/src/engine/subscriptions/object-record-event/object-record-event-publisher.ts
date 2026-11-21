@@ -1,16 +1,24 @@
 import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { Injectable, Logger } from '@nestjs/common';
+import { isString } from '@sniptt/guards';
 
 import { QUERY_MAX_RECORDS_FROM_RELATION } from 'twenty-shared/constants';
+import { STANDARD_OBJECTS } from 'twenty-shared/metadata';
 import { type ObjectRecordEvent } from 'twenty-shared/database-events';
 import {
   Nullable,
   ObjectRecord,
   type RecordGqlOperationSignature,
 } from 'twenty-shared/types';
-import { isDefined, isRecordGqlOperationSignature } from 'twenty-shared/utils';
+import {
+  isDefined,
+  isPlainObject,
+  isRecordGqlOperationSignature,
+} from 'twenty-shared/utils';
+import { In } from 'typeorm';
 
 import { LoadComputedFieldsHelper } from 'src/engine/api/common/common-computed-fields-loader/load-computed-fields.helper';
+import { CommonRecordVisibilityService } from 'src/engine/api/common/common-record-visibility/common-record-visibility.service';
 import { ProcessNestedRelationsHelper } from 'src/engine/api/common/common-nested-relations-processor/process-nested-relations.helper';
 import { CommonSelectFieldsBuilder } from 'src/engine/api/common/common-select-fields/common-select-fields-builder';
 import { DatabaseEventAction } from 'src/engine/workspace-event-emitter/enums/database-event-action';
@@ -60,6 +68,7 @@ export class ObjectRecordEventPublisher {
     private readonly recordEventPermissionsReadService: RecordEventPermissionsReadService,
     private readonly workspaceOrmManager: WorkspaceOrmManager,
     private readonly userWorkspaceAuthContextService: UserWorkspaceAuthContextService,
+    private readonly commonRecordVisibilityService: CommonRecordVisibilityService,
   ) {}
 
   async publish(
@@ -183,11 +192,32 @@ export class ObjectRecordEventPublisher {
       objectRecordEvent: ObjectRecordSubscriptionEvent;
     }[] = [];
 
-    const readableEvents =
-      await this.recordEventPermissionsReadService.filterReadableEvents({
-        authContext: permissionsAuthContext,
+    let readableEvents: ObjectRecordEvent[];
+
+    try {
+      readableEvents = await this.filterMessagingReadableEvents({
+        events:
+          await this.recordEventPermissionsReadService.filterReadableEvents({
+            authContext: permissionsAuthContext,
+            eventBatch: workspaceEventBatch,
+          }),
         eventBatch: workspaceEventBatch,
+        subscriberAuthContext: this.findSubscriberAuthContext({
+          subscriberAuthContexts,
+          workspaceId: workspaceEventBatch.workspaceId,
+          userWorkspaceId,
+          applicationId: subscriberAuthContext.applicationId,
+        }),
       });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to check subscriber row visibility for ${workspaceEventBatch.name}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return;
+    }
 
     for (const event of readableEvents) {
       const { action } = parseEventNameOrThrow(workspaceEventBatch.name);
@@ -195,7 +225,7 @@ export class ObjectRecordEventPublisher {
       const filteredEvent: ObjectRecordSubscriptionEvent = {
         action,
         objectNameSingular,
-        ...event,
+        ...structuredClone(event),
       };
 
       const matchedQueryIds = this.getMatchingObjectRecordQueryIds({
@@ -233,11 +263,32 @@ export class ObjectRecordEventPublisher {
         });
       } catch (error) {
         this.logger.warn(
-          `Failed to enrich nested relations for ${workspaceEventBatch.name} subscription event, broadcasting without them: ${
+          `Failed to apply subscriber visibility for ${workspaceEventBatch.name}, skipping subscription event: ${
             error instanceof Error ? error.message : String(error)
           }`,
           error instanceof Error ? error.stack : undefined,
         );
+
+        return;
+      }
+
+      if (objectNameSingular === 'message') {
+        for (const matchedEvent of matchedEvents) {
+          const event = matchedEvent.objectRecordEvent;
+          const after =
+            'after' in event.properties ? event.properties.after : undefined;
+
+          if (
+            isPlainObject(after) &&
+            isPlainObject(after.providerMetadata) &&
+            after.providerMetadata.hidden === true
+          ) {
+            matchedEvent.objectRecordEvent = {
+              ...event,
+              ...this.buildMessageInvalidation(event),
+            };
+          }
+        }
       }
 
       const payload: EventStreamPayload = {
@@ -251,6 +302,121 @@ export class ObjectRecordEventPublisher {
         payload,
       });
     }
+  }
+
+  private async filterMessagingReadableEvents({
+    events,
+    eventBatch,
+    subscriberAuthContext,
+  }: {
+    events: ObjectRecordEvent[];
+    eventBatch: WorkspaceEventBatch<ObjectRecordEvent>;
+    subscriberAuthContext: Promise<WorkspaceAuthContext>;
+  }): Promise<ObjectRecordEvent[]> {
+    if (events.length === 0) {
+      return events;
+    }
+
+    const { flatFieldMetadataMaps, flatMessagingProviderMaps } =
+      await this.workspaceCacheService.getOrRecompute(eventBatch.workspaceId, [
+        'flatFieldMetadataMaps',
+        'flatMessagingProviderMaps',
+      ]);
+    const objectNameSingular = eventBatch.objectMetadata.nameSingular;
+    const isNativeMessagingObject =
+      ['message', 'messageThread'].includes(objectNameSingular) &&
+      isDefined(
+        flatFieldMetadataMaps.byUniversalIdentifier[
+          STANDARD_OBJECTS.message.fields.providerMetadata.universalIdentifier
+        ],
+      );
+    const isProviderChannelObject = Object.values(
+      flatMessagingProviderMaps.byUniversalIdentifier,
+    ).some(
+      (provider) =>
+        isDefined(provider) &&
+        isDefined(provider.channelObjectUniversalIdentifier) &&
+        provider.channelObjectUniversalIdentifier ===
+          eventBatch.objectMetadata.universalIdentifier,
+    );
+
+    if (!isNativeMessagingObject && !isProviderChannelObject) {
+      return events;
+    }
+
+    const visibleRecords =
+      await this.workspaceOrmManager.executeInWorkspaceContext(
+        () =>
+          this.workspaceOrmManager.getRepository(objectNameSingular).find({
+            where: { id: In(events.map(({ recordId }) => recordId)) },
+            select: { id: true },
+            withDeleted: true,
+          }),
+        await subscriberAuthContext,
+      );
+    const visibleRecordIds = new Set(visibleRecords.map(({ id }) => id));
+
+    return events.flatMap((event) => {
+      if (visibleRecordIds.has(event.recordId)) {
+        return [event];
+      }
+
+      if (
+        objectNameSingular === 'message' &&
+        this.isProviderDeletionTransition(event)
+      ) {
+        return [this.buildMessageInvalidation(event)];
+      }
+
+      return [];
+    });
+  }
+
+  private isProviderDeletionTransition(event: ObjectRecordEvent): boolean {
+    if (!('diff' in event.properties)) {
+      return false;
+    }
+
+    const { before, after } = event.properties;
+
+    if (!isPlainObject(before) || !isPlainObject(after)) {
+      return false;
+    }
+
+    return (
+      isPlainObject(after.providerMetadata) &&
+      isDefined(after.providerMetadata.deletedAt) &&
+      (!isPlainObject(before.providerMetadata) ||
+        !isDefined(before.providerMetadata.deletedAt))
+    );
+  }
+
+  private buildMessageInvalidation(
+    event: ObjectRecordEvent,
+  ): ObjectRecordEvent {
+    const after =
+      'after' in event.properties ? event.properties.after : undefined;
+    const messageThreadId = isPlainObject(after)
+      ? after.messageThreadId
+      : undefined;
+    const identity = {
+      id: event.recordId,
+      ...(isString(messageThreadId) ? { messageThreadId } : {}),
+    };
+    const providerMetadata = { hidden: true };
+
+    return {
+      eventId: event.eventId,
+      recordId: event.recordId,
+      properties: {
+        before: identity,
+        after: { ...identity, providerMetadata },
+        updatedFields: ['providerMetadata'],
+        diff: {
+          providerMetadata: { before: undefined, after: providerMetadata },
+        },
+      },
+    };
   }
 
   private async enrichEventBatchWithNestedRelations({
@@ -342,6 +508,43 @@ export class ObjectRecordEventPublisher {
         limit: QUERY_MAX_RECORDS_FROM_RELATION,
         selection,
       });
+
+      await this.commonRecordVisibilityService.applyVisibilityRestrictions({
+        selection,
+        records: allRecords,
+        flatObjectMetadata: objectMetadata,
+        flatObjectMetadataMaps,
+        flatFieldMetadataMaps,
+        authContext: resolvedSubscriberAuthContext,
+        recordReadRestrictions: {
+          unreadableObjectMetadataIds: new Set(
+            Object.values(flatObjectMetadataMaps.byUniversalIdentifier)
+              .filter(isDefined)
+              .map(({ id }) => id)
+              .filter((id) => !readableObjectMetadataIds.has(id)),
+          ),
+          unreadableFieldMetadataIds,
+        },
+      });
+
+      for (const event of events) {
+        if (
+          !('diff' in event.properties) ||
+          !isDefined(event.properties.diff)
+        ) {
+          continue;
+        }
+
+        const before = event.properties.before as ObjectRecord | undefined;
+        const after = event.properties.after as ObjectRecord | undefined;
+
+        event.properties.diff = Object.fromEntries(
+          Object.keys(event.properties.diff).map((fieldName) => [
+            fieldName,
+            { before: before?.[fieldName], after: after?.[fieldName] },
+          ]),
+        );
+      }
     }, resolvedSubscriberAuthContext);
   }
 

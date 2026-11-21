@@ -42,9 +42,56 @@ const buildMessage = (
 
 describe('ChatThreadMessageGroup', () => {
   const originalFetch = global.fetch;
+  const originalIsSecureContext = window.isSecureContext;
+
+  it('formats Slack text for display and copies the original body', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, 'isSecureContext', {
+      configurable: true,
+      value: true,
+    });
+    const text = '<@U123|Adlet> :saluting_face:';
+    renderWithProviders(
+      <ChatThreadMessageGroup
+        group={{
+          id: 'slack',
+          isOutgoing: false,
+          messages: [
+            buildMessage({
+              text,
+              providerMetadata: {
+                permalink: 'https://app.slack.com/archives/C123/p123',
+              },
+            }),
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText('@Adlet')).toBeInTheDocument();
+    expect(screen.getByText('🫡')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Copy to Clipboard' }));
+    expect(await navigator.clipboard.readText()).toBe(text);
+  });
+
+  it('keeps non-Slack provider bodies literal', () => {
+    renderWithProviders(
+      <ChatThreadMessageGroup
+        group={{
+          id: 'other',
+          isOutgoing: false,
+          messages: [buildMessage({ text: '*Plain* :saluting_face:' })],
+        }}
+      />,
+    );
+    expect(screen.getByText('*Plain* :saluting_face:')).toBeInTheDocument();
+  });
 
   afterEach(() => {
     global.fetch = originalFetch;
+    Object.defineProperty(window, 'isSecureContext', {
+      configurable: true,
+      value: originalIsSecureContext,
+    });
   });
 
   it('renders the text of each message', () => {
@@ -59,6 +106,148 @@ describe('ChatThreadMessageGroup', () => {
     );
 
     expect(screen.getByText('See you tomorrow')).toBeInTheDocument();
+  });
+
+  it('shows Slack edits, source link and read-only reactions', () => {
+    renderWithProviders(
+      <ChatThreadMessageGroup
+        group={{
+          id: 'group-id',
+          isOutgoing: false,
+          messages: [
+            buildMessage({
+              providerMetadata: {
+                updatedAt: '2026-11-21T10:00:00.000Z',
+                editedAt: '2026-11-21T10:00:00.000Z',
+                permalink: 'https://workspace.slack.com/archives/C123/p123',
+                reactions: [
+                  { name: 'thumbsup', count: 2, users: ['U1', 'U2'] },
+                ],
+              },
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Edited')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open in Slack' })).toHaveAttribute(
+      'href',
+      'https://workspace.slack.com/archives/C123/p123',
+    );
+    expect(screen.getByLabelText(/👍 by/)).toBeInTheDocument();
+    expect(screen.getByText('👍')).toBeInTheDocument();
+    expect(screen.queryByText(':thumbsup:')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /👍 by/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
+
+  it('copies the message body without including its reaction', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, 'isSecureContext', {
+      configurable: true,
+      value: true,
+    });
+
+    renderWithProviders(
+      <ChatThreadMessageGroup
+        group={{
+          id: 'group-id',
+          isOutgoing: false,
+          messages: [
+            buildMessage({
+              providerMetadata: {
+                reactions: [
+                  { name: 'thumbsup', count: 2, users: ['U1', 'U2'] },
+                ],
+              },
+            }),
+          ],
+        }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Copy to Clipboard' }));
+
+    expect(await navigator.clipboard.readText()).toBe('See you tomorrow');
+    expect(
+      screen.queryByRole('button', { name: /👍/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides messages marked private by the server', () => {
+    renderWithProviders(
+      <ChatThreadMessageGroup
+        group={{
+          id: 'group-id',
+          isOutgoing: true,
+          messages: [
+            buildMessage({
+              providerMetadata: { hidden: true },
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.queryByText('See you tomorrow')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Copy to Clipboard' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('marks deleted Slack messages while keeping the authorized body', () => {
+    renderWithProviders(
+      <ChatThreadMessageGroup
+        group={{
+          id: 'group-id',
+          isOutgoing: false,
+          messages: [
+            buildMessage({
+              providerMetadata: {
+                updatedAt: '2026-11-21T10:00:00.000Z',
+                deletedAt: '2026-11-21T10:00:00.000Z',
+                editedAt: '2026-11-20T10:00:00.000Z',
+              },
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Deleted')).toBeInTheDocument();
+    expect(screen.getByText('See you tomorrow')).toBeInTheDocument();
+    expect(screen.queryByText('Edited')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    // oxlint-disable-next-line no-script-url -- This fixture deliberately exercises an unsafe protocol.
+    'javascript:alert(1)',
+    'https://workspace.slack.com.evil.test/message',
+    'https://slack.com@evil.test/message',
+  ])('does not expose an unsafe Slack permalink: %s', (permalink) => {
+    renderWithProviders(
+      <ChatThreadMessageGroup
+        group={{
+          id: 'group-id',
+          isOutgoing: false,
+          messages: [
+            buildMessage({
+              providerMetadata: {
+                updatedAt: '2026-11-21T10:00:00.000Z',
+                permalink,
+              },
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(
+      screen.queryByRole('link', { name: 'Open in Slack' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows the time and sent receipt of outgoing messages only', () => {

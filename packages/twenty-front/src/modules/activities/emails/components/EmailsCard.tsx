@@ -9,6 +9,7 @@ import { getTimelineThreadsFromObjectRecord } from '@/activities/emails/graphql/
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { useCustomResolver } from '@/activities/hooks/useCustomResolver';
 import { useSubscribeTimelineToParticipantChanges } from '@/activities/hooks/useSubscribeTimelineToParticipantChanges';
+import { useSubscribeToTimelineMessageChanges } from '@/activities/emails/hooks/useSubscribeToTimelineMessageChanges';
 import { WidgetHeaderCountEffect } from '@/page-layout/widgets/components/WidgetHeaderCountEffect';
 import { timelineThreadChannelFilterFamilyState } from '@/activities/emails/states/timelineThreadChannelFilterFamilyState';
 import { useTargetRecord } from '@/ui/layout/contexts/useTargetRecord';
@@ -60,6 +61,11 @@ export const EmailsCard = ({ sourceFieldMetadataIdPaths }: EmailsCardProps) => {
 
   const { totalNumberOfThreads, timelineThreads } =
     data?.getTimelineThreadsFromObjectRecord ?? {};
+
+  useSubscribeToTimelineMessageChanges({
+    queryId: `emails-${targetRecord.id}`,
+    messageThreadIds: timelineThreads?.map(({ id }) => id) ?? [],
+  });
 
   const hasMoreTimelineThreads =
     timelineThreads && totalNumberOfThreads

@@ -84,6 +84,7 @@ const sumPetColumn = ({
       flatObjectMetadataMaps,
       flatFieldMetadataMaps,
       flatIndexMaps: createEmptyFlatEntityMaps(),
+      flatMessagingProviderMaps: createEmptyFlatEntityMaps(),
       objectIdByNameSingular: { pet: PET_OBJECT_METADATA_ID },
       featureFlagsMap: DISABLED_FEATURE_FLAGS_MAP,
       billingEntitlements: {},

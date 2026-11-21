@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
+import { STANDARD_OBJECTS } from 'twenty-shared/metadata';
+import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
+import { ApplyMessagesVisibilityRestrictionsService } from 'src/modules/messaging/common/query-hooks/message/apply-messages-visibility-restrictions.service';
+import { buildProviderMessageVisibilityFilter } from 'src/engine/core-modules/messaging/utils/build-provider-message-visibility-filter.util';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { type MessagingProviderConversationStyle } from 'twenty-shared/application';
 import {
   MessageChannelVisibility,
   MessageParticipantRole,
+  type ObjectRecord,
 } from 'twenty-shared/types';
 import { isNonEmptyString } from '@sniptt/guards';
 import { escapeForIlike, isDefined } from 'twenty-shared/utils';
@@ -51,6 +56,7 @@ export class TimelineMessagingService {
     private readonly workspaceCacheService: WorkspaceCacheService,
     private readonly fileUrlService: FileUrlService,
     private readonly recordPermissionsReadService: RecordPermissionsReadService,
+    private readonly applyMessagesVisibilityRestrictionsService: ApplyMessagesVisibilityRestrictionsService,
   ) {}
 
   public async getAndCountMessageThreads({
@@ -75,6 +81,7 @@ export class TimelineMessagingService {
       return { messageThreads: [], totalNumberOfThreads: 0 };
     }
 
+    const viewerAuthContext = getWorkspaceAuthContext();
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
@@ -98,6 +105,11 @@ export class TimelineMessagingService {
         .limit(pageSize);
 
       for (const queryBuilder of [totalQueryBuilder, threadIdsQueryBuilder]) {
+        await this.applyProviderMessageVisibilityFilter(queryBuilder, {
+          workspaceId,
+          messageAlias: 'messages',
+          authContext: viewerAuthContext,
+        });
         this.applyRecordFilter(queryBuilder, { targetFilter, personIds });
 
         if (isDefined(messageChannelIds)) {
@@ -116,7 +128,10 @@ export class TimelineMessagingService {
       const messageThreadIds = threadIdsQuery.map((thread) => thread.id);
 
       return {
-        messageThreads: await this.findMessageThreadsByIds(messageThreadIds),
+        messageThreads: await this.findMessageThreadsByIds(
+          messageThreadIds,
+          viewerAuthContext,
+        ),
         totalNumberOfThreads,
       };
     }, authContext);
@@ -152,6 +167,8 @@ export class TimelineMessagingService {
       return [];
     }
 
+    const viewerAuthContext = getWorkspaceAuthContext();
+
     return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
       const messageThreadRepository =
         this.workspaceOrmManager.getRepositoryWithoutPermissionChecks<MessageThreadWorkspaceEntity>(
@@ -171,6 +188,12 @@ export class TimelineMessagingService {
           'messageChannelMessageAssociations.messageChannelId IN (:...messageChannelIds)',
           { messageChannelIds },
         );
+
+      await this.applyProviderMessageVisibilityFilter(queryBuilder, {
+        workspaceId,
+        messageAlias: 'messages',
+        authContext: viewerAuthContext,
+      });
 
       searchWords.forEach((searchWord, index) => {
         const parameterName = `searchWord${index}`;
@@ -199,6 +222,7 @@ export class TimelineMessagingService {
 
       return this.findMessageThreadsByIds(
         threadIdsQuery.map((thread) => thread.id),
+        viewerAuthContext,
       );
     }, buildSystemAuthContext(workspaceId));
   }
@@ -347,6 +371,12 @@ export class TimelineMessagingService {
             'messageChannelMessageAssociations',
           );
 
+        await this.applyProviderMessageVisibilityFilter(queryBuilder, {
+          workspaceId,
+          messageAlias: 'messages',
+          authContext,
+        });
+
         this.applyRecordFilter(queryBuilder, { targetFilter, personIds });
 
         const rows = await queryBuilder
@@ -379,6 +409,39 @@ export class TimelineMessagingService {
     return [...channelByKey.values()];
   }
 
+  private async applyProviderMessageVisibilityFilter(
+    queryBuilder: WorkspaceSelectQueryBuilder,
+    {
+      workspaceId,
+      messageAlias,
+      authContext,
+    }: {
+      workspaceId: string;
+      messageAlias: string;
+      authContext: WorkspaceAuthContext;
+    },
+  ): Promise<void> {
+    const { flatFieldMetadataMaps } =
+      await this.workspaceCacheService.getOrRecompute(workspaceId, [
+        'flatFieldMetadataMaps',
+      ]);
+    if (
+      !isDefined(
+        flatFieldMetadataMaps.byUniversalIdentifier[
+          STANDARD_OBJECTS.message.fields.providerMetadata.universalIdentifier
+        ],
+      )
+    ) {
+      return;
+    }
+    const { condition, parameters } = buildProviderMessageVisibilityFilter({
+      workspaceId,
+      messageAlias,
+      authContext,
+    });
+    queryBuilder.andWhere(condition, parameters);
+  }
+
   private applyMessageChannelFilter(
     queryBuilder: WorkspaceSelectQueryBuilder,
     {
@@ -391,12 +454,9 @@ export class TimelineMessagingService {
     queryBuilder.andWhere(
       `EXISTS (
         SELECT 1
-        FROM "${schemaName}"."message" "channelMessage"
-        INNER JOIN "${schemaName}"."messageChannelMessageAssociation" "channelMessageAssociation"
-          ON "channelMessageAssociation"."messageId" = "channelMessage"."id"
+        FROM "${schemaName}"."messageChannelMessageAssociation" "channelMessageAssociation"
+        WHERE "channelMessageAssociation"."messageId" = "messages"."id"
           AND "channelMessageAssociation"."deletedAt" IS NULL
-        WHERE "channelMessage"."messageThreadId" = "messageThread"."id"
-          AND "channelMessage"."deletedAt" IS NULL
           AND "channelMessageAssociation"."messageChannelId" IN (:...filteredMessageChannelIds)
       )`,
       { filteredMessageChannelIds: messageChannelIds },
@@ -430,6 +490,7 @@ export class TimelineMessagingService {
 
   private async findMessageThreadsByIds(
     messageThreadIds: string[],
+    viewerAuthContext: WorkspaceAuthContext,
   ): Promise<TimelineMessageThread[]> {
     if (messageThreadIds.length === 0) {
       return [];
@@ -452,6 +513,19 @@ export class TimelineMessagingService {
       relations: ['messages'],
     });
 
+    const messages = messageThreads.flatMap((thread) => thread.messages);
+    await this.applyMessagesVisibilityRestrictionsService.applyVisibilityRestrictions(
+      {
+        records: messages as unknown as ObjectRecord[],
+        authContext: viewerAuthContext,
+      },
+    );
+    for (const thread of messageThreads) {
+      thread.messages = thread.messages.filter(
+        (message) => !('hidden' in (message.providerMetadata ?? {})),
+      );
+    }
+
     const messageThreadPositionById = new Map(
       messageThreadIds.map((messageThreadId, index) => [
         messageThreadId,
@@ -460,6 +534,7 @@ export class TimelineMessagingService {
     );
 
     return messageThreads
+      .filter((thread) => thread.messages.length > 0)
       .sort(
         (a, b) =>
           (messageThreadPositionById.get(a.id) ?? 0) -
@@ -487,6 +562,7 @@ export class TimelineMessagingService {
   ): Promise<{
     [key: string]: MessageParticipantWorkspaceEntity[];
   }> {
+    const viewerAuthContext = getWorkspaceAuthContext();
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
@@ -495,7 +571,7 @@ export class TimelineMessagingService {
           'messageParticipant',
         );
 
-      const threadParticipants = await messageParticipantRepository
+      const queryBuilder = messageParticipantRepository
         .createQueryBuilder()
         .select('messageParticipant')
         .addSelect('message.messageThreadId')
@@ -513,8 +589,15 @@ export class TimelineMessagingService {
           role: MessageParticipantRole.FROM,
         })
         .orderBy('message.messageThreadId')
-        .distinctOn(['message.messageThreadId', 'messageParticipant.handle'])
-        .getMany<MessageParticipantWorkspaceEntity>();
+        .distinctOn(['message.messageThreadId', 'messageParticipant.handle']);
+
+      await this.applyProviderMessageVisibilityFilter(queryBuilder, {
+        workspaceId,
+        messageAlias: 'message',
+        authContext: viewerAuthContext,
+      });
+      const threadParticipants =
+        await queryBuilder.getMany<MessageParticipantWorkspaceEntity>();
 
       const orderedThreadParticipants = threadParticipants.sort(
         (a, b) =>
@@ -758,13 +841,15 @@ export class TimelineMessagingService {
     threadVisibilityByThreadId: Record<string, MessageChannelVisibility>;
     threadChannelByThreadId: Record<string, TimelineThreadChannelDTO>;
   }> {
+    const viewerAuthContext = getWorkspaceAuthContext();
+
     return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
       const messageThreadRepository =
         this.workspaceOrmManager.getRepositoryWithoutPermissionChecks<MessageThreadWorkspaceEntity>(
           'messageThread',
         );
 
-      const threadChannelRows = await messageThreadRepository
+      const queryBuilder = messageThreadRepository
         .createQueryBuilder()
         .select('messageThread.id', 'id')
         .addSelect(
@@ -779,8 +864,17 @@ export class TimelineMessagingService {
         .where('messageThread.id = ANY(:messageThreadIds)', {
           messageThreadIds,
         })
-        .orderBy('messageChannelMessageAssociation.messageChannelId')
-        .getRawMany<{ id: string; messageChannelId: string | null }>();
+        .orderBy('messageChannelMessageAssociation.messageChannelId');
+
+      await this.applyProviderMessageVisibilityFilter(queryBuilder, {
+        workspaceId,
+        messageAlias: 'message',
+        authContext: viewerAuthContext,
+      });
+      const threadChannelRows = await queryBuilder.getRawMany<{
+        id: string;
+        messageChannelId: string | null;
+      }>();
 
       const allMessageChannelIds = [
         ...new Set(

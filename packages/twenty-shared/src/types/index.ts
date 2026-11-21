@@ -284,6 +284,7 @@ export type { RatioAggregateConfig } from './page-layout/RatioAggregateConfig';
 export { WidgetType } from './page-layout/WidgetType';
 export type { PartialFieldMetadataItem } from './PartialFieldMetadataItem';
 export type { PartialFieldMetadataItemOption } from './PartialFieldMetadataOption';
+export type { ProviderMessageMetadata } from './ProviderMessageMetadata';
 export type { QueryCursorDirection } from './QueryCursorDirection';
 export type { RecordExportColumn } from './RecordExportColumn';
 export { RecordFilterGroupLogicalOperator } from './RecordFilterGroupLogicalOperator';

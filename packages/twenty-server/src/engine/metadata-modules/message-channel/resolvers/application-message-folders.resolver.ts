@@ -71,6 +71,7 @@ export class ApplicationMessageFoldersResolver {
       requestUserWorkspaceId: userWorkspaceId ?? null,
       messageChannelId: input.messageChannelId,
       folders: input.folders,
+      isPartial: input.isPartial,
     });
   }
 }

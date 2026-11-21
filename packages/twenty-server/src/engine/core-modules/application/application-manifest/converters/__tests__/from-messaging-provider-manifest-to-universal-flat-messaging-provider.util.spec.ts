@@ -10,6 +10,20 @@ const MESSAGING_PROVIDER_MANIFEST = {
 };
 
 describe('fromMessagingProviderManifestToUniversalFlatMessagingProvider', () => {
+  it('keeps existing providers isolated unless explicitly opted in', () => {
+    const convert = (deduplicateAcrossConnections?: boolean) =>
+      fromMessagingProviderManifestToUniversalFlatMessagingProvider({
+        messagingProviderManifest: {
+          ...MESSAGING_PROVIDER_MANIFEST,
+          deduplicateAcrossConnections,
+        },
+        applicationUniversalIdentifier: 'application',
+        now: '2026-11-21T00:00:00.000Z',
+      });
+    expect(convert().deduplicateAcrossConnections).toBe(false);
+    expect(convert(true).deduplicateAcrossConnections).toBe(true);
+  });
+
   it('stores no conversation style when the app declares none', () => {
     expect(
       fromMessagingProviderManifestToUniversalFlatMessagingProvider({
@@ -31,5 +45,21 @@ describe('fromMessagingProviderManifestToUniversalFlatMessagingProvider', () => 
         now: '2026-11-09T00:00:00.000Z',
       }).conversationStyle,
     ).toBe('chat');
+  });
+  it('persists an optional conversation object universal identifier', () => {
+    const convert = (channelObject?: { universalIdentifier: string }) =>
+      fromMessagingProviderManifestToUniversalFlatMessagingProvider({
+        messagingProviderManifest: {
+          ...MESSAGING_PROVIDER_MANIFEST,
+          channelObject,
+        },
+        applicationUniversalIdentifier: 'app',
+        now: '2026-11-21T00:00:00.000Z',
+      });
+    expect(convert().channelObjectUniversalIdentifier).toBeNull();
+    expect(
+      convert({ universalIdentifier: '20e5eb99-a3cb-47a6-8155-0eb8837a67bc' })
+        .channelObjectUniversalIdentifier,
+    ).toBe('20e5eb99-a3cb-47a6-8155-0eb8837a67bc');
   });
 });

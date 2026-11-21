@@ -5,6 +5,7 @@ import { QUERY_MAX_RECORDS } from 'twenty-shared/constants';
 type FetchAllThreadMessagesOperationSignatureFactory = {
   messageThreadId: string | null;
   isMessageAttachmentEnabled: boolean;
+  isProviderMetadataAvailable?: boolean;
 };
 
 export const fetchAllThreadMessagesOperationSignatureFactory: RecordGqlOperationSignatureFactory<
@@ -12,6 +13,7 @@ export const fetchAllThreadMessagesOperationSignatureFactory: RecordGqlOperation
 > = ({
   messageThreadId,
   isMessageAttachmentEnabled,
+  isProviderMetadataAvailable = false,
 }: FetchAllThreadMessagesOperationSignatureFactory) => ({
   objectNameSingular: StandardObjectNameSingular.Message,
   variables: {
@@ -34,6 +36,7 @@ export const fetchAllThreadMessagesOperationSignatureFactory: RecordGqlOperation
     headerMessageId: true,
     subject: true,
     text: true,
+    ...(isProviderMetadataAvailable && { providerMetadata: true }),
     receivedAt: true,
     isDraft: true,
     // message.attachments only exists once the workspace upgrade has run

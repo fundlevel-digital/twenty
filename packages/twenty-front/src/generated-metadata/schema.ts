@@ -549,34 +549,57 @@ export enum AppKeyValueScope {
   WORKSPACE = 'WORKSPACE'
 }
 
+export type AppMessageApplicationFieldsInput = {
+  message?: InputMaybe<Scalars['JSON']['input']>;
+  thread?: InputMaybe<Scalars['JSON']['input']>;
+};
+
 export type AppMessageAttachmentInput = {
   fileId: Scalars['UUID']['input'];
   label: Scalars['String']['input'];
 };
 
 export type AppMessageFolderInput = {
+  applicationRecordId?: InputMaybe<Scalars['UUID']['input']>;
   externalId: Scalars['String']['input'];
   isSynced?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
 };
 
 export type AppMessageInput = {
+  applicationFields?: InputMaybe<AppMessageApplicationFieldsInput>;
   attachments?: InputMaybe<Array<AppMessageAttachmentInput>>;
   externalId: Scalars['String']['input'];
   folderExternalIds?: InputMaybe<Array<Scalars['String']['input']>>;
   participants: Array<AppMessageParticipantInput>;
+  providerMetadata?: InputMaybe<AppMessageMetadataInput>;
   receivedAt: Scalars['DateTime']['input'];
   subject?: InputMaybe<Scalars['String']['input']>;
   text: Scalars['String']['input'];
   threadExternalId: Scalars['String']['input'];
 };
 
+export type AppMessageMetadataInput = {
+  deletedAt?: InputMaybe<Scalars['String']['input']>;
+  editedAt?: InputMaybe<Scalars['String']['input']>;
+  permalink?: InputMaybe<Scalars['String']['input']>;
+  reactions?: InputMaybe<Array<AppMessageReactionInput>>;
+  updatedAt: Scalars['String']['input'];
+};
+
 export type AppMessageParticipantInput = {
+  contactEmail?: InputMaybe<Scalars['String']['input']>;
   displayName?: InputMaybe<Scalars['String']['input']>;
   handle: Scalars['String']['input'];
   personId?: InputMaybe<Scalars['UUID']['input']>;
   role: MessageParticipantRole;
   workspaceMemberId?: InputMaybe<Scalars['UUID']['input']>;
+};
+
+export type AppMessageReactionInput = {
+  count: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  users: Array<Scalars['String']['input']>;
 };
 
 export type Application = {
@@ -3510,6 +3533,7 @@ export type MessageCampaignSendBlockerDto = {
 
 export type MessageChannel = {
   __typename?: 'MessageChannel';
+  canSendMessages: Scalars['Boolean']['output'];
   connectedAccount?: Maybe<ConnectedAccountPublicDto>;
   connectedAccountId: Scalars['UUID']['output'];
   contactAutoCreationPolicy: MessageChannelContactAutoCreationPolicy;
@@ -3973,6 +3997,7 @@ export type Mutation = {
   updateAgentChatThreadInboxState: Array<AgentChatThreadParticipant>;
   updateApiKey?: Maybe<ApiKey>;
   updateAppMessageChannel: MessageChannel;
+  updateAppMessages: Scalars['Boolean']['output'];
   updateApplication: Application;
   updateApplicationRegistration: ApplicationRegistration;
   updateApplicationRegistrationVariable: ApplicationRegistrationVariable;
@@ -5253,6 +5278,11 @@ export type MutationUpdateApiKeyArgs = {
 
 export type MutationUpdateAppMessageChannelArgs = {
   input: UpdateAppMessageChannelInput;
+};
+
+
+export type MutationUpdateAppMessagesArgs = {
+  input: UpdateAppMessagesInput;
 };
 
 
@@ -7636,6 +7666,7 @@ export enum SupportDriver {
 
 export type SyncAppMessageFoldersInput = {
   folders: Array<AppMessageFolderInput>;
+  isPartial?: InputMaybe<Scalars['Boolean']['input']>;
   messageChannelId: Scalars['UUID']['input'];
 };
 
@@ -7866,11 +7897,27 @@ export type UpdateApiKeyInput = {
 };
 
 export type UpdateAppMessageChannelInput = {
+  contactAutoCreationPolicy?: InputMaybe<MessageChannelContactAutoCreationPolicy>;
   displayName?: InputMaybe<Scalars['String']['input']>;
+  excludeGroupEmails?: InputMaybe<Scalars['Boolean']['input']>;
+  excludeNonProfessionalEmails?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['UUID']['input'];
+  isContactAutoCreationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   isSyncEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   messagingProviderUniversalIdentifier?: InputMaybe<Scalars['UUID']['input']>;
   visibility?: InputMaybe<MessageChannelVisibility>;
+};
+
+export type UpdateAppMessageInput = {
+  applicationFields?: InputMaybe<AppMessageApplicationFieldsInput>;
+  externalId: Scalars['String']['input'];
+  providerMetadata: AppMessageMetadataInput;
+  text?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateAppMessagesInput = {
+  messageChannelId: Scalars['UUID']['input'];
+  messages: Array<UpdateAppMessageInput>;
 };
 
 export type UpdateApplicationInput = {

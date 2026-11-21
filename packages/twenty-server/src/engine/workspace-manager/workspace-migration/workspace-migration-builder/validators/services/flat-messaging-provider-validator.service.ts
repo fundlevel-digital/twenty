@@ -36,6 +36,7 @@ const validateMessagingProviderReferences = ({
   flatMessagingProvider,
   flatConnectionProviderMaps,
   flatLogicFunctionMaps,
+  flatObjectMetadataMaps,
 }: {
   flatMessagingProvider: Pick<
     UniversalFlatMessagingProvider,
@@ -43,10 +44,13 @@ const validateMessagingProviderReferences = ({
     | 'connectionProviderUniversalIdentifier'
     | 'sendMessageLogicFunctionUniversalIdentifier'
     | 'markThreadAsReadLogicFunctionUniversalIdentifier'
+    | 'channelObjectUniversalIdentifier'
     | 'conversationStyle'
+    | 'deduplicateAcrossConnections'
   >;
   flatConnectionProviderMaps: MetadataUniversalFlatEntityMaps<'connectionProvider'>;
   flatLogicFunctionMaps: MetadataUniversalFlatEntityMaps<'logicFunction'>;
+  flatObjectMetadataMaps: MetadataUniversalFlatEntityMaps<'objectMetadata'>;
 }): FlatEntityValidationError[] => {
   const errors: FlatEntityValidationError[] = [];
 
@@ -117,6 +121,32 @@ const validateMessagingProviderReferences = ({
     });
   }
 
+  if (typeof flatMessagingProvider.deduplicateAcrossConnections !== 'boolean') {
+    errors.push({
+      code: MessagingProviderExceptionCode.INVALID_MESSAGING_PROVIDER_INPUT,
+      message: t`Messaging provider deduplicateAcrossConnections must be a boolean`,
+      userFriendlyMessage: msg`This messaging provider's deduplication setting is invalid.`,
+    });
+  }
+
+  const channelObjectUniversalIdentifier =
+    flatMessagingProvider.channelObjectUniversalIdentifier;
+  if (
+    isDefined(channelObjectUniversalIdentifier) &&
+    !isInApplication({
+      flatEntityMaps: flatObjectMetadataMaps,
+      universalIdentifier: channelObjectUniversalIdentifier,
+      applicationUniversalIdentifier:
+        flatMessagingProvider.applicationUniversalIdentifier,
+    })
+  ) {
+    errors.push({
+      code: MessagingProviderExceptionCode.INVALID_MESSAGING_PROVIDER_INPUT,
+      message: t`Messaging provider channel object was not found in this application`,
+      userFriendlyMessage: msg`The conversation object must belong to this application.`,
+    });
+  }
+
   return errors;
 };
 
@@ -159,6 +189,7 @@ export class FlatMessagingProviderValidatorService {
       flatMessagingProviderMaps: optimisticFlatMessagingProviderMaps,
       flatConnectionProviderMaps,
       flatLogicFunctionMaps,
+      flatObjectMetadataMaps,
     },
   }: UniversalFlatEntityValidationArgs<
     typeof ALL_METADATA_NAME.messagingProvider
@@ -193,6 +224,7 @@ export class FlatMessagingProviderValidatorService {
         flatMessagingProvider,
         flatConnectionProviderMaps,
         flatLogicFunctionMaps,
+        flatObjectMetadataMaps,
       }),
     );
 
@@ -255,6 +287,7 @@ export class FlatMessagingProviderValidatorService {
       flatMessagingProviderMaps: optimisticFlatMessagingProviderMaps,
       flatConnectionProviderMaps,
       flatLogicFunctionMaps,
+      flatObjectMetadataMaps,
     },
   }: FlatEntityUpdateValidationArgs<
     typeof ALL_METADATA_NAME.messagingProvider
@@ -320,6 +353,7 @@ export class FlatMessagingProviderValidatorService {
         },
         flatConnectionProviderMaps,
         flatLogicFunctionMaps,
+        flatObjectMetadataMaps,
       }),
     );
 

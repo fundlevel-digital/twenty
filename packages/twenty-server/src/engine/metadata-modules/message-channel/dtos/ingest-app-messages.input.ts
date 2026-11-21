@@ -1,4 +1,5 @@
-import { Field, InputType, registerEnumType } from '@nestjs/graphql';
+import GraphQLJSON from 'graphql-type-json';
+import { Field, InputType, Int, registerEnumType } from '@nestjs/graphql';
 
 import { Type } from 'class-transformer';
 import {
@@ -10,7 +11,14 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsEmail,
+  IsInt,
+  IsObject,
+  IsISO8601,
+  Min,
+  Max,
   IsUUID,
+  IsUrl,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -32,6 +40,12 @@ export const MAX_APP_MESSAGE_FOLDERS_PER_MESSAGE = 32;
 
 @InputType('AppMessageParticipantInput')
 export class AppMessageParticipantInput {
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(254)
+  contactEmail?: string;
+
   @Field(() => MessageParticipantRole)
   @IsEnum(MessageParticipantRole)
   @IsNotEmpty()
@@ -75,9 +89,87 @@ export class AppMessageAttachmentInput {
   label: string;
 }
 
+@InputType('AppMessageReactionInput')
+export class AppMessageReactionInput {
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name: string;
+
+  @Field(() => Int)
+  @IsInt()
+  @Min(0)
+  @Max(1000000)
+  count: number;
+
+  @Field(() => [String])
+  @IsArray()
+  @ArrayMaxSize(1000)
+  @IsString({ each: true })
+  @MaxLength(255, { each: true })
+  users: string[];
+}
+
+@InputType('AppMessageMetadataInput')
+export class AppMessageMetadataInput {
+  @Field()
+  @IsISO8601()
+  updatedAt: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  permalink?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsISO8601()
+  editedAt?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsISO8601()
+  deletedAt?: string;
+
+  @Field(() => [AppMessageReactionInput], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => AppMessageReactionInput)
+  reactions?: AppMessageReactionInput[];
+}
+
+@InputType('AppMessageApplicationFieldsInput')
+export class AppMessageApplicationFieldsInput {
+  @Field(() => GraphQLJSON, { nullable: true })
+  @IsOptional()
+  @IsObject()
+  message?: Record<string, string | null>;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  @IsOptional()
+  @IsObject()
+  thread?: Record<string, string | null>;
+}
+
 @InputType('AppMessageInput')
 export class AppMessageInput {
-  // re-ingesting the same externalId is a no-op, so redelivered webhooks are safe
+  @Field(() => AppMessageApplicationFieldsInput, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AppMessageApplicationFieldsInput)
+  applicationFields?: AppMessageApplicationFieldsInput;
+
+  @Field(() => AppMessageMetadataInput, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AppMessageMetadataInput)
+  providerMetadata?: AppMessageMetadataInput;
+
   @Field()
   @IsString()
   @IsNotEmpty()
@@ -148,4 +240,45 @@ export class IngestAppMessagesInput {
   @ValidateNested({ each: true })
   @Type(() => AppMessageInput)
   messages: AppMessageInput[];
+}
+
+@InputType('UpdateAppMessageInput')
+export class UpdateAppMessageInput {
+  @Field(() => AppMessageApplicationFieldsInput, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AppMessageApplicationFieldsInput)
+  applicationFields?: AppMessageApplicationFieldsInput;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(512)
+  externalId: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_APP_MESSAGE_TEXT_LENGTH)
+  text?: string;
+
+  @Field(() => AppMessageMetadataInput)
+  @ValidateNested()
+  @Type(() => AppMessageMetadataInput)
+  providerMetadata: AppMessageMetadataInput;
+}
+
+@InputType('UpdateAppMessagesInput')
+export class UpdateAppMessagesInput {
+  @Field(() => UUIDScalarType)
+  @IsUUID()
+  messageChannelId: string;
+
+  @Field(() => [UpdateAppMessageInput])
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(INGEST_APP_MESSAGES_MAX_BATCH_SIZE)
+  @ValidateNested({ each: true })
+  @Type(() => UpdateAppMessageInput)
+  messages: UpdateAppMessageInput[];
 }

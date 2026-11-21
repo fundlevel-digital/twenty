@@ -1,3 +1,4 @@
+import { useCanReplyToEmailThread } from '@/activities/emails/hooks/useCanReplyToEmailThread';
 import { useReplyContext } from '@/activities/emails/hooks/useReplyContext';
 import { HeadlessEngineCommandWrapperEffect } from '@/command-menu-item/engine-command/components/HeadlessEngineCommandWrapperEffect';
 import { useHeadlessCommandContextApi } from '@/command-menu-item/engine-command/hooks/useHeadlessCommandContextApi';
@@ -9,10 +10,15 @@ export const ReplyToEmailThreadCommand = () => {
   const threadId = selectedRecords[0]?.id ?? null;
 
   const replyContext = useReplyContext(threadId);
+  const canReplyToEmailThread = useCanReplyToEmailThread(threadId);
   const { openComposeEmailInSidePanel } = useOpenComposeEmailInSidePanel();
 
   const handleExecute = () => {
-    if (!isDefined(replyContext) || replyContext.loading) {
+    if (
+      !canReplyToEmailThread ||
+      !isDefined(replyContext) ||
+      replyContext.loading
+    ) {
       return;
     }
 
@@ -25,7 +31,8 @@ export const ReplyToEmailThreadCommand = () => {
     });
   };
 
-  const isReady = isDefined(replyContext) && !replyContext.loading;
+  const isReady =
+    canReplyToEmailThread && isDefined(replyContext) && !replyContext.loading;
 
   return (
     <HeadlessEngineCommandWrapperEffect

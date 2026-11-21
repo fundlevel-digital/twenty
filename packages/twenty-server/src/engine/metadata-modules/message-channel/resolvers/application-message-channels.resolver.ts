@@ -98,6 +98,10 @@ export class ApplicationMessageChannelsResolver {
       displayName: input.displayName,
       visibility: input.visibility,
       isSyncEnabled: input.isSyncEnabled,
+      isContactAutoCreationEnabled: input.isContactAutoCreationEnabled,
+      contactAutoCreationPolicy: input.contactAutoCreationPolicy,
+      excludeGroupEmails: input.excludeGroupEmails,
+      excludeNonProfessionalEmails: input.excludeNonProfessionalEmails,
       messagingProviderUniversalIdentifier:
         input.messagingProviderUniversalIdentifier,
     });

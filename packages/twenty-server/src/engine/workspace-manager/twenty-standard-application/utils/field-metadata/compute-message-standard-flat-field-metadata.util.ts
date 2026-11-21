@@ -234,6 +234,31 @@ export const buildMessageStandardFlatFieldMetadatas = ({
     twentyStandardApplicationId,
     now,
   }),
+  providerMetadata: createStandardFieldFlatMetadata({
+    objectName,
+    workspaceId,
+    context: {
+      fieldName: 'providerMetadata',
+      type: FieldMetadataType.RAW_JSON,
+      label: i18nLabel(
+        msg({ message: `Provider metadata`, context: 'fieldMetadata.label' }),
+      ),
+      description: i18nLabel(
+        msg({
+          message: `Provider message reactions, link, edits and deletion state`,
+          context: 'fieldMetadata.description',
+        }),
+      ),
+      icon: 'IconMessage',
+      isSystem: true,
+      isNullable: true,
+      isUIEditable: false,
+    },
+    standardObjectMetadataRelatedEntityIds,
+    dependencyFlatEntityMaps,
+    twentyStandardApplicationId,
+    now,
+  }),
   headerMessageId: createStandardFieldFlatMetadata({
     objectName,
     workspaceId,

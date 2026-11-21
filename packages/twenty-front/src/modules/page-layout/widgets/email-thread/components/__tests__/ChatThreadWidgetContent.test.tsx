@@ -12,6 +12,7 @@ const MEMBER_ID = 'member-1';
 
 const mockSendAppChannelMessage = jest.fn();
 const mockRefetchQueries = jest.fn();
+let mockCanSendMessages = true;
 
 jest.mock('@apollo/client/react', () => ({
   useApolloClient: () => ({ refetchQueries: mockRefetchQueries }),
@@ -37,6 +38,7 @@ jest.mock('@/activities/emails/hooks/useReplyConnectedAccount', () => ({
     messageChannel: {
       id: 'channel-1',
       isSyncEnabled: true,
+      canSendMessages: mockCanSendMessages,
       messagingProviderUniversalIdentifier: 'whatsapp-messaging',
     },
     connectedAccount: {
@@ -110,7 +112,17 @@ const renderContent = () => {
 describe('ChatThreadWidgetContent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCanSendMessages = true;
     sessionStorage.clear();
+  });
+
+  it('does not offer a composer for a read-only messaging provider', () => {
+    mockCanSendMessages = false;
+
+    renderContent();
+
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(mockSendAppChannelMessage).not.toHaveBeenCalled();
   });
 
   it('shows a failed send without waiting for the account refresh', async () => {

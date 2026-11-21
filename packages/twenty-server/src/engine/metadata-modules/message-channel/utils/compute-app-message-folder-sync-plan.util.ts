@@ -6,13 +6,16 @@ import { type MessageFolderEntity } from 'src/engine/metadata-modules/message-fo
 type ExistingFolder = Pick<
   MessageFolderEntity,
   'id' | 'externalId' | 'name' | 'isSynced'
->;
+> &
+  Partial<Pick<MessageFolderEntity, 'applicationRecordId'>>;
 
 export type AppMessageFolderSyncPlan = {
-  foldersToCreate: Required<AppMessageFolderInput>[];
+  foldersToCreate: (AppMessageFolderInput & { isSynced: boolean })[];
   foldersToUpdate: {
     id: string;
-    update: Partial<Pick<MessageFolderEntity, 'name' | 'isSynced'>>;
+    update: Partial<
+      Pick<MessageFolderEntity, 'name' | 'isSynced' | 'applicationRecordId'>
+    >;
   }[];
   folderIdsToDelete: string[];
 };
@@ -20,9 +23,11 @@ export type AppMessageFolderSyncPlan = {
 export const computeAppMessageFolderSyncPlan = ({
   existingFolders,
   requestedFolders,
+  isPartial = false,
 }: {
   existingFolders: ExistingFolder[];
   requestedFolders: AppMessageFolderInput[];
+  isPartial?: boolean;
 }): AppMessageFolderSyncPlan => {
   const existingFoldersByExternalId = new Map(
     existingFolders
@@ -46,6 +51,9 @@ export const computeAppMessageFolderSyncPlan = ({
         externalId: requestedFolder.externalId,
         name: requestedFolder.name,
         isSynced: requestedFolder.isSynced ?? true,
+        ...(isDefined(requestedFolder.applicationRecordId)
+          ? { applicationRecordId: requestedFolder.applicationRecordId }
+          : {}),
       });
       continue;
     }
@@ -58,10 +66,18 @@ export const computeAppMessageFolderSyncPlan = ({
     }
 
     if (
+      !isPartial &&
       isDefined(requestedFolder.isSynced) &&
       existingFolder.isSynced !== requestedFolder.isSynced
     ) {
       update.isSynced = requestedFolder.isSynced;
+    }
+
+    if (
+      isDefined(requestedFolder.applicationRecordId) &&
+      existingFolder.applicationRecordId !== requestedFolder.applicationRecordId
+    ) {
+      update.applicationRecordId = requestedFolder.applicationRecordId;
     }
 
     if (Object.keys(update).length > 0) {
@@ -69,13 +85,15 @@ export const computeAppMessageFolderSyncPlan = ({
     }
   }
 
-  const folderIdsToDelete = existingFolders
-    .filter(
-      (folder) =>
-        !isDefined(folder.externalId) ||
-        !requestedExternalIds.has(folder.externalId),
-    )
-    .map((folder) => folder.id);
+  const folderIdsToDelete = isPartial
+    ? []
+    : existingFolders
+        .filter(
+          (folder) =>
+            !isDefined(folder.externalId) ||
+            !requestedExternalIds.has(folder.externalId),
+        )
+        .map((folder) => folder.id);
 
   return { foldersToCreate, foldersToUpdate, folderIdsToDelete };
 };

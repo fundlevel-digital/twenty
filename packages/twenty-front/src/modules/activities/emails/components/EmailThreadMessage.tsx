@@ -62,6 +62,10 @@ export const EmailThreadMessage = ({
     }
   };
 
+  if (message.providerMetadata?.hidden === true) {
+    return null;
+  }
+
   return (
     <EmailThreadMessageLayout
       hideBottomBorder={hideBottomBorder}

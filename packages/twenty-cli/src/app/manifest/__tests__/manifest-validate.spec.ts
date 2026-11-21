@@ -523,6 +523,59 @@ describe('manifestValidate', () => {
       expect(result.errors).toHaveLength(0);
     });
 
+    it('accepts a messaging provider reference to its channel object', () => {
+      const channelObjectId = '550e8400-e29b-41d4-a716-446655440061';
+      const channelNameFieldId = '550e8400-e29b-41d4-a716-446655440062';
+      const connectionProviderId = '550e8400-e29b-41d4-a716-446655440063';
+      const result = manifestValidate({
+        ...validManifest,
+        objects: [
+          {
+            universalIdentifier: channelObjectId,
+            nameSingular: 'channel',
+            namePlural: 'channels',
+            labelSingular: 'Channel',
+            labelPlural: 'Channels',
+            labelIdentifierFieldMetadataUniversalIdentifier: channelNameFieldId,
+            fields: [
+              {
+                universalIdentifier: channelNameFieldId,
+                type: FieldMetadataType.TEXT,
+                name: 'name',
+                label: 'Name',
+              },
+            ],
+          },
+        ],
+        connectionProviders: [
+          {
+            universalIdentifier: connectionProviderId,
+            name: 'slack',
+            displayName: 'Slack',
+            type: 'oauth',
+            oauth: {
+              authorizationEndpoint: 'https://slack.com/oauth/v2/authorize',
+              tokenEndpoint: 'https://slack.com/api/oauth.v2.access',
+              scopes: [],
+              clientIdVariable: 'SLACK_CLIENT_ID',
+              clientSecretVariable: 'SLACK_CLIENT_SECRET',
+            },
+          },
+        ],
+        messagingProviders: [
+          {
+            universalIdentifier: '550e8400-e29b-41d4-a716-446655440064',
+            name: 'slack-messaging',
+            displayName: 'Slack Messages',
+            connectionProvider: { universalIdentifier: connectionProviderId },
+            channelObject: { universalIdentifier: channelObjectId },
+          },
+        ],
+      });
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
     it('should not flag an MCP server referencing its connection provider as a duplicate', () => {
       const connectionProviderId = '550e8400-e29b-41d4-a716-446655440048';
 

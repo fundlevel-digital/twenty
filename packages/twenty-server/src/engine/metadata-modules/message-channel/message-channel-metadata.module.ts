@@ -1,3 +1,5 @@
+import { ContactCreationManagerModule } from 'src/modules/contact-creation-manager/contact-creation-manager.module';
+import { ApplicationMessageContactCreationService } from 'src/engine/metadata-modules/message-channel/services/application-message-contact-creation.service';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -37,6 +39,7 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
 @Module({
   imports: [
     FeatureFlagModule,
+    ContactCreationManagerModule,
     TypeOrmModule.forFeature([
       MessageChannelEntity,
       MessageFolderEntity,
@@ -64,6 +67,7 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     ApplicationMessageFoldersService,
     ApplicationMessageFoldersResolver,
     ApplicationMessageIngestionService,
+    ApplicationMessageContactCreationService,
     ApplicationMessageIngestionResolver,
     ApplicationMessageReadService,
     ApplicationMessageReadResolver,

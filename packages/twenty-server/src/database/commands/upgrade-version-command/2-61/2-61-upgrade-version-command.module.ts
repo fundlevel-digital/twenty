@@ -11,9 +11,11 @@ import { AddWorkspaceNavigationMenuSectionCommand } from 'src/database/commands/
 import { ConvertPermissionStorageObjectsToTablesCommand } from 'src/database/commands/upgrade-version-command/2-61/2-61-workspace-command-1795258335000-convert-permission-storage-objects-to-tables.command';
 import { DeleteStandardHelperAgentCommand } from 'src/database/commands/upgrade-version-command/2-61/2-61-workspace-command-1795261783307-delete-standard-helper-agent.command';
 import { TypeAccessGroupsCommand } from 'src/database/commands/upgrade-version-command/2-61/2-61-workspace-command-1795264768000-type-access-groups.command';
+import { AddMessageProviderMetadataCommand } from 'src/database/commands/upgrade-version-command/2-61/2-61-workspace-command-1795281277518-add-message-provider-metadata.command';
 import { AccessGroupComputationModule } from 'src/engine/permissions/internal/access-group/access-group-computation.module';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { CommandMenuItemEntity } from 'src/engine/metadata-modules/command-menu-item/entities/command-menu-item.entity';
+import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { WorkspaceMetadataVersionModule } from 'src/engine/metadata-modules/workspace-metadata-version/workspace-metadata-version.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/workspace-migration-runner.module';
@@ -21,6 +23,7 @@ import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace
 
 @Module({
   imports: [
+    FieldMetadataModule,
     AccessGroupComputationModule,
     ApplicationModule,
     TypeOrmModule.forFeature([CommandMenuItemEntity]),
@@ -31,6 +34,7 @@ import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace
     WorkspaceMigrationRunnerModule,
   ],
   providers: [
+    AddMessageProviderMetadataCommand,
     BackfillLegacyWorkflowVersionLinksCommand,
     BackfillReadPrivateChannelsPermissionFlagCommand,
     ConvertNotStartedWorkflowRunsCommand,

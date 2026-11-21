@@ -53,6 +53,10 @@ type UpdateArgs = ApplicationScope & {
   visibility?: MessageChannelVisibility;
   isSyncEnabled?: boolean;
   messagingProviderUniversalIdentifier?: string | null;
+  isContactAutoCreationEnabled?: boolean;
+  contactAutoCreationPolicy?: MessageChannelContactAutoCreationPolicy;
+  excludeGroupEmails?: boolean;
+  excludeNonProfessionalEmails?: boolean;
 };
 
 // TypeORM's update() cannot take the relations Partial<MessageChannelEntity> carries
@@ -63,6 +67,10 @@ type UpdatableChannelFields = Partial<
     | 'visibility'
     | 'isSyncEnabled'
     | 'messagingProviderUniversalIdentifier'
+    | 'isContactAutoCreationEnabled'
+    | 'contactAutoCreationPolicy'
+    | 'excludeGroupEmails'
+    | 'excludeNonProfessionalEmails'
   >
 >;
 
@@ -245,6 +253,10 @@ export class ApplicationMessageChannelsService {
     visibility,
     isSyncEnabled,
     messagingProviderUniversalIdentifier,
+    isContactAutoCreationEnabled,
+    contactAutoCreationPolicy,
+    excludeGroupEmails,
+    excludeNonProfessionalEmails,
   }: UpdateArgs): Promise<MessageChannelDTO> {
     const { messageChannel, connectedAccount } = await this.findOwnedOrThrow({
       applicationId,
@@ -254,6 +266,19 @@ export class ApplicationMessageChannelsService {
     });
 
     const data: UpdatableChannelFields = {};
+
+    if (isDefined(isContactAutoCreationEnabled)) {
+      data.isContactAutoCreationEnabled = isContactAutoCreationEnabled;
+    }
+    if (isDefined(contactAutoCreationPolicy)) {
+      data.contactAutoCreationPolicy = contactAutoCreationPolicy;
+    }
+    if (isDefined(excludeGroupEmails)) {
+      data.excludeGroupEmails = excludeGroupEmails;
+    }
+    if (isDefined(excludeNonProfessionalEmails)) {
+      data.excludeNonProfessionalEmails = excludeNonProfessionalEmails;
+    }
 
     if (displayName !== undefined) {
       data.displayName = normalizeDisplayName(displayName);
@@ -358,6 +383,74 @@ export class ApplicationMessageChannelsService {
     }
 
     return connectedAccount;
+  }
+
+  async canSendMessages({
+    workspaceId,
+    messageChannel,
+  }: {
+    workspaceId: string;
+    messageChannel: MessageChannelDTO;
+  }): Promise<boolean> {
+    if (messageChannel.type !== MessageChannelType.APP) {
+      return false;
+    }
+
+    const connectedAccount = await this.connectedAccountRepository.findOne({
+      where: { id: messageChannel.connectedAccountId, workspaceId },
+    });
+
+    if (!isDefined(connectedAccount)) {
+      return false;
+    }
+
+    const { flatMessagingProviderMaps, flatConnectionProviderMaps } =
+      await this.workspaceCacheService.getOrRecompute(workspaceId, [
+        'flatMessagingProviderMaps',
+        'flatConnectionProviderMaps',
+      ]);
+    const provider = findMessagingProviderOnConnectionProvider({
+      flatMessagingProviderMaps,
+      flatConnectionProviderMaps,
+      messagingProviderUniversalIdentifier:
+        messageChannel.messagingProviderUniversalIdentifier,
+      connectionProviderId: connectedAccount.connectionProviderId,
+    });
+
+    return (
+      provider?.applicationId === connectedAccount.applicationId &&
+      isDefined(provider?.sendMessageLogicFunctionUniversalIdentifier)
+    );
+  }
+
+  async deduplicatesAcrossConnections({
+    applicationId,
+    workspaceId,
+    messageChannel,
+    connectedAccount,
+  }: {
+    applicationId: string;
+    workspaceId: string;
+    messageChannel: MessageChannelEntity;
+    connectedAccount: ConnectedAccountEntity;
+  }): Promise<boolean> {
+    const { flatMessagingProviderMaps, flatConnectionProviderMaps } =
+      await this.workspaceCacheService.getOrRecompute(workspaceId, [
+        'flatMessagingProviderMaps',
+        'flatConnectionProviderMaps',
+      ]);
+    const provider = findMessagingProviderOnConnectionProvider({
+      flatMessagingProviderMaps,
+      flatConnectionProviderMaps,
+      messagingProviderUniversalIdentifier:
+        messageChannel.messagingProviderUniversalIdentifier,
+      connectionProviderId: connectedAccount.connectionProviderId,
+    });
+
+    return (
+      provider?.applicationId === applicationId &&
+      provider.deduplicateAcrossConnections === true
+    );
   }
 
   private async assertMessagingProviderFitsConnectionOrThrow({

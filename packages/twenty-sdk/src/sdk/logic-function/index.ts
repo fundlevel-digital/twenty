@@ -139,3 +139,5 @@ export type { AppKeyValue, AppKeyValueScope } from 'twenty-shared/application';
 
 export { Response } from '@/sdk/logic-function/response';
 export type { ResponseInit } from '@/sdk/logic-function/response';
+
+export { updateMessages } from './messaging/update-messages';
