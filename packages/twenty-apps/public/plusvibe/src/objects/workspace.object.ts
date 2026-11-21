@@ -11,8 +11,8 @@ export default defineObject({
   universalIdentifier: WORKSPACE_UNIVERSAL_IDENTIFIER,
   nameSingular: 'plusvibeWorkspace',
   namePlural: 'plusvibeWorkspaces',
-  labelSingular: 'PlusVibe workspace',
-  labelPlural: 'PlusVibe workspaces',
+  labelSingular: 'PlusVibe Workspace',
+  labelPlural: 'PlusVibe Workspaces',
   icon: 'IconSettings',
   labelIdentifierFieldMetadataUniversalIdentifier:
     WORKSPACE_NAME_UNIVERSAL_IDENTIFIER,
@@ -34,7 +34,7 @@ export default defineObject({
     {
       universalIdentifier: WORKSPACE_SELECTED_UNIVERSAL_IDENTIFIER,
       name: 'isSelected',
-      label: 'Sync enabled',
+      label: 'Sync Enabled',
       type: FieldType.BOOLEAN,
       icon: 'IconToggleRight',
       defaultValue: false,
@@ -42,7 +42,7 @@ export default defineObject({
     {
       universalIdentifier: WORKSPACE_LAST_SYNCED_AT_UNIVERSAL_IDENTIFIER,
       name: 'lastSyncedAt',
-      label: 'Last synced at',
+      label: 'Last Synced At',
       type: FieldType.DATE_TIME,
       icon: 'IconCalendar',
       isNullable: true,

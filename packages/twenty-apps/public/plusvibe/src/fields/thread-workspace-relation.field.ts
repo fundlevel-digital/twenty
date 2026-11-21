@@ -16,7 +16,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
   name: 'plusvibeWorkspaceRecord',
-  label: 'PlusVibe workspace',
+  label: 'PlusVibe Workspace',
   type: FieldType.RELATION,
   icon: 'IconPlug',
   relationTargetObjectMetadataUniversalIdentifier:

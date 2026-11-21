@@ -11,11 +11,11 @@ import {
 
 export default defineNavigationMenuItem({
   universalIdentifier: MESSAGE_NAVIGATION_UNIVERSAL_IDENTIFIER,
-  name: 'PlusVibe emails',
+  name: 'PlusVibe Emails',
   type: NavigationMenuItemType.OBJECT,
   parentUniversalIdentifier: FOLDER_NAVIGATION_UNIVERSAL_IDENTIFIER,
   targetObjectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
   viewUniversalIdentifier: MESSAGE_ALL_VIEW_UNIVERSAL_IDENTIFIER,
-  position: 3,
+  position: 4,
 });

@@ -10,7 +10,7 @@ import {
 
 export default defineView({
   universalIdentifier: WORKSPACE_ALL_VIEW_UNIVERSAL_IDENTIFIER,
-  name: 'PlusVibe workspaces',
+  name: 'PlusVibe Workspaces',
   objectUniversalIdentifier: WORKSPACE_UNIVERSAL_IDENTIFIER,
   type: ViewType.TABLE,
   icon: 'IconMail',

@@ -10,7 +10,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
   name: 'plusvibeReplyLabels',
-  label: 'Reply labels',
+  label: 'Reply Labels',
   type: FieldType.MULTI_SELECT,
   icon: 'IconTags',
   options: [
@@ -24,7 +24,7 @@ export default defineField({
     {
       id: 'c30bdd11-71f6-4be1-b87f-fc6c4a8cc6e7',
       value: 'NOT_INTERESTED',
-      label: 'Not interested',
+      label: 'Not Interested',
       position: 1,
       color: 'red',
     },
@@ -38,7 +38,7 @@ export default defineField({
     {
       id: '02f85c24-f029-474e-bb34-6f396776d0ba',
       value: 'OUT_OF_OFFICE',
-      label: 'Out of office',
+      label: 'Out of Office',
       position: 3,
       color: 'yellow',
     },

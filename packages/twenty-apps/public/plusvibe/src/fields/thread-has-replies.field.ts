@@ -10,7 +10,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
   name: 'plusvibeHasReplies',
-  label: 'Has lead replies',
+  label: 'Has Lead Replies',
   type: FieldType.BOOLEAN,
   icon: 'IconMessageReply',
   defaultValue: false,

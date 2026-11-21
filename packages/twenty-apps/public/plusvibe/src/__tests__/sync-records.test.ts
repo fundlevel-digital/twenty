@@ -45,7 +45,9 @@ import {
   recordId,
   syncActivity,
   syncPerson,
+  syncCampaign,
 } from 'src/logic-functions/utils/sync-records';
+import { syncSourceThread } from 'src/logic-functions/utils/sync-source-thread';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -61,6 +63,39 @@ beforeEach(() => {
 });
 
 describe('Twenty record synchronization', () => {
+  it('keeps campaign status values compatible with the select and retains the source value', async () => {
+    await syncCampaign({
+      workspaceId: 'workspace-1',
+      workspaceName: 'Sales',
+      externalId: 'campaign-1',
+      status: 'paused',
+    });
+    expect(patch).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.objectContaining({ campaignStatus: 'PAUSED', status: 'paused' }),
+    );
+    await syncCampaign({
+      workspaceId: 'workspace-1',
+      workspaceName: 'Sales',
+      externalId: 'campaign-1',
+      status: 'Future Provider State',
+    });
+    expect(patch).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        campaignStatus: 'OTHER',
+        status: 'Future Provider State',
+      }),
+    );
+  });
+
+  it('reuses source thread records within a workspace and isolates matching IDs in another workspace', async () => {
+    const first = await syncSourceThread('workspace-1', 'thread-1');
+    expect(await syncSourceThread('workspace-1', 'thread-1')).toBe(first);
+    expect(await syncSourceThread('workspace-2', 'thread-1')).not.toBe(first);
+    expect(post).toHaveBeenCalledTimes(2);
+  });
+
   it('matches an existing person by normalized email without overwriting their data', async () => {
     const personId = recordId('existing');
     query.mockResolvedValueOnce({

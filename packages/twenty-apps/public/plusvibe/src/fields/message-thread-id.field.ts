@@ -10,7 +10,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
   name: 'plusvibeThreadId',
-  label: 'PlusVibe Thread ID',
+  label: 'PlusVibe Thread ID (Raw)',
   type: FieldType.TEXT,
   icon: 'IconMessages',
 });

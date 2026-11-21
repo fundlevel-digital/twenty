@@ -12,13 +12,14 @@ import {
   THREAD_REPLY_LABELS_UNIVERSAL_IDENTIFIER,
   THREAD_SENDER_UNIVERSAL_IDENTIFIER,
   THREAD_SOURCE_UNIVERSAL_IDENTIFIER,
-  THREAD_THREAD_ID_UNIVERSAL_IDENTIFIER,
+  NATIVE_THREAD_SOURCE_THREAD_RELATION_UNIVERSAL_IDENTIFIER,
   THREAD_WORKSPACE_RELATION_UNIVERSAL_IDENTIFIER,
+  THREAD_THREAD_ID_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineView({
   universalIdentifier: THREAD_ALL_VIEW_UNIVERSAL_IDENTIFIER,
-  name: 'PlusVibe conversations',
+  name: 'PlusVibe Conversations',
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
   type: ViewType.TABLE,
@@ -79,10 +80,18 @@ export default defineView({
       size: 180,
     },
     {
+      universalIdentifier: 'd71db53f-0106-4fae-b312-cf8a9718b1f5',
+      fieldMetadataUniversalIdentifier:
+        NATIVE_THREAD_SOURCE_THREAD_RELATION_UNIVERSAL_IDENTIFIER,
+      position: 7,
+      isVisible: true,
+      size: 180,
+    },
+    {
       universalIdentifier: 'a3c22e35-87e6-4178-b342-a4d5f3327e59',
       fieldMetadataUniversalIdentifier: THREAD_THREAD_ID_UNIVERSAL_IDENTIFIER,
       position: 7,
-      isVisible: true,
+      isVisible: false,
       size: 180,
     },
   ],

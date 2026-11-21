@@ -12,6 +12,6 @@ export default defineNavigationMenuItem({
   universalIdentifier: ACTIVITY_NAVIGATION_UNIVERSAL_IDENTIFIER,
   type: NavigationMenuItemType.OBJECT,
   parentUniversalIdentifier: FOLDER_NAVIGATION_UNIVERSAL_IDENTIFIER,
-  position: 4,
+  position: 5,
   targetObjectUniversalIdentifier: ACTIVITY_UNIVERSAL_IDENTIFIER,
 });

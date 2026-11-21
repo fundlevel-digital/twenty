@@ -16,7 +16,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
   name: 'plusvibeCampaignRecord',
-  label: 'PlusVibe campaign',
+  label: 'PlusVibe Campaign',
   type: FieldType.RELATION,
   icon: 'IconPlug',
   relationTargetObjectMetadataUniversalIdentifier:

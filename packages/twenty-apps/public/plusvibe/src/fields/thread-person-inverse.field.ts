@@ -14,7 +14,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
   name: 'plusvibeThreads',
-  label: 'PlusVibe conversations',
+  label: 'PlusVibe Conversations',
   type: FieldType.RELATION,
   icon: 'IconMail',
   relationTargetObjectMetadataUniversalIdentifier:

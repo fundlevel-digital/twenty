@@ -11,11 +11,11 @@ import {
 
 export default defineNavigationMenuItem({
   universalIdentifier: THREAD_NAVIGATION_UNIVERSAL_IDENTIFIER,
-  name: 'PlusVibe conversations',
+  name: 'PlusVibe Conversations',
   type: NavigationMenuItemType.OBJECT,
   parentUniversalIdentifier: FOLDER_NAVIGATION_UNIVERSAL_IDENTIFIER,
   targetObjectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
   viewUniversalIdentifier: THREAD_ALL_VIEW_UNIVERSAL_IDENTIFIER,
-  position: 2,
+  position: 3,
 });

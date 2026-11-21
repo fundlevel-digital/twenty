@@ -50,6 +50,9 @@ vi.mock('src/logic-functions/utils/sync-records', () => ({
   recordId: (...parts: string[]) => parts.join(':'),
 }));
 vi.mock('src/logic-functions/utils/sync-workspace', () => ({ syncWorkspace }));
+vi.mock('src/logic-functions/utils/sync-source-thread', () => ({
+  syncSourceThread: async () => 'source-thread-record',
+}));
 vi.mock('src/logic-functions/utils/plusvibe-api', () => ({
   getApiKeyFingerprint: () => 'fingerprint',
 }));
@@ -116,6 +119,22 @@ beforeEach(() => {
 });
 
 describe('Native PlusVibe emails', () => {
+  it('groups campaign history with a previously identified provider thread', async () => {
+    await syncNativeEmail(EMAIL);
+    await syncNativeEmail({
+      ...EMAIL,
+      externalId: 'older-send',
+      threadId: undefined,
+    });
+    expect(patch).toHaveBeenLastCalledWith(
+      '/rest/messages/native-message-1',
+      expect.objectContaining({
+        plusvibeThreadId: EMAIL.threadId,
+        plusvibeThreadRecordId: 'source-thread-record',
+      }),
+    );
+  });
+
   it('keeps oversized emails within native ingestion limits', async () => {
     await syncNativeEmail({
       ...EMAIL,
@@ -173,6 +192,7 @@ describe('Native PlusVibe emails', () => {
         plusvibeCampaignId: 'campaign-1',
         plusvibeCampaignRecordId: 'campaign-record-1',
         plusvibeThreadId: 'provider-thread-1',
+        plusvibeThreadRecordId: 'source-thread-record',
       }),
     );
   });

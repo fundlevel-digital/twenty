@@ -18,8 +18,8 @@ export default defineObject({
   universalIdentifier: ACTIVITY_UNIVERSAL_IDENTIFIER,
   nameSingular: 'plusvibeActivity',
   namePlural: 'plusvibeActivities',
-  labelSingular: 'PlusVibe event',
-  labelPlural: 'PlusVibe events',
+  labelSingular: 'PlusVibe Event',
+  labelPlural: 'PlusVibe Events',
   icon: 'IconMail',
   labelIdentifierFieldMetadataUniversalIdentifier:
     ACTIVITY_NAME_UNIVERSAL_IDENTIFIER,
@@ -34,7 +34,7 @@ export default defineObject({
     {
       universalIdentifier: ACTIVITY_EXTERNAL_ID_UNIVERSAL_IDENTIFIER,
       name: 'externalId',
-      label: 'PlusVibe event ID',
+      label: 'PlusVibe Event ID',
       type: FieldType.TEXT,
       icon: 'IconKey',
     },
@@ -62,7 +62,7 @@ export default defineObject({
     {
       universalIdentifier: ACTIVITY_EMAIL_UNIVERSAL_IDENTIFIER,
       name: 'email',
-      label: 'Lead email',
+      label: 'Lead Email',
       type: FieldType.TEXT,
       icon: 'IconMail',
     },
@@ -83,7 +83,7 @@ export default defineObject({
     {
       universalIdentifier: ACTIVITY_OCCURRED_AT_UNIVERSAL_IDENTIFIER,
       name: 'occurredAt',
-      label: 'Occurred at',
+      label: 'Occurred At',
       type: FieldType.DATE_TIME,
       icon: 'IconCalendar',
       isNullable: true,
@@ -92,14 +92,14 @@ export default defineObject({
     {
       universalIdentifier: ACTIVITY_LABEL_UNIVERSAL_IDENTIFIER,
       name: 'label',
-      label: 'Lead label',
+      label: 'Lead Label',
       type: FieldType.TEXT,
       icon: 'IconTag',
     },
     {
       universalIdentifier: ACTIVITY_THREAD_LINK_UNIVERSAL_IDENTIFIER,
       name: 'threadLink',
-      label: 'Open conversation',
+      label: 'Open Conversation',
       type: FieldType.LINKS,
       icon: 'IconLink',
     },

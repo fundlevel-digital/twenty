@@ -17,6 +17,10 @@ export const recordId = (...parts: string[]) =>
 
 const restClient = () => new RestApiClient({ runAs: 'application' });
 
+const CAMPAIGN_STATUS_SCHEMA = z
+  .enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'ARCHIVED', 'OTHER'])
+  .catch('OTHER');
+
 export const findRecord = async (
   plural: string,
   id: string,
@@ -117,7 +121,14 @@ export const syncCampaign = async ({
       secondaryLinks: [],
     },
     ...(isNonEmptyString(name) ? { name } : {}),
-    ...(isNonEmptyString(status) ? { status } : {}),
+    ...(isNonEmptyString(status)
+      ? {
+          status,
+          campaignStatus: CAMPAIGN_STATUS_SCHEMA.parse(
+            status.trim().toUpperCase(),
+          ),
+        }
+      : {}),
   };
   await createRecordIfMissing('plusvibeCampaigns', id, {
     name: name ?? externalId,

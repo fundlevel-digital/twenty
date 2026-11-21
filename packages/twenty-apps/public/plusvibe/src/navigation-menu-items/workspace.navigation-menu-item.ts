@@ -11,7 +11,7 @@ import {
 
 export default defineNavigationMenuItem({
   universalIdentifier: WORKSPACE_NAVIGATION_UNIVERSAL_IDENTIFIER,
-  name: 'PlusVibe workspaces',
+  name: 'PlusVibe Workspaces',
   type: NavigationMenuItemType.OBJECT,
   parentUniversalIdentifier: FOLDER_NAVIGATION_UNIVERSAL_IDENTIFIER,
   targetObjectUniversalIdentifier: WORKSPACE_UNIVERSAL_IDENTIFIER,

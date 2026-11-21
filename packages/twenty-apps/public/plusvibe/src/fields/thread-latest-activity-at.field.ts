@@ -10,7 +10,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
   name: 'plusvibeLatestActivityAt',
-  label: 'Latest email at',
+  label: 'Latest Email At',
   type: FieldType.DATE_TIME,
   icon: 'IconCalendar',
   isNullable: true,

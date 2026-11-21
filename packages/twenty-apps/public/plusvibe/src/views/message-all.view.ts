@@ -9,13 +9,14 @@ import {
   MESSAGE_CAMPAIGN_RELATION_UNIVERSAL_IDENTIFIER,
   MESSAGE_SENDER_UNIVERSAL_IDENTIFIER,
   MESSAGE_SOURCE_UNIVERSAL_IDENTIFIER,
-  MESSAGE_THREAD_ID_UNIVERSAL_IDENTIFIER,
+  MESSAGE_SOURCE_THREAD_RELATION_UNIVERSAL_IDENTIFIER,
   MESSAGE_WORKSPACE_RELATION_UNIVERSAL_IDENTIFIER,
+  MESSAGE_THREAD_ID_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineView({
   universalIdentifier: MESSAGE_ALL_VIEW_UNIVERSAL_IDENTIFIER,
-  name: 'PlusVibe emails',
+  name: 'PlusVibe Emails',
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
   type: ViewType.TABLE,
@@ -53,10 +54,18 @@ export default defineView({
       size: 180,
     },
     {
+      universalIdentifier: '7719a0f2-8a88-4131-8c96-db70439334b7',
+      fieldMetadataUniversalIdentifier:
+        MESSAGE_SOURCE_THREAD_RELATION_UNIVERSAL_IDENTIFIER,
+      position: 4,
+      isVisible: true,
+      size: 180,
+    },
+    {
       universalIdentifier: '2370b87b-0557-4ecc-8195-d79e52e7c642',
       fieldMetadataUniversalIdentifier: MESSAGE_THREAD_ID_UNIVERSAL_IDENTIFIER,
       position: 4,
-      isVisible: true,
+      isVisible: false,
       size: 180,
     },
   ],

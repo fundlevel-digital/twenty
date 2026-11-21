@@ -23,6 +23,7 @@ import {
 } from 'src/logic-functions/utils/sync-records';
 import { syncWorkspace } from 'src/logic-functions/utils/sync-workspace';
 import { type PlusvibeLead } from 'src/logic-functions/utils/normalize-event';
+import { syncSourceThread } from 'src/logic-functions/utils/sync-source-thread';
 
 const MAX_NATIVE_EMAIL_TEXT_LENGTH = 262_144;
 const MAX_NATIVE_EMAIL_SUBJECT_LENGTH = 998;
@@ -134,14 +135,17 @@ export const mergeThreadState = (
   };
 };
 
-export const getCanonicalThreadId = async (email: NativeEmail) => {
-  const logicalId = recordId(
+const getConversationId = (email: NativeEmail) =>
+  recordId(
     'conversation',
     email.workspaceId,
     email.sender,
     email.leadEmail,
     email.campaignId ?? '',
   );
+
+export const getCanonicalThreadId = async (email: NativeEmail) => {
+  const logicalId = getConversationId(email);
   const key = `plusvibe:conversation:${logicalId}`;
   const current = await kv.get<{
     canonicalId: string;
@@ -257,6 +261,13 @@ export const syncNativeEmail = async (email: NativeEmail) => {
       })
     : undefined;
   const nativeThreadExternalId = await getCanonicalThreadId(email);
+  const conversation = await kv.get<{ providerThreadId?: string }>(
+    `plusvibe:conversation:${getConversationId(email)}`,
+  );
+  const providerThreadId = email.threadId ?? conversation?.providerThreadId;
+  const sourceThreadId = providerThreadId
+    ? await syncSourceThread(email.workspaceId, providerThreadId)
+    : undefined;
   const [message] = await ingestMessages({
     messageChannelId: channel.id,
     messages: [
@@ -292,7 +303,8 @@ export const syncNativeEmail = async (email: NativeEmail) => {
     plusvibeWorkspaceRecordId: workspaceId,
     ...(email.campaignId ? { plusvibeCampaignId: email.campaignId } : {}),
     ...(campaignId ? { plusvibeCampaignRecordId: campaignId } : {}),
-    ...(email.threadId ? { plusvibeThreadId: email.threadId } : {}),
+    ...(providerThreadId ? { plusvibeThreadId: providerThreadId } : {}),
+    ...(sourceThreadId ? { plusvibeThreadRecordId: sourceThreadId } : {}),
   };
   await client.patch(`/rest/messages/${message.messageId}`, {
     ...common,

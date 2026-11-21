@@ -47,7 +47,13 @@ legacy messaging channels to avoid duplicating already imported messages.
   contacts match by primary email and retain their fields. Source lead mappings
   keep alternate-address replies linked to the same person.
 - **PlusVibe workspaces:** source workspace ID, name, and whether sync is selected.
-- **PlusVibe campaigns:** source campaign ID, name, status, and workspace relation.
+- **PlusVibe campaigns:** source campaign ID, name, Status select, and Workspace
+  relation. Status choices are Draft, Active, Paused, Completed, Archived, and
+  Other. The original provider value remains in Status (Raw).
+- **PlusVibe threads:** source thread identities scoped to each workspace. The
+  PlusVibe Thread ID relation on native Messages and Message Threads supports
+  Twenty's Group by menu; the original text ID remains available as
+  PlusVibe Thread ID (Raw).
 - **Messages:** actual native email records, with participants and thread links.
   Custom fields include Source = PlusVibe, PlusVibe Workspace ID, PlusVibe Sender,
   PlusVibe Campaign ID, PlusVibe Thread ID when supplied, the message identity,
@@ -58,7 +64,7 @@ legacy messaging channels to avoid duplicating already imported messages.
 - **PlusVibe events:** the earlier activity object now holds bounce and label
   events. Email bodies are stored as native Messages, not activity copies.
 
-The **PlusVibe emails** and **PlusVibe conversations** navigation items open
+The **PlusVibe Emails** and **PlusVibe Conversations** navigation items open
 native tables with Twenty's normal filters. Conversations include saved views
 for **Replied**, **Interested**, and **Not interested**. Combine these with sender,
 workspace, campaign, or thread ID filters. Reply labels preserve the known

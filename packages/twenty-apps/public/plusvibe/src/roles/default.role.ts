@@ -8,11 +8,12 @@ import {
   CAMPAIGN_UNIVERSAL_IDENTIFIER,
   ACTIVITY_UNIVERSAL_IDENTIFIER,
   WORKSPACE_UNIVERSAL_IDENTIFIER,
+  SOURCE_THREAD_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
-  label: 'PlusVibe sync',
+  label: 'PlusVibe Sync',
   canUpdateAllSettings: false,
   canBeAssignedToAgents: false,
   canBeAssignedToUsers: false,
@@ -28,6 +29,7 @@ export default defineApplicationRole({
       CAMPAIGN_UNIVERSAL_IDENTIFIER,
       ACTIVITY_UNIVERSAL_IDENTIFIER,
       WORKSPACE_UNIVERSAL_IDENTIFIER,
+      SOURCE_THREAD_UNIVERSAL_IDENTIFIER,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
     ].map((objectUniversalIdentifier) => ({

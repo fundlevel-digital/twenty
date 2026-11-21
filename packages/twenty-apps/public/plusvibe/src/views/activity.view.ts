@@ -14,7 +14,7 @@ import {
 
 export default defineView({
   universalIdentifier: ACTIVITY_VIEW_UNIVERSAL_IDENTIFIER,
-  name: 'PlusVibe bounce and label events',
+  name: 'PlusVibe Bounce and Label Events',
   objectUniversalIdentifier: ACTIVITY_UNIVERSAL_IDENTIFIER,
   type: ViewType.TABLE,
   icon: 'IconMail',
