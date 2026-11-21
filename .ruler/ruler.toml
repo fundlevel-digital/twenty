@@ -1,0 +1,15 @@
+# AGENTS.md already aliases CLAUDE.md for Codex, Cursor, Pi and OpenCode.
+default_agents = ["claude"]
+nested = true
+
+[gitignore]
+enabled = false
+
+[backup]
+enabled = false
+
+[mcp]
+enabled = false
+
+[skills]
+enabled = false

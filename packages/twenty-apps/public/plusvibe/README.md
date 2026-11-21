@@ -6,6 +6,9 @@ workspace and campaign records provide source context and normal Twenty filters.
 Requires Twenty 2.60+, a PlusVibe account API key, and public HTTPS server routes.
 The app icon was supplied by the workspace owner.
 
+The [decision history](../../../../docs/decisions/packages/twenty-apps/public/plusvibe/DECISIONS.md)
+preserves the owner requests, corrections, rationale and preview/deployment boundary.
+
 ## Set up
 
 ```sh
