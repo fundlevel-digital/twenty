@@ -1,6 +1,6 @@
 import { defineApplication } from 'twenty-sdk/define';
 
-import { APP, REBUILD } from 'src/constants/universal-identifiers';
+import { APP } from 'src/constants/universal-identifiers';
 
 export default defineApplication({
   universalIdentifier: APP.APPLICATION,
@@ -23,16 +23,6 @@ export default defineApplication({
     },
   },
   applicationVariables: {
-    CONNECTION_PRIVACY_READY: {
-      universalIdentifier: REBUILD.VAR_PRIVACY_READY,
-      label: 'Connection Privacy Configured',
-      description:
-        'Set to true only after scripts/configure-connection-privacy.mjs has installed native private-record sharing and verified member and embedded-token access.',
-      type: 'BOOLEAN',
-      value: false,
-      isSecret: false,
-      isRequired: false,
-    },
     UNIPILE_API_KEY: {
       universalIdentifier: APP.VAR_UNIPILE_API_KEY,
       label: 'Unipile API Key',

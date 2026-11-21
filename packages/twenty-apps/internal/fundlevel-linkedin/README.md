@@ -71,7 +71,7 @@ its default function role, access to internal records, and gives real owners the
 account/connection shares. It records object/role IDs in internal app KV.
 
 Verify shared/private access as two different members, another administrator, and
-with embedded front-component tokens before setting `CONNECTION_PRIVACY_READY=true`.
+with embedded front-component tokens before setting the internal `linkedin-private-records-ready` app KV marker to true.
 New records carry native shares at creation. Visibility updates use the member's
 native sharing authority; they restrict before labeling records private and publish
 after recording Workspace. Large accounts may take over a minute because the native
@@ -84,7 +84,7 @@ Use the existing Infisical Unipile key and signing secret; never print them.
 - Workspace variables: `UNIPILE_API_KEY`, `UNIPILE_WEBHOOK_SECRET`.
 - Developer registration server variables: the same names, for hosted sign-in and
   server-wide webhook resolution. Configure these as well as workspace variables.
-- `CONNECTION_PRIVACY_READY`: false until native setup and access checks pass.
+- Internal app KV `linkedin-private-records-ready`: false until native setup and access checks pass; this is not a user-editable application variable.
 
 The Cloudflare archive variables are obsolete. Keep the direct webhook signing
 secret even after retiring archive-only configuration.
@@ -156,3 +156,24 @@ the production CRM. A future cutover needs the following sequence:
    accounted for. Its original disconnect/uninstall deletes upstream accounts; our
    replacement does not alter that app's code. The preview disabled those cloned
    hooks before uninstalling. Production removal is still pending.
+
+## Automatic Webhook Configuration
+
+After saving the Unipile API key, the administrator can configure delivery and
+its generated secret without copying credentials through the UI:
+
+```sh
+node scripts/configure-webhook.mjs --container <server> --workspace-id <workspace-id>
+node scripts/configure-webhook.mjs --container <server> --workspace-id <workspace-id> --apply
+```
+
+The first command is a dry run. Apply reuses an endpoint matching this app’s
+registration URL or creates one, subscribes to the supported message/account
+events, stores its secret through Twenty’s encrypted variable services, and tests
+signed acceptance and unsigned rejection. It leaves unrelated endpoints alone.
+The helper completed on production on 2026-11-21; LinkedIn sign-in can happen later.
+
+Archive URL/token variables and the manual privacy-readiness toggle were removed
+from production. Readiness is an internal app KV value, set only after native
+permission setup and verification; an old True environment flag is ignored.
+See [decision 0010](../../../../docs/decisions/linkedin/0010-automatic-webhook-and-internal-configuration.md).

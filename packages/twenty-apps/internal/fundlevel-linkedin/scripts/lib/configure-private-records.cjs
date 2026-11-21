@@ -229,7 +229,7 @@ const main = async () => {
         value: connectionObject.id,
       });
     console.log(
-      'Native privacy and application/owner grants configured. Verify two-member reads before enabling CONNECTION_PRIVACY_READY.',
+      'Native privacy and application/owner grants configured. Verify two-member reads before marking internal privacy readiness.',
     );
   } finally {
     await application.close();
