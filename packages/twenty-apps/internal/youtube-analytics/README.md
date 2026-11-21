@@ -125,3 +125,12 @@ yarn test
 yarn typecheck
 yarn lint
 ```
+
+## Decisions And Preview Setup
+
+The [decision index](../../../../docs/decisions/youtube-analytics/DECISIONS.md)
+records the owner's choices and the verified production rollout, including the
+90-channel migration and avatar backfill. The
+[handoff](HANDOFF.md) starts with the current deployed state and keeps older notes
+as history. For an isolated remote VM, use the
+[Twenty remote preview skill](../../../../.agents/skills/twenty-remote-preview/SKILL.md).

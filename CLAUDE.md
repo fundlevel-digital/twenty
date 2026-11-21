@@ -1,3 +1,7 @@
+
+
+<!-- Source: .ruler/instructions.md -->
+
 # CLAUDE.md
 
 Twenty is an open-source CRM — an Nx / Yarn 4 monorepo. Main packages: `twenty-front` (React 18, Jotai, Linaria, Vite), `twenty-server` (NestJS, TypeORM, PostgreSQL, Redis, GraphQL), `twenty-shared` (isomorphic types/utils), `twenty-ui`, `twenty-sdk` (application definitions and runtime), `twenty-cli` (standalone CLI), `twenty-e2e-testing` (Playwright).
@@ -75,3 +79,43 @@ Use only `twenty-crm-self-host`. Verify recalled claims against current source
 and deployment evidence. If memory is unavailable, report a safe status and
 continue independent work. Connection details and CLI fallback are in the
 [memory runbook](packages/twenty-docker/operations/hindsight-memory.md).
+
+
+
+<!-- Source: .ruler/authoring.md -->
+
+# Agent Configuration Sources
+
+Ruler owns repository rules in `.ruler/*.md`. Edit those sources, then run
+`yarn ruler:apply` from the repository root. The generated root `AGENTS.md` and
+`CLAUDE.md` stay tracked so fresh checkouts have instructions before installation.
+Do not edit generated rules directly. Scoped rules may use `<area>/.ruler/*.md`.
+Keep the root outputs as regular files: Ruler refuses the former `AGENTS.md` →
+`CLAUDE.md` symlink when writing generated instructions.
+
+Skills follow the `fundlevel-digital/mono` convention: their canonical source is
+`.agents/skills/<name>/SKILL.md`, with committed relative aliases in
+`.claude/skills/` and `.pi/skills/`. Codex, Cursor and OpenCode can discover the
+canonical directory. Edit the canonical skill; it needs no Ruler regeneration.
+Keep supporting references beside the skill. Preserve existing Claude-only skills.
+
+MCP settings, client settings and agent definitions are outside this Ruler setup.
+Do not overwrite `.mcp.json`, `.codex/config.toml` or `.claude/settings.json` when
+applying rules. The pinned Ruler command uses local sources only. MCP and skill
+generation are disabled in `.ruler/ruler.toml`; its CLI flag disables subagent
+generation.
+
+
+
+<!-- Source: .ruler/decisions.md -->
+
+# Decisions And Operational Skills
+
+Use the [decisions skill](.agents/skills/decisions/SKILL.md) before substantial
+work and when Kareem settles, rejects, corrects or reverses a choice. Read
+[docs/DECISIONS.md](docs/DECISIONS.md), then the relevant area index. Record the
+exchange and evidence in root `docs/decisions/<area>/` in the same turn. Respect
+settled choices unless Kareem changes them; record reversals by supersession.
+
+For setting up, restoring or diagnosing a remote Twenty preview, use the
+[Twenty remote preview skill](.agents/skills/twenty-remote-preview/SKILL.md).
