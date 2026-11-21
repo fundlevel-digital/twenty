@@ -1,7 +1,7 @@
 # 0008. Merge Main And Deploy LinkedIn To Production
 
 - Date: 2026-11-21
-- Status: accepted
+- Status: superseded by 0009 (production deployment authorization only)
 - Decided by: Kareem
 - Area: LinkedIn
 - Related: [0004](0004-cloud-preview-and-simulated-provider-checks.md), [0007](0007-open-the-rebuild-pull-request.md)

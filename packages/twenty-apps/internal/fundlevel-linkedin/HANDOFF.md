@@ -5,6 +5,15 @@ Do not rename the branch or apply this rebuild to production without a separate
 production cutover request. Owner decisions and the exchange behind them are in
 [root docs](../../../../docs/decisions/linkedin/DECISIONS.md).
 
+## Latest Branch And Deployment Status
+
+On 2026-11-21, `origin/main` was merged, conflicts resolved and the result pushed
+as `297672a0f7`; all 302 tests, direct app typecheck and lint passed after merging.
+The owner requested production deployment, then canceled it before any production
+write or deployment command ran. The rebuild remains preview-only. Temporary
+production CLI credentials copied into this workspace were removed; see decision
+[0009](../../../../docs/decisions/linkedin/0009-cancel-the-production-deployment.md).
+
 ## Completed
 
 The existing LinkedIn Sync app was rebuilt around native messaging and per-member
