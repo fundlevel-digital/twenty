@@ -27,6 +27,8 @@ export const YOUTUBE_CHANNEL_VIEW_UNIVERSAL_IDENTIFIER =
 
 export const YOUTUBE_CHANNEL_FIELD_UNIVERSAL_IDENTIFIERS = {
   name: 'aec4a922-d271-48f1-ac23-b57f3e6f1848',
+  avatarUrl: 'da8f84d2-6a25-4e7f-92cb-2f5f499d63fa',
+  avatarFile: '1a74179e-cb83-4bd7-9352-40aa8f23bfbe',
   youtubeId: '3ea97f72-0b12-4b7d-9250-c1a636d48422',
   youtubeHandle: '87b9729a-f99a-4e02-8a66-1e8bb8b0b237',
   youtubeUrl: '302ade83-6837-4a08-99f3-ef9ed36c578a',

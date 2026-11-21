@@ -10,6 +10,7 @@ const CHANNEL = {
   uploadsPlaylistId: 'uploads',
   subscriberCount: 1000,
   title: null,
+  avatarUrl: null,
   handle: null,
 };
 const publishedAt = (days: number) =>

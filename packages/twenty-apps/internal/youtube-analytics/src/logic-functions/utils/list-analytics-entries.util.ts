@@ -13,6 +13,8 @@ type AnalyticsEntryNode = {
   youtubeId?: unknown;
   youtubeHandle?: unknown;
   youtubeUrl?: unknown;
+  avatarUrl?: unknown;
+  avatarFile?: { fileId: string }[] | null;
 };
 
 type AnalyticsEntriesQueryResult = {
@@ -36,6 +38,8 @@ const LIST_ANALYTICS_ENTRIES_QUERY = `
           youtubeId
           youtubeHandle
           youtubeUrl
+          avatarUrl
+          avatarFile { fileId }
         }
       }
       pageInfo {
@@ -69,6 +73,8 @@ const toAnalyticsEntry = (node: AnalyticsEntryNode): AnalyticsEntry | null => {
     youtubeId: normalizeOptionalText(node.youtubeId),
     youtubeHandle: normalizeOptionalText(node.youtubeHandle),
     youtubeUrl: normalizeOptionalText(node.youtubeUrl),
+    avatarUrl: normalizeOptionalText(node.avatarUrl),
+    hasAvatar: (node.avatarFile?.length ?? 0) > 0,
   };
 };
 

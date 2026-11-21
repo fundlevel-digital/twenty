@@ -6,7 +6,20 @@ import {
   refreshYoutubeAnalyticsHandler,
 } from 'src/logic-functions/handlers/refresh-youtube-analytics.handler';
 import { type WorkspaceGraphqlClient } from 'src/logic-functions/utils/workspace-graphql-client.util';
+import { buildYoutubeAvatarUpdate } from 'src/logic-functions/utils/build-youtube-avatar-update.util';
 import { YoutubeClient } from 'src/logic-functions/utils/youtube-client';
+
+vi.mock('src/logic-functions/utils/build-youtube-avatar-update.util', () => ({
+  buildYoutubeAvatarUpdate: vi.fn(
+    async ({ avatarUrl }: { avatarUrl: string | null }) =>
+      avatarUrl
+        ? {
+            avatarUrl,
+            avatarFile: [{ fileId: 'photo-id', label: 'youtube-avatar.jpg' }],
+          }
+        : {},
+  ),
+}));
 
 vi.mock('twenty-sdk/logic-function', () => ({ listConnections: vi.fn() }));
 vi.mock(
@@ -71,7 +84,13 @@ const youtubeFetch = (async (input: string | URL | Request) => {
       items: [
         {
           id: CHANNEL_ID,
-          snippet: { title: 'Creator', customUrl: '@creator' },
+          snippet: {
+            title: 'Creator',
+            customUrl: '@creator',
+            thumbnails: {
+              high: { url: 'https://yt3.ggpht.com/channel-photo' },
+            },
+          },
           contentDetails: { relatedPlaylists: { uploads: 'UU000' } },
           statistics: { subscriberCount: '1000' },
         },
@@ -149,6 +168,7 @@ describe('refreshYoutubeAnalytics', () => {
         youtubeUrl: `https://www.youtube.com/channel/${CHANNEL_ID}`,
         uploadsPlaylistId: 'UU000',
         subscriberCount: 1000,
+        avatarUrl: 'https://yt3.ggpht.com/channel-photo',
         averageViews: 100,
         medianViews: 100,
         averageEngagementPercentage: 6,
@@ -207,6 +227,77 @@ describe('refreshYoutubeAnalytics', () => {
       calculationStatus: 'FAILED',
       calculationError: 'no YouTube channel identity',
     });
+  });
+
+  it('preserves an existing avatar when YouTube omits the thumbnail', async () => {
+    const { client, mutations } = buildClientMock({
+      nodes: [buildEntryNode('channel-1', { youtubeId: CHANNEL_ID })],
+    });
+    const youtubeClient = buildYoutubeClient();
+    vi.spyOn(youtubeClient, 'resolveChannels').mockResolvedValue({
+      channels: [
+        {
+          recordId: 'channel-1',
+          channelId: CHANNEL_ID,
+          uploadsPlaylistId: 'UU000',
+          title: 'Creator',
+          handle: '@creator',
+          subscriberCount: 1000,
+          avatarUrl: null,
+        },
+      ],
+      missingIdentity: [],
+      notFound: [],
+      failed: [],
+    });
+    await refreshYoutubeAnalytics({
+      client,
+      youtubeClient,
+      selection: { kind: 'calculationsEnabled' },
+      now: () => NOW,
+    });
+    expect(mutations[0].data).not.toHaveProperty('avatarUrl');
+  });
+
+  it('saves the resolved avatar even when video collection fails', async () => {
+    const { client, mutations } = buildClientMock({
+      nodes: [buildEntryNode('channel-1', { youtubeId: CHANNEL_ID })],
+    });
+    const youtubeClient = buildYoutubeClient();
+    vi.spyOn(youtubeClient, 'listUploadPage').mockRejectedValue(
+      new Error('quota exhausted'),
+    );
+    await refreshYoutubeAnalytics({
+      client,
+      youtubeClient,
+      selection: { kind: 'calculationsEnabled' },
+      now: () => NOW,
+    });
+    expect(mutations[0].data).toMatchObject({
+      avatarUrl: 'https://yt3.ggpht.com/channel-photo',
+      calculationStatus: 'FAILED',
+    });
+    expect(mutations[0].data).not.toHaveProperty('averageViews');
+  });
+
+  it('keeps metric updates when avatar upload fails', async () => {
+    const { client, mutations } = buildClientMock({
+      nodes: [buildEntryNode('channel-1', { youtubeId: CHANNEL_ID })],
+    });
+    vi.mocked(buildYoutubeAvatarUpdate).mockRejectedValueOnce(
+      new Error('upload unavailable'),
+    );
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await refreshYoutubeAnalytics({
+      client,
+      youtubeClient: buildYoutubeClient(),
+      selection: { kind: 'calculationsEnabled' },
+      now: () => NOW,
+    });
+    expect(mutations[0].data.calculationStatus).toBe('READY');
+    expect(mutations[0].data).not.toHaveProperty('avatarUrl');
+    expect(warning).toHaveBeenCalledOnce();
+    warning.mockRestore();
   });
 
   it('records a failed write once without retrying it', async () => {

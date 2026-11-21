@@ -166,6 +166,51 @@ describe('YoutubeClient', () => {
     },
   );
 
+  it.each([
+    [
+      {
+        high: { url: 'high' },
+        medium: { url: 'medium' },
+        default: { url: 'default' },
+      },
+      'high',
+    ],
+    [
+      {
+        high: { url: '' },
+        medium: { url: 'medium' },
+        default: { url: 'default' },
+      },
+      'medium',
+    ],
+    [{ default: { url: 'default' } }, 'default'],
+    [{}, null],
+    [undefined, null],
+  ])(
+    'uses the best available channel photo (%j)',
+    async (thumbnails, avatarUrl) => {
+      const client = buildClient((async () =>
+        Response.json({
+          items: [
+            {
+              id: CHANNEL_ID,
+              snippet: { thumbnails },
+              contentDetails: { relatedPlaylists: { uploads: 'UU000' } },
+            },
+          ],
+        })) as typeof fetch);
+      const result = await client.resolveChannels([
+        {
+          recordId: 'channel-record-1',
+          youtubeId: CHANNEL_ID,
+          youtubeHandle: null,
+          youtubeUrl: null,
+        },
+      ]);
+      expect(result.channels[0].avatarUrl).toBe(avatarUrl);
+    },
+  );
+
   it('moves to the next key after an authorization failure', async () => {
     const requests: RecordedRequest[] = [];
     const fetchImplementation = (async (

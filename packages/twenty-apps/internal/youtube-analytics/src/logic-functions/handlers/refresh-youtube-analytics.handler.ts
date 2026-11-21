@@ -21,6 +21,7 @@ import {
 } from 'src/logic-functions/utils/to-analytics-entry-selection.util';
 import { toErrorMessage } from 'src/logic-functions/utils/to-error-message.util';
 import { updateAnalyticsEntry } from 'src/logic-functions/utils/update-analytics-entry.util';
+import { buildYoutubeAvatarUpdate } from 'src/logic-functions/utils/build-youtube-avatar-update.util';
 import {
   createWorkspaceGraphqlClient,
   type WorkspaceGraphqlClient,
@@ -184,8 +185,26 @@ export const refreshYoutubeAnalytics = async ({
     entryWrites,
     Math.min(options.concurrency, ANALYTICS_ENTRY_WRITE_CONCURRENCY),
     async ({ entry, data, failureReason }) => {
+      const channel = identitiesByRecordId.get(entry.id);
+      let avatarUpdate = {};
+
       try {
-        await updateAnalyticsEntry({ client, entryId: entry.id, data });
+        avatarUpdate = await buildYoutubeAvatarUpdate({
+          entry,
+          avatarUrl: channel?.avatarUrl ?? null,
+        });
+      } catch (error) {
+        console.warn(
+          `YouTube avatar import failed for ${entry.id}: ${toErrorMessage(error)}`,
+        );
+      }
+
+      try {
+        await updateAnalyticsEntry({
+          client,
+          entryId: entry.id,
+          data: { ...data, ...avatarUpdate },
+        });
       } catch (error) {
         failures.push({
           entryId: entry.id,

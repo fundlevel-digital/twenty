@@ -16,7 +16,28 @@ export default defineObject({
   isSearchable: true,
   labelIdentifierFieldMetadataUniversalIdentifier:
     YOUTUBE_CHANNEL_FIELD_UNIVERSAL_IDENTIFIERS.name,
+  imageIdentifierFieldMetadataUniversalIdentifier:
+    YOUTUBE_CHANNEL_FIELD_UNIVERSAL_IDENTIFIERS.avatarFile,
   fields: [
+    {
+      universalIdentifier:
+        YOUTUBE_CHANNEL_FIELD_UNIVERSAL_IDENTIFIERS.avatarFile,
+      name: 'avatarFile',
+      label: 'Avatar',
+      type: FieldType.FILES,
+      universalSettings: { maxNumberOfValues: 1 },
+      icon: 'IconPhoto',
+      isNullable: true,
+    },
+    {
+      universalIdentifier:
+        YOUTUBE_CHANNEL_FIELD_UNIVERSAL_IDENTIFIERS.avatarUrl,
+      name: 'avatarUrl',
+      label: 'Avatar URL',
+      type: FieldType.TEXT,
+      icon: 'IconPhoto',
+      isNullable: true,
+    },
     {
       universalIdentifier: YOUTUBE_CHANNEL_FIELD_UNIVERSAL_IDENTIFIERS.name,
       name: 'name',

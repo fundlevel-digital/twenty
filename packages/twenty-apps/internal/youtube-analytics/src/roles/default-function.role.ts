@@ -27,5 +27,6 @@ export default defineApplicationRole({
     SystemPermissionFlag.DATA_MODEL,
     SystemPermissionFlag.VIEWS,
     SystemPermissionFlag.APPLICATIONS,
+    SystemPermissionFlag.UPLOAD_FILE,
   ],
 });
