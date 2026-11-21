@@ -4,4 +4,8 @@ export type YoutubeAnalyticsSyncOptions = {
   maxUploads: number;
   minimumDurationSeconds: number;
   concurrency: number;
+  timeframeDays: number[];
+  numberTimeframeDays: number[];
+  percentageTimeframeDays: number[];
+  metricFormat: 'NUMBERS' | 'PERCENTAGES' | 'BOTH';
 };

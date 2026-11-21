@@ -1,5 +1,5 @@
-export type InfluencerYoutubeIdentity = {
-  influencerId: string;
+export type YoutubeChannelRecordIdentity = {
+  recordId: string;
   youtubeId: string | null;
   youtubeHandle: string | null;
   youtubeUrl: string | null;

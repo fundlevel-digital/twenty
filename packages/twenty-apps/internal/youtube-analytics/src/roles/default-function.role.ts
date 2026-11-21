@@ -1,16 +1,15 @@
-import { defineApplicationRole } from 'twenty-sdk/define';
+import { defineApplicationRole, SystemPermissionFlag } from 'twenty-sdk/define';
 
 import {
   DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
-  INFLUENCER_ANALYTICS_ENTRY_OBJECT_UNIVERSAL_IDENTIFIER,
-  INFLUENCER_OBJECT_UNIVERSAL_IDENTIFIER,
+  YOUTUBE_CHANNEL_OBJECT_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
-  label: 'YouTube analytics refresh role',
+  label: 'YouTube Analytics Refresh Role',
   description:
-    'Reads influencer YouTube identities and writes the computed metrics and calculation status onto influencer analytics entries.',
+    'Reads and updates YouTube Channels and synchronizes metric columns and views, and manages its own configuration.',
   canUpdateAllSettings: false,
   canBeAssignedToAgents: false,
   canBeAssignedToUsers: false,
@@ -18,16 +17,15 @@ export default defineApplicationRole({
   recordsPermissions: {
     objects: [
       {
-        objectUniversalIdentifier: INFLUENCER_OBJECT_UNIVERSAL_IDENTIFIER,
-        canReadAllRecords: true,
-      },
-      {
-        objectUniversalIdentifier:
-          INFLUENCER_ANALYTICS_ENTRY_OBJECT_UNIVERSAL_IDENTIFIER,
+        objectUniversalIdentifier: YOUTUBE_CHANNEL_OBJECT_UNIVERSAL_IDENTIFIER,
         canReadAllRecords: true,
         canUpdateAllRecords: true,
       },
     ],
   },
-  permissionFlagUniversalIdentifiers: [],
+  permissionFlagUniversalIdentifiers: [
+    SystemPermissionFlag.DATA_MODEL,
+    SystemPermissionFlag.VIEWS,
+    SystemPermissionFlag.APPLICATIONS,
+  ],
 });

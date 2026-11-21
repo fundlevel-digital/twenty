@@ -24,7 +24,7 @@ beforeEach(() => {
 
 describe('createWorkspaceGraphqlClient', () => {
   it('posts the query and variables to /graphql as the application', async () => {
-    post.mockResolvedValue({ data: { influencerAnalyticsEntries: null } });
+    post.mockResolvedValue({ data: { youtubeChannels: null } });
 
     const data = await createWorkspaceGraphqlClient().request('query { a }', {
       first: 1,
@@ -35,7 +35,7 @@ describe('createWorkspaceGraphqlClient', () => {
       query: 'query { a }',
       variables: { first: 1 },
     });
-    expect(data).toEqual({ influencerAnalyticsEntries: null });
+    expect(data).toEqual({ youtubeChannels: null });
   });
 
   it('throws the joined GraphQL error messages', async () => {

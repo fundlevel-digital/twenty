@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { listConnections } from 'twenty-sdk/logic-function';
 
-import { YOUTUBE_ANALYTICS_SYNC_OPTIONS } from 'src/logic-functions/constants/youtube-analytics-sync-options.constant';
 import {
   refreshYoutubeAnalytics,
   refreshYoutubeAnalyticsHandler,
@@ -8,16 +8,23 @@ import {
 import { type WorkspaceGraphqlClient } from 'src/logic-functions/utils/workspace-graphql-client.util';
 import { YoutubeClient } from 'src/logic-functions/utils/youtube-client';
 
+vi.mock('twenty-sdk/logic-function', () => ({ listConnections: vi.fn() }));
+vi.mock(
+  'src/logic-functions/utils/synchronize-youtube-metric-fields.util',
+  () => ({ synchronizeYoutubeMetricFields: vi.fn() }),
+);
+
 type MutationVariables = { id: string; data: Record<string, unknown> };
 
 type QueryVariables = { filter: unknown; first: number; after?: string };
 
 const CHANNEL_ID = 'UC0000000000000000000000';
 
-const buildEntryNode = (
-  entryId: string,
-  influencer: Record<string, unknown> | null,
-) => ({ id: entryId, name: '', influencer });
+const buildEntryNode = (id: string, fields: Record<string, unknown> = {}) => ({
+  id,
+  name: '',
+  ...fields,
+});
 
 const buildClientMock = ({
   nodes,
@@ -31,20 +38,20 @@ const buildClientMock = ({
   const client: WorkspaceGraphqlClient = {
     request: vi.fn(
       async (query: string, variables: Record<string, unknown>) => {
-        if (query.includes('updateInfluencerAnalyticsEntry(')) {
+        if (query.includes('updateYoutubeChannel(')) {
           mutations.push(variables as MutationVariables);
 
           if (failMutation) {
             throw new Error('Twenty update failed with status 500');
           }
 
-          return { updateInfluencerAnalyticsEntry: { id: variables.id } };
+          return { updateYoutubeChannel: { id: variables.id } };
         }
 
         queries.push(variables as QueryVariables);
 
         return {
-          influencerAnalyticsEntries: {
+          youtubeChannels: {
             edges: nodes.map((node) => ({ node })),
             pageInfo: { hasNextPage: false, endCursor: null },
           },
@@ -64,6 +71,7 @@ const youtubeFetch = (async (input: string | URL | Request) => {
       items: [
         {
           id: CHANNEL_ID,
+          snippet: { title: 'Creator', customUrl: '@creator' },
           contentDetails: { relatedPlaylists: { uploads: 'UU000' } },
           statistics: { subscriberCount: '1000' },
         },
@@ -101,8 +109,7 @@ const youtubeFetch = (async (input: string | URL | Request) => {
 
 const buildYoutubeClient = () =>
   new YoutubeClient({
-    tregToken: 'treg-token',
-    keyToolNames: ['key-a'],
+    credentials: [{ id: 'api-key-1', apiKey: 'key-a' }],
     fetchImplementation: youtubeFetch,
     waitImplementation: async () => {},
   });
@@ -115,216 +122,173 @@ afterEach(() => {
 });
 
 describe('refreshYoutubeAnalytics', () => {
-  it('uses the production metric windows', () => {
-    expect(YOUTUBE_ANALYTICS_SYNC_OPTIONS).toEqual({
-      lookback: 12,
-      recentWindowDays: 60,
-      maxUploads: 60,
-      minimumDurationSeconds: 181,
-      concurrency: 4,
-    });
-  });
-
-  it('writes the computed metrics to every entry of the influencer', async () => {
-    const influencer = {
-      id: 'influencer-1',
-      name: 'Creator',
-      youtubeId: CHANNEL_ID,
-      youtubeHandle: '',
-      youtubeUrl: '',
-    };
+  it('stores channel identity, subscribers and metrics on the app-owned channel', async () => {
     const { client, queries, mutations } = buildClientMock({
-      nodes: [
-        buildEntryNode('entry-1', influencer),
-        buildEntryNode('entry-2', influencer),
-      ],
+      nodes: [buildEntryNode('channel-1', { youtubeId: CHANNEL_ID })],
     });
-
     const result = await refreshYoutubeAnalytics({
       client,
       youtubeClient: buildYoutubeClient(),
       selection: { kind: 'calculationsEnabled' },
       now: () => NOW,
     });
-
     expect(queries).toEqual([
       { filter: { calculationsEnabled: { eq: true } }, first: 200 },
     ]);
     expect(result).toMatchObject({
-      entriesSelected: 2,
-      entriesWritten: 2,
+      entriesSelected: 1,
+      entriesWritten: 1,
       entriesFailed: 0,
-      quota: { channelsList: 1, playlistItemsList: 1, videosList: 1, total: 3 },
     });
-    expect(mutations.map((mutation) => mutation.id)).toEqual([
-      'entry-1',
-      'entry-2',
-    ]);
-    expect(mutations[0]?.data).toEqual({
-      averageViews: 100,
-      averageEngagementPercentage: 6,
-      medianViews: 100,
-      medianEngagementPercentage: 6,
-      averageViewRate: 10,
-      averageViews60d: 100,
-      medianViews60d: 100,
-      averageEngagementPercentage60d: 6,
-      medianEngagementPercentage60d: 6,
-      averageViewRate60d: 10,
-      lastPostDate: '2026-08-01',
-      postsPerMonth: 0.08,
-      averageStatisticsUpdatedAt: '2026-08-28',
-      lastCalculatedAt: '2026-08-28T05:00:00.000Z',
-      calculationStatus: 'READY',
-      calculationError: '',
-      name: 'Influencer YouTube Analytics — Creator',
-    });
-  });
-
-  it('records the reason on entries it cannot calculate', async () => {
-    const { client, mutations } = buildClientMock({
-      nodes: [
-        buildEntryNode('entry-1', {
-          id: 'influencer-1',
-          name: 'No channel',
-          youtubeId: '',
-          youtubeHandle: '',
-          youtubeUrl: '',
-        }),
-        buildEntryNode('entry-2', null),
-      ],
-    });
-
-    const result = await refreshYoutubeAnalytics({
-      client,
-      youtubeClient: buildYoutubeClient(),
-      selection: { kind: 'calculationsEnabled' },
-      now: () => NOW,
-    });
-
-    expect(result).toMatchObject({
-      entriesWritten: 0,
-      entriesFailed: 2,
-      missingIdentity: 1,
-    });
-    expect(mutations.map((mutation) => mutation.data)).toEqual([
-      {
-        calculationStatus: 'FAILED',
-        calculationError: 'no YouTube channel identity',
+    expect(mutations[0]).toMatchObject({
+      id: 'channel-1',
+      data: {
+        name: 'Creator',
+        youtubeId: CHANNEL_ID,
+        youtubeHandle: '@creator',
+        youtubeUrl: `https://www.youtube.com/channel/${CHANNEL_ID}`,
+        uploadsPlaylistId: 'UU000',
+        subscriberCount: 1000,
+        averageViews: 100,
+        medianViews: 100,
+        averageEngagementPercentage: 6,
+        medianEngagementPercentage: 6,
+        averageViewRate: 10,
+        averageViews60d: 100,
+        medianViews60d: 100,
+        averageEngagementPercentage60d: 6,
+        medianEngagementPercentage60d: 6,
+        averageViewRate60d: 10,
+        lastPostDate: '2026-08-01',
+        postsPerMonth: 0.08,
+        averageStatisticsUpdatedAt: '2026-08-28',
+        lastCalculatedAt: NOW.toISOString(),
+        calculationStatus: 'READY',
+        calculationError: '',
+        recentVideoCount: 12,
+        videosAnalyzed: 1,
       },
-      { calculationStatus: 'FAILED', calculationError: 'no linked influencer' },
-    ]);
+    });
+    expect(
+      vi
+        .mocked(client.request)
+        .mock.calls.every(([query]) => !query.includes('influencerAnalytics')),
+    ).toBe(true);
   });
 
-  it('does not retry a failed write', async () => {
+  it('preserves a custom channel name', async () => {
     const { client, mutations } = buildClientMock({
       nodes: [
-        buildEntryNode('entry-1', {
-          id: 'influencer-1',
-          name: 'Creator',
+        buildEntryNode('channel-1', {
+          name: 'My channel label',
           youtubeId: CHANNEL_ID,
-          youtubeHandle: null,
-          youtubeUrl: null,
         }),
       ],
-      failMutation: true,
     });
-
-    const result = await refreshYoutubeAnalytics({
-      client,
-      youtubeClient: buildYoutubeClient(),
-      selection: { kind: 'calculationsEnabled' },
-      now: () => NOW,
-    });
-
-    expect(mutations).toHaveLength(1);
-    expect(result.failures).toEqual([
-      {
-        entryId: 'entry-1',
-        influencerId: 'influencer-1',
-        reason: 'Twenty update failed with status 500',
-      },
-    ]);
-  });
-
-  it('selects the requested entries and influencers', async () => {
-    const { client, queries } = buildClientMock({ nodes: [] });
-
     await refreshYoutubeAnalytics({
       client,
       youtubeClient: buildYoutubeClient(),
-      selection: {
-        kind: 'records',
-        entryIds: ['entry-1'],
-        influencerIds: ['influencer-1'],
-      },
-      now: () => NOW,
+      selection: { kind: 'calculationsEnabled' },
     });
-
-    expect(queries[0]?.filter).toEqual({
-      or: [
-        { id: { in: ['entry-1'] } },
-        { influencerId: { in: ['influencer-1'] } },
-      ],
-    });
+    expect(mutations[0].data).not.toHaveProperty('name');
   });
 
-  it('refreshes nothing when the route names no records', async () => {
-    const { client, queries } = buildClientMock({ nodes: [] });
-
+  it('records missing identities without overwriting existing metrics', async () => {
+    const { client, mutations } = buildClientMock({
+      nodes: [buildEntryNode('channel-1')],
+    });
     const result = await refreshYoutubeAnalytics({
       client,
       youtubeClient: buildYoutubeClient(),
-      selection: { kind: 'records', entryIds: [], influencerIds: [] },
-      now: () => NOW,
+      selection: { kind: 'calculationsEnabled' },
     });
+    expect(result).toMatchObject({ entriesFailed: 1, missingIdentity: 1 });
+    expect(mutations[0].data).toEqual({
+      calculationStatus: 'FAILED',
+      calculationError: 'no YouTube channel identity',
+    });
+  });
 
+  it('records a failed write once without retrying it', async () => {
+    const { client, mutations } = buildClientMock({
+      nodes: [buildEntryNode('channel-1', { youtubeId: CHANNEL_ID })],
+      failMutation: true,
+    });
+    const result = await refreshYoutubeAnalytics({
+      client,
+      youtubeClient: buildYoutubeClient(),
+      selection: { kind: 'calculationsEnabled' },
+    });
+    expect(mutations).toHaveLength(1);
+    expect(result.failures).toEqual([
+      { entryId: 'channel-1', reason: 'Twenty update failed with status 500' },
+    ]);
+  });
+
+  it('selects only channel records named in a manual request', async () => {
+    const { client, queries } = buildClientMock({ nodes: [] });
+    await refreshYoutubeAnalytics({
+      client,
+      youtubeClient: buildYoutubeClient(),
+      selection: { kind: 'records', channelIds: ['channel-1'] },
+    });
+    expect(queries[0].filter).toEqual({ id: { in: ['channel-1'] } });
+  });
+
+  it('refreshes nothing when a route names no channels', async () => {
+    const { client, queries } = buildClientMock({ nodes: [] });
+    const result = await refreshYoutubeAnalytics({
+      client,
+      youtubeClient: buildYoutubeClient(),
+      selection: { kind: 'records', channelIds: [] },
+    });
     expect(queries).toHaveLength(0);
     expect(result.entriesSelected).toBe(0);
   });
 });
 
 describe('refreshYoutubeAnalyticsHandler', () => {
-  it('refuses to run without a treg token', async () => {
-    const fetchMock = vi.fn();
+  it('refuses invalid settings before fetching credentials or reading records', async () => {
+    vi.stubEnv('RECENT_VIDEO_COUNT', '31');
     const createClient = vi.fn();
-
-    vi.stubEnv('TREG_TOKEN', '');
-    vi.stubGlobal('fetch', fetchMock);
-
+    vi.mocked(listConnections).mockClear();
     await expect(
       refreshYoutubeAnalyticsHandler({}, createClient),
-    ).rejects.toThrow('TREG_TOKEN is not set');
+    ).rejects.toThrow('RECENT_VIDEO_COUNT');
     expect(createClient).not.toHaveBeenCalled();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(listConnections).not.toHaveBeenCalled();
   });
 
-  it('refreshes enabled entries on the cron and named records on the route', async () => {
-    vi.stubEnv('TREG_TOKEN', 'treg-token');
-    vi.stubGlobal('fetch', youtubeFetch);
-    const cronMock = buildClientMock({ nodes: [] });
-    const routeMock = buildClientMock({ nodes: [] });
+  it('refuses to run when no keys are connected', async () => {
+    vi.mocked(listConnections).mockResolvedValue([]);
+    const createClient = vi.fn();
+    await expect(
+      refreshYoutubeAnalyticsHandler({}, createClient),
+    ).rejects.toThrow('No usable YouTube API key connections');
+    expect(createClient).not.toHaveBeenCalled();
+  });
 
-    await refreshYoutubeAnalyticsHandler({}, () => cronMock.client);
-    await refreshYoutubeAnalyticsHandler(
+  it('uses the configured count and selected channel IDs', async () => {
+    vi.stubEnv('RECENT_VIDEO_COUNT', '2');
+    vi.mocked(listConnections).mockResolvedValue([
       {
-        headers: {},
-        queryStringParameters: {},
-        pathParameters: {},
-        body: { influencerIds: ['influencer-1'] },
-        isBase64Encoded: false,
-        requestContext: {
-          http: { method: 'POST', path: '/youtube-analytics/refresh' },
-        },
-      } as unknown as Parameters<typeof refreshYoutubeAnalyticsHandler>[0],
-      () => routeMock.client,
+        id: 'first',
+        providerType: 'api-key',
+        accessToken: 'key-a',
+        authFailedAt: null,
+      },
+    ] as Awaited<ReturnType<typeof listConnections>>);
+    vi.stubGlobal('fetch', youtubeFetch);
+    const { client, mutations, queries } = buildClientMock({
+      nodes: [buildEntryNode('channel-1', { youtubeId: CHANNEL_ID })],
+    });
+    await refreshYoutubeAnalyticsHandler(
+      { requestContext: {}, body: { channelIds: ['channel-1'] } } as Parameters<
+        typeof refreshYoutubeAnalyticsHandler
+      >[0],
+      () => client,
     );
-
-    expect(cronMock.queries[0]?.filter).toEqual({
-      calculationsEnabled: { eq: true },
-    });
-    expect(routeMock.queries[0]?.filter).toEqual({
-      or: [{ influencerId: { in: ['influencer-1'] } }],
-    });
+    expect(queries[0].filter).toEqual({ id: { in: ['channel-1'] } });
+    expect(mutations[0].data.recentVideoCount).toBe(2);
   });
 });
