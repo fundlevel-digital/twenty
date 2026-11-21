@@ -45,3 +45,20 @@ SDK app release.
 
 The release handoff records commit/PR, deployment plan and apply results,
 verification, and any outstanding OAuth setup. Credentials stay outside Git.
+
+
+## Release Outcome
+
+[PR #16](https://github.com/fundlevel-digital/twenty/pull/16) merged on
+2026-11-21 as `a07620c917d9b2df5c036df9c58665b7c623fe1a`. The app from that
+commit was installed in the live CRM without pruning; its follow-up plan reports
+zero changes. The production endpoint, booking schema and scheduled reconciliation
+were verified. See the [release handoff](../../handoffs/2026-11-21-cal-com-preview.md#production-release).
+
+After being asked to fill the external OAuth variables and add a live connection,
+Kareem reported: "Configured live credentials and connected". Both live credential
+fields are confirmed filled. At 23:38 UTC, settings and aggregate provider queries
+still showed zero live connections and zero bookings. The owner was asked to
+confirm the Add Connection result and registered callback. Installation is
+complete; live consent and import remain unverified. This observation does not
+supersede the deployment decision.

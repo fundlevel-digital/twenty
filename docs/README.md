@@ -1,6 +1,6 @@
 # Twenty Engineering Notes
 
-- [Cal.com OAuth App Preview](handoffs/2026-11-21-cal-com-preview.md): implementation, isolated preview, verification and OAuth setup requirements.
+- [Cal.com OAuth App And Release](handoffs/2026-11-21-cal-com-preview.md): implementation, isolated preview, live installation and OAuth verification status.
 
 - [Live CRM Rollout](handoffs/2026-11-21-live-crm-rollout.md): deployed core/apps, migration recovery, PlusVibe reconciliation and pending LinkedIn/Slack activation.
 
