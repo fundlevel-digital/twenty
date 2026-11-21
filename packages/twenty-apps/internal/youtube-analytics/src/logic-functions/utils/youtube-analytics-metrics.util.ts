@@ -101,6 +101,14 @@ export const computeWindowStats = (
   return {
     averageViews,
     medianViews: Math.round(median(videos.map((video) => video.views))),
+    averageLikes: Math.round(
+      trimmedMean(videos, (video) => video.likes)?.value ?? 0,
+    ),
+    medianLikes: Math.round(median(videos.map((video) => video.likes))),
+    averageComments: Math.round(
+      trimmedMean(videos, (video) => video.comments)?.value ?? 0,
+    ),
+    medianComments: Math.round(median(videos.map((video) => video.comments))),
     engagementRate: Math.round(engagement.value * 100) / 100,
     medianEngagementRate:
       Math.round(median(videos.map(engagementPercentage)) * 100) / 100,

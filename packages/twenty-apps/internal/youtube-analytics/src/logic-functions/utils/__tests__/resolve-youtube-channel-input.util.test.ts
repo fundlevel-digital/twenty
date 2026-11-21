@@ -7,7 +7,7 @@ const CHANNEL_ID = 'UC_zBdZ0_H_jn41FDRG7q4Tw';
 const buildIdentity = (
   overrides: Partial<Parameters<typeof resolveYoutubeChannelInput>[0]>,
 ) => ({
-  influencerId: 'influencer-1',
+  recordId: 'channel-record-1',
   youtubeId: null,
   youtubeHandle: null,
   youtubeUrl: null,

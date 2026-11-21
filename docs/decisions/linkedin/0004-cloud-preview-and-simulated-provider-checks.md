@@ -1,7 +1,7 @@
 # 0004. Use A Cloud Preview And Finish With Saved Data
 
 - Date: 2026-11-21
-- Status: accepted
+- Status: superseded by 0008 (production deployment restriction only)
 - Decided by: Kareem
 - Area: LinkedIn
 - Related: [area index](DECISIONS.md), [app handoff](../../../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md)

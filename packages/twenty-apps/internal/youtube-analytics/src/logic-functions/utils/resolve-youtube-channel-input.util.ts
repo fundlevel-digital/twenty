@@ -1,9 +1,9 @@
-import { type InfluencerYoutubeIdentity } from 'src/logic-functions/types/influencer-youtube-identity.type';
+import { type YoutubeChannelRecordIdentity } from 'src/logic-functions/types/youtube-channel-record-identity.type';
 import { type YoutubeChannelInput } from 'src/logic-functions/types/youtube-channel-input.type';
 import { isDefined } from 'src/utils/is-defined';
 
 export const resolveYoutubeChannelInput = (
-  identity: InfluencerYoutubeIdentity,
+  identity: YoutubeChannelRecordIdentity,
 ): YoutubeChannelInput | null => {
   if (identity.youtubeId?.startsWith('UC') === true) {
     return { kind: 'id', value: identity.youtubeId };

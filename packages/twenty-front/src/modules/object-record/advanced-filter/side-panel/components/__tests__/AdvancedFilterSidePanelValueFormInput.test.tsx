@@ -1,4 +1,5 @@
 import { render, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 
 import { isManyToOneRelationField } from '@/object-metadata/utils/isManyToOneRelationField';
@@ -6,10 +7,13 @@ import { AdvancedFilterSidePanelValueFormInput } from '@/object-record/advanced-
 import { AdvancedFilterContext } from '@/object-record/advanced-filter/states/context/AdvancedFilterContext';
 import { getAdvancedFilterObjectFilterDropdownComponentInstanceId } from '@/object-record/advanced-filter/utils/getAdvancedFilterObjectFilterDropdownComponentInstanceId';
 import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
+import type * as FormMultiRecordPickerDraftValueModule from '@/object-record/record-field/ui/form-types/utils/getFormMultiRecordPickerDraftValue';
 import { fieldMetadataItemIdUsedInDropdownComponentState } from '@/object-record/object-filter-dropdown/states/fieldMetadataItemIdUsedInDropdownComponentState';
+import { objectFilterDropdownCurrentRecordFilterComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownCurrentRecordFilterComponentState';
 import { RecordFiltersComponentInstanceContext } from '@/object-record/record-filter/states/context/RecordFiltersComponentInstanceContext';
 import { currentRecordFiltersComponentState } from '@/object-record/record-filter/states/currentRecordFiltersComponentState';
 import { type RecordFilter } from '@/object-record/record-filter/types/RecordFilter';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { FieldMetadataType, ViewFilterOperand } from 'twenty-shared/types';
 import { getMockObjectMetadataItemOrThrow } from '~/testing/utils/getMockObjectMetadataItemOrThrow';
@@ -18,6 +22,42 @@ import { getJestMetadataAndApolloMocksWrapper } from '~/testing/jest/getJestMeta
 jest.mock('@/object-record/record-field/ui/components/FormFieldInput', () => ({
   FormFieldInput: () => <div data-testid="form-field-input" />,
 }));
+
+jest.mock(
+  '@/object-record/record-field/ui/form-types/components/FormMultiRecordPicker',
+  () => ({
+    FormMultiRecordPicker: ({
+      defaultValue,
+      onChange,
+    }: {
+      defaultValue: string[] | string;
+      onChange: (value: string[]) => void;
+    }) => {
+      const { getFormMultiRecordPickerDraftValue } = jest.requireActual<
+        typeof FormMultiRecordPickerDraftValueModule
+      >(
+        '@/object-record/record-field/ui/form-types/utils/getFormMultiRecordPickerDraftValue',
+      );
+      const draftValue = getFormMultiRecordPickerDraftValue(defaultValue);
+
+      return (
+        <select
+          aria-label="Related Records"
+          multiple
+          value={draftValue.type === 'static' ? draftValue.value : []}
+          onChange={(event) =>
+            onChange(
+              [...event.target.selectedOptions].map((option) => option.value),
+            )
+          }
+        >
+          <option value="20202020-aaaa-4bbb-8ccc-111111111111">Acme</option>
+          <option value="20202020-aaaa-4bbb-8ccc-222222222222">Example</option>
+        </select>
+      );
+    },
+  }),
+);
 
 jest.mock(
   '@/object-record/record-field/ui/form-types/components/FormMultiSelectFieldInput',
@@ -41,6 +81,10 @@ jest.mock(
 
 const INSTANCE_ID = 'advanced-filter-value-test';
 const FILTER_ID = 'relation-select-filter';
+const RELATED_RECORD_IDS = [
+  '20202020-aaaa-4bbb-8ccc-111111111111',
+  '20202020-aaaa-4bbb-8ccc-222222222222',
+];
 
 const opportunity = getMockObjectMetadataItemOrThrow('opportunity');
 
@@ -127,19 +171,34 @@ const Seed = ({
   );
 
   const [isSeeded, setIsSeeded] = useState(false);
+  const setObjectFilterDropdownCurrentRecordFilter = useSetAtomComponentState(
+    objectFilterDropdownCurrentRecordFilterComponentState,
+  );
+  const currentRecordFilters = useAtomComponentStateValue(
+    currentRecordFiltersComponentState,
+  );
 
   useEffect(() => {
     setCurrentRecordFilters([recordFilter]);
+    setObjectFilterDropdownCurrentRecordFilter(recordFilter);
     setFieldMetadataItemIdUsedInDropdown(dropdownFieldMetadataId);
     setIsSeeded(true);
   }, [
     recordFilter,
     dropdownFieldMetadataId,
     setCurrentRecordFilters,
+    setObjectFilterDropdownCurrentRecordFilter,
     setFieldMetadataItemIdUsedInDropdown,
   ]);
 
-  return isSeeded ? <>{children}</> : null;
+  return isSeeded ? (
+    <>
+      {children}
+      <output aria-label="Saved Filter">
+        {currentRecordFilters[0]?.value}
+      </output>
+    </>
+  ) : null;
 };
 
 const renderValueInput = ({
@@ -208,17 +267,44 @@ describe('AdvancedFilterSidePanelValueFormInput', () => {
     });
   });
 
-  it('falls through to the generic field input for a direct relation to a non-workspaceMember object', async () => {
-    const { getByTestId, queryByTestId } = renderValueInput({
-      recordFilter: nonWorkspaceMemberRelationFilter,
+  it.each([
+    ['a saved ID array', JSON.stringify(RELATED_RECORD_IDS)],
+    [
+      'a saved relation object',
+      JSON.stringify({ selectedRecordIds: RELATED_RECORD_IDS }),
+    ],
+  ])('reopens %s without dropping any selected records', async (_, value) => {
+    const { findByRole } = renderValueInput({
+      recordFilter: { ...nonWorkspaceMemberRelationFilter, value },
       dropdownFieldMetadataId: nonWorkspaceMemberRelationField.id,
     });
 
-    await waitFor(() => {
-      expect(getByTestId('form-field-input')).toBeInTheDocument();
-    });
     expect(
-      queryByTestId('workspace-member-filter-input'),
-    ).not.toBeInTheDocument();
+      await findByRole('listbox', { name: 'Related Records' }),
+    ).toHaveValue(RELATED_RECORD_IDS);
+  });
+
+  it('saves added and removed relation selections as an ID array', async () => {
+    const user = userEvent.setup();
+    const { findByRole, getByRole } = renderValueInput({
+      recordFilter: {
+        ...nonWorkspaceMemberRelationFilter,
+        value: RELATED_RECORD_IDS[0],
+      },
+      dropdownFieldMetadataId: nonWorkspaceMemberRelationField.id,
+    });
+
+    const picker = await findByRole('listbox', { name: 'Related Records' });
+    expect(picker).toHaveValue([RELATED_RECORD_IDS[0]]);
+
+    await user.selectOptions(picker, RELATED_RECORD_IDS[1]);
+    expect(getByRole('status', { name: 'Saved Filter' }).textContent).toBe(
+      JSON.stringify(RELATED_RECORD_IDS),
+    );
+
+    await user.deselectOptions(picker, RELATED_RECORD_IDS);
+    expect(getByRole('status', { name: 'Saved Filter' }).textContent).toBe(
+      '[]',
+    );
   });
 });

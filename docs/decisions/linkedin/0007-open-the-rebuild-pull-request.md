@@ -1,7 +1,7 @@
 # 0007. Open The Rebuild Pull Request
 
 - Date: 2026-11-21
-- Status: accepted
+- Status: superseded by 0008 (production deployment restriction only)
 - Decided by: Kareem
 - Area: LinkedIn
 - Related: [0001](0001-keep-our-app-and-use-native-messaging.md), [0004](0004-cloud-preview-and-simulated-provider-checks.md)

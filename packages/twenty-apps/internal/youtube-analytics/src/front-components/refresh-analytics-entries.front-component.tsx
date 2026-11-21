@@ -5,10 +5,10 @@ import { REFRESH_ANALYTICS_ENTRIES_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER } from '
 import { requestYoutubeAnalyticsRefresh } from 'src/front-components/utils/request-youtube-analytics-refresh.util';
 
 const RefreshAnalyticsEntries = () => {
-  const entryIds = useSelectedRecordIds();
+  const channelIds = useSelectedRecordIds();
 
   return (
-    <Command execute={() => requestYoutubeAnalyticsRefresh({ entryIds })} />
+    <Command execute={() => requestYoutubeAnalyticsRefresh({ channelIds })} />
   );
 };
 
@@ -17,7 +17,7 @@ export default defineFrontComponent({
     REFRESH_ANALYTICS_ENTRIES_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER,
   name: 'refresh-analytics-entries',
   description:
-    'Recomputes YouTube analytics for the selected influencer analytics entries.',
+    'Recomputes YouTube analytics for the selected YouTube channels.',
   component: RefreshAnalyticsEntries,
   isHeadless: true,
 });

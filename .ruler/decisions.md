@@ -1,12 +1,14 @@
-# Decisions And Documentation
+# Decisions And Operational Skills
 
-Read `docs/DECISIONS.md` and the relevant area index before substantial work.
-Use `.agents/skills/decisions/SKILL.md` when Kareem settles, changes, confirms or
-rejects a choice. Record the dated exchange and his exact words, the outcome,
-reasons and evidence. Preserve accepted records; changes get a new record.
+Use the [decisions skill](.agents/skills/decisions/SKILL.md) before substantial
+work and when Kareem settles, rejects, corrects or reverses a choice. Read
+[docs/DECISIONS.md](docs/DECISIONS.md), then the relevant area index. Record the
+exchange and evidence in root `docs/decisions/<area>/` in the same turn. Respect
+settled choices unless Kareem changes them; record reversals by supersession.
 
-All records and area indexes live under root `docs/decisions/`. LinkedIn's index
-is `docs/decisions/linkedin/DECISIONS.md`; implementation and operating details
-remain in `packages/twenty-apps/internal/fundlevel-linkedin/README.md` and
-`HANDOFF.md`. Distinguish source implementation, preview verification and actual
-production changes. Keep credentials and customer CRM records out of these docs.
+For setting up, restoring or diagnosing a remote Twenty preview, use the
+[Twenty remote preview skill](.agents/skills/twenty-remote-preview/SKILL.md).
+
+LinkedIn's index is `docs/decisions/linkedin/DECISIONS.md`; implementation and
+operating details remain in `packages/twenty-apps/internal/fundlevel-linkedin/`.
+Distinguish source implementation, preview verification and production changes.

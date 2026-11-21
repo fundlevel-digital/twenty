@@ -1,16 +1,21 @@
 # Agent Configuration Sources
 
-Edit rules in `.ruler/*.md`, then run `bash scripts/ruler-apply.sh`
-(or `yarn ruler:apply` after installing root dependencies). Root `AGENTS.md`,
-`CLAUDE.md` and the other Ruler outputs are generated. Do not edit them directly.
-Existing Twenty rules were preserved in `.ruler/instructions.md` when Ruler was
-introduced. MCP configuration is outside this Ruler setup; keep `.mcp.json` intact.
+Ruler owns repository rules in `.ruler/*.md`. Edit those sources, then run
+`bash scripts/ruler-apply.sh` from the repository root
+(or `yarn ruler:apply` after root dependencies are installed). The generated root `AGENTS.md` and
+`CLAUDE.md` stay tracked so fresh checkouts have instructions before installation.
+Do not edit generated rules directly. Scoped rules may use `<area>/.ruler/*.md`.
+Keep the root outputs as regular files: Ruler refuses the former `AGENTS.md` →
+`CLAUDE.md` symlink when writing generated instructions.
 
-Skills live in `.agents/skills/<name>/SKILL.md`, with aliases from
-`.claude/skills/` and `.pi/skills/`. Edit that canonical source; skills do not need
-Ruler regeneration. Preserve existing skills and their sources.
+Skills follow the `fundlevel-digital/mono` convention: their canonical source is
+`.agents/skills/<name>/SKILL.md`, with committed relative aliases in
+`.claude/skills/` and `.pi/skills/`. Codex, Cursor and OpenCode can discover the
+canonical directory. Edit the canonical skill; it needs no Ruler regeneration.
+Keep supporting references beside the skill. Preserve existing Claude-only skills.
 
-The decision skill and this source/alias convention came from
-`fundlevel-digital/mono` at `94038532154c12f58e51e01a99a0769d1a169f6e`
-(2026-11-21). `sunny` has the earlier colocated-decision convention; use the newer
-central layout here. The imported skill's area table is adapted to Twenty.
+MCP settings, client settings and agent definitions are outside this Ruler setup.
+Do not overwrite `.mcp.json`, `.codex/config.toml` or `.claude/settings.json` when
+applying rules. The pinned Ruler command uses local sources only. MCP and skill
+generation are disabled in `.ruler/ruler.toml`; its CLI flag disables subagent
+generation.

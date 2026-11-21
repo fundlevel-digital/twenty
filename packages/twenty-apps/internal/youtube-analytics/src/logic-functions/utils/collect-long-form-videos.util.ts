@@ -1,4 +1,5 @@
 import { isNonEmptyString } from '@sniptt/guards';
+import { MILLISECONDS_PER_DAY } from 'src/logic-functions/constants/milliseconds-per-day.constant';
 
 import { YOUTUBE_MAX_UPLOAD_PAGES } from 'src/logic-functions/constants/youtube-max-upload-pages.constant';
 import { type ChannelIdentity } from 'src/logic-functions/types/channel-identity.type';
@@ -7,7 +8,6 @@ import { type YoutubeAnalyticsSyncOptions } from 'src/logic-functions/types/yout
 import { selectLongFormVideos } from 'src/logic-functions/utils/youtube-analytics-metrics.util';
 import { type YoutubeClient } from 'src/logic-functions/utils/youtube-client';
 
-// Pages newest-first until maxUploads long-form videos qualify or the playlist ends.
 export const collectLongFormVideos = async ({
   youtubeClient,
   channel,
@@ -21,6 +21,9 @@ export const collectLongFormVideos = async ({
 }): Promise<VideoStats[]> => {
   let pageToken: string | undefined;
   let selected: VideoStats[] = [];
+  const boundary =
+    Date.parse(asOf) -
+    Math.max(365, ...options.timeframeDays) * MILLISECONDS_PER_DAY;
 
   for (let page = 0; page < YOUTUBE_MAX_UPLOAD_PAGES; page++) {
     const uploadPage = await youtubeClient.listUploadPage({
@@ -40,14 +43,19 @@ export const collectLongFormVideos = async ({
     });
     pageToken = uploadPage.nextPageToken;
 
+    const crossedBoundary = uploadPage.candidates.some(
+      ({ publishedAt }) =>
+        publishedAt !== null && Date.parse(publishedAt) < boundary,
+    );
     if (
-      selected.length >= options.maxUploads ||
+      (crossedBoundary && selected.length >= options.lookback) ||
       !isNonEmptyString(pageToken) ||
       uploadPage.rawItemCount === 0
     ) {
-      break;
+      return selected;
     }
   }
-
-  return selected;
+  throw new Error(
+    'Upload scan limit reached before the configured windows were covered. Previous metrics were preserved.',
+  );
 };

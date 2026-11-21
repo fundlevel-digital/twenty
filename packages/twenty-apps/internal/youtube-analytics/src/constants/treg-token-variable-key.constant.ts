@@ -1,1 +1,0 @@
-export const TREG_TOKEN_VARIABLE_KEY = 'TREG_TOKEN';

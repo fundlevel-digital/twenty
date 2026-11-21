@@ -76,9 +76,3 @@ screenshots/
 # Private MCP verification state and Python bytecode
 /.context/hindsight/
 /scripts/__pycache__/
-
-
-# START Ruler Generated Files
-/AGENTS.md
-/CLAUDE.md
-# END Ruler Generated Files

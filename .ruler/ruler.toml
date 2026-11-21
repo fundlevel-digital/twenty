@@ -1,14 +1,19 @@
-# Skills live in .agents/skills; existing MCP configuration stays in .mcp.json.
+# Rules follow mono's Ruler setup; skills remain canonical in .agents/skills.
 default_agents = ["codex", "cursor", "claude", "pi", "opencode"]
 nested = true
 
+# Keep repository instructions available before dependency installation.
 [gitignore]
-enabled = true
+enabled = false
 
 [backup]
 enabled = false
 
+# Existing Twenty MCP configuration is maintained independently.
 [mcp]
+enabled = false
+
+[skills]
 enabled = false
 
 [agents.copilot]
