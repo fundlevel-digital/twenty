@@ -1,15 +1,20 @@
-# AGENTS.md already links to CLAUDE.md, which all agents can read.
-default_agents = ["claude"]
-nested = false
+# Rules follow mono's Ruler setup; skills remain canonical in .agents/skills.
+default_agents = ["codex", "cursor", "claude", "pi", "opencode"]
+nested = true
 
+# Keep repository instructions available before dependency installation.
 [gitignore]
 enabled = false
 
 [backup]
 enabled = false
 
+# Existing Twenty MCP configuration is maintained independently.
 [mcp]
 enabled = false
 
 [skills]
+enabled = false
+
+[agents.copilot]
 enabled = false

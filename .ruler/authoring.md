@@ -1,20 +1,20 @@
 # Agent Configuration Sources
 
-Repository instructions are owned by `.ruler/*.md`. Run `yarn ruler:apply`
-after changing them. `CLAUDE.md` is generated and stays tracked so fresh
-checkouts have instructions before installing tools. The existing `AGENTS.md`
-symlink points to that same file for Codex, Cursor, Pi and OpenCode.
-Edit the Ruler sources, not the generated file. Keep package-specific instructions
-in place; this configuration generates repository-root instructions only.
-Paths in these instruction sources are relative to the repository root.
+Ruler owns repository rules in `.ruler/*.md`. Edit those sources, then run
+`yarn ruler:apply` from the repository root. The generated root `AGENTS.md` and
+`CLAUDE.md` stay tracked so fresh checkouts have instructions before installation.
+Do not edit generated rules directly. Scoped rules may use `<area>/.ruler/*.md`.
+Keep the root outputs as regular files: Ruler refuses the former `AGENTS.md` →
+`CLAUDE.md` symlink when writing generated instructions.
 
-Shared skills live in `.agents/skills/<name>/SKILL.md`. Claude and Pi aliases
-link to those canonical directories from `.claude/skills/` and `.pi/skills/`.
-Codex, Cursor and OpenCode discover `.agents/skills/` directly. Skill edits need
-no Ruler regeneration. Preserve the existing Claude-only skills unless their
-migration is part of the task.
+Skills follow the `fundlevel-digital/mono` convention: their canonical source is
+`.agents/skills/<name>/SKILL.md`, with committed relative aliases in
+`.claude/skills/` and `.pi/skills/`. Codex, Cursor and OpenCode can discover the
+canonical directory. Edit the canonical skill; it needs no Ruler regeneration.
+Keep supporting references beside the skill. Preserve existing Claude-only skills.
 
-This setup follows `fundlevel-digital/mono` and `fundlevel-digital/sunny`.
-Ruler is pinned to 0.3.46, matching sunny. Its MCP and experimental skill
-management are disabled: existing `.mcp.json`, agent settings and skill sources
-have their own owners and must not be overwritten by `ruler:apply`.
+MCP settings, client settings and agent definitions are outside this Ruler setup.
+Do not overwrite `.mcp.json`, `.codex/config.toml` or `.claude/settings.json` when
+applying rules. The pinned Ruler command uses local sources only. MCP and skill
+generation are disabled in `.ruler/ruler.toml`; its CLI flag disables subagent
+generation.

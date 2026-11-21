@@ -148,5 +148,13 @@ clone, includes `.context/expression-editor-*.log`,
 The shared [decisions skill](../../.agents/skills/decisions/SKILL.md) and
 [Ruler documentation rules](../../.ruler/documentation.md) adapt the conventions
 in `fundlevel-digital/mono` and `fundlevel-digital/sunny`. Run `yarn ruler:apply`
-after editing `.ruler/*.md`. The existing `AGENTS.md → CLAUDE.md` link remains,
-existing skills remain in place, and Ruler does not manage MCP configuration.
+after editing `.ruler/*.md`. Before opening the PR, fork main advanced to `3fd0bccc00`. Its Ruler setup
+and shared decision skill were preserved while adding this session's records
+and documentation routing. Root `AGENTS.md` and `CLAUDE.md` are now regular
+generated files, following main. Its existing YouTube records and remote-preview
+skill are preserved; this task did not create or extend that skill. Ruler does
+not manage MCP configuration. After reconciliation, all 142 incoming YouTube
+app unit tests passed, Ruler regeneration was idempotent, and documentation
+links and preserved MCP/settings/skill hashes checked successfully. The accepted
+records above describe the original
+session choices and implementation before this reconciliation.

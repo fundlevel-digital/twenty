@@ -1,85 +1,98 @@
 ---
 name: decisions
-description: Keep the owner's choices and their supporting exchanges auditable in docs/DECISIONS.md and numbered records under docs/decisions. Read before substantial repository work or reopening a settled question, and update when the owner chooses, corrects, rejects or reverses an approach.
+description: Record Kareem's decisions with exact quotes, the exchange, evidence and outcomes under root docs/decisions. Read before substantial work, reopening a settled question, or recording an approval, rejection, correction or reversal.
 ---
 
 # Decision Records
 
-Read `docs/DECISIONS.md`, then the relevant area index before starting work.
-Follow settled owner choices and later corrections. Verify technical premises
-against current source; if new evidence contradicts a premise, explain it and
-cite the record rather than silently changing the decision.
+Read `docs/DECISIONS.md`, then the relevant area's index and records before
+working. Follow settled choices unless Kareem changes them. A record supplies
+context, not permission for a new production action.
+
+This adapts the centralized layout from
+[`fundlevel-digital/mono`](https://github.com/fundlevel-digital/mono/blob/main/.agents/skills/decisions/SKILL.md).
+The earlier `sunny` skill colocates indexes with packages; use the centralized
+layout here.
 
 ## Placement
 
-Keep every decision record under root `docs/decisions/`, following the convention
-in `fundlevel-digital/mono`:
+All decision records and indexes live in the repository root's `docs` directory:
 
-- Cross-cutting decisions: `docs/decisions/NNNN-short-title.md`, indexed in
-  `docs/DECISIONS.md`.
-- Area decisions: `docs/decisions/<area>/NNNN-short-title.md`, with an area
-  `DECISIONS.md` in that directory, linked from the root index.
-- Number from `0001` within each area; never reuse a number. Record a decision
-  once and cross-link other areas instead of duplicating it.
+| Scope             | Index                                           | Records                        |
+| ----------------- | ----------------------------------------------- | ------------------------------ |
+| Repository        | `docs/DECISIONS.md`                             | `docs/decisions/NNNN-title.md` |
+| YouTube Analytics | `docs/decisions/youtube-analytics/DECISIONS.md` | Same directory                 |
+| New area          | `docs/decisions/<area>/DECISIONS.md`            | Same directory                 |
 
-## Recording Choices
+Keep operational instructions beside their owning package or skill. Link to
+them from records rather than copying a runbook into every decision. Record a
+cross-area decision once and link it from the other area indexes.
 
-Write a record in the same turn, before handing off, when the owner chooses an
-approach, approves a plan, corrects the work, rejects a proposal, or reverses a
-choice. Include small command approvals in the larger decision's exchange rather
-than making a record for each command.
+## When To Record
 
-Preserve the relevant back-and-forth in order. Quote the owner's words exactly,
-including typos, and summarize the agent's proposals and findings. Distinguish
-explicit instructions, agent implementation choices, and verified outcomes.
-An accepted decision is historical evidence, not authorization for a deployment
-or another external action.
+Write a record in the same turn when Kareem chooses or rejects an option,
+approves a plan, corrects a requirement, or reverses a settled choice. Group
+small command approvals into the larger decision they serve. For list-building
+work, record the criteria, changes, counts and spend even without a debate.
 
-Use this structure, scaled to the decision:
+Use the actual conversation, not a reconstructed dialogue. Quote Kareem exactly,
+including typos. Summarize the agent's findings and proposals in a line each.
+If older messages are unavailable, identify the gap and cite the available
+handoff or record; do not invent a quote or attribute an inferred reason to him.
+
+Keep credentials, private sharing links and customer record contents out of
+records. Use counts and non-sensitive identifiers for verification. Separate
+implemented, merged, deployed and verified states, with dates and source links.
+Do not report a preserved timestamp as proof of a fresh calculation.
+
+## Record Format
+
+Number from `0001` within each area, using the next unused number. Never reuse
+a number or rewrite an accepted record. To reverse a decision, add a new record,
+change only the old record's status to `superseded by NNNN`, and update both
+index entries. Commit the record with its work, or separately for documentation.
 
 ```markdown
-# NNNN. Title
+# NNNN. Title In Plain Words
 
 - Date: YYYY-MM-DD
 - Status: accepted | superseded by NNNN | reverted on YYYY-MM-DD
-- Decided by: <owner>
-- Area: <repository folder or cross-cutting>
-- Related: <records and handoffs>
+- Decided by: Kareem
+- Area: <area>
+- Related: <links, if any>
 
 ## Context
-The problem and the choice to make.
+
+The situation and the question to settle.
 
 ## Exchange
-Dated owner quotes and agent summaries, in chronological order.
+
+- YYYY-MM-DD Kareem: "Exact words."
+- YYYY-MM-DD Agent: summarized finding or proposal.
+- YYYY-MM-DD Kareem: "Exact correction or approval."
 
 ## Decision
-The final choice and its scope, including corrections and rejected alternatives.
+
+The resulting choice and what it rules out.
 
 ## Why
-The owner's stated reasons and the supporting evidence.
+
+Reasons stated by Kareem or supported by cited evidence; label inferences.
 
 ## Consequences
-What changed, what remains, and what the decision rules out.
+
+Resulting behavior, files, migrations, commits, deployments or costs.
 
 ## Evidence
-Source paths, commits, verification results, and their practical limits.
+
+Sources, checks and remaining uncertainty.
 ```
 
-Do not rewrite an accepted record's history. A reversal gets a new record; update
-the old status and both index entries to show the supersession. Commit records
-with the work they govern, or in a documentation commit when recording earlier
-work.
+Each area index starts with a one-line description followed by this table,
+oldest first. Links are relative to the index's directory:
 
-Keep credentials, tokens, private keys and customer CRM records out of records.
-Explicitly redact secrets if a relevant quote contains them. Record verification
-results and aggregate counts rather than customer data. Keep planned,
-implemented, merged and deployed states distinct.
-
-## Index and Session Handoffs
-
-The root index has a table with number, date, decision and status, newest last.
-Area indexes use the same format. Link session handoffs from `docs/README.md`;
-handoffs explain implementation, validation and remaining work, while records
-preserve the choices. Link between them rather than duplicating the whole session.
-
-Adapted from the [mono decisions skill](https://github.com/fundlevel-digital/mono/blob/94038532154c12f58e51e01a99a0769d1a169f6e/.agents/skills/decisions/SKILL.md).
+```markdown
+| #                           | Date       | Decision           | Status   |
+| --------------------------- | ---------- | ------------------ | -------- |
+| [0001](0001-short-title.md) | YYYY-MM-DD | The settled choice | accepted |
+```

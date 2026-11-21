@@ -1,11 +1,11 @@
 import { type WorkspaceGraphqlClient } from 'src/logic-functions/utils/workspace-graphql-client.util';
 
 const UPDATE_ANALYTICS_ENTRY_MUTATION = `
-  mutation UpdateInfluencerAnalyticsEntry(
+  mutation UpdateYoutubeChannel(
     $id: UUID!
-    $data: InfluencerAnalyticsEntryUpdateInput!
+    $data: YoutubeChannelUpdateInput!
   ) {
-    updateInfluencerAnalyticsEntry(id: $id, data: $data) {
+    updateYoutubeChannel(id: $id, data: $data) {
       id
     }
   }

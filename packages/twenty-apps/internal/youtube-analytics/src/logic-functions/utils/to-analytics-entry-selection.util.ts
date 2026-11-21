@@ -24,9 +24,5 @@ export const toAnalyticsEntrySelection = (
     return { kind: 'calculationsEnabled' };
   }
 
-  return {
-    kind: 'records',
-    entryIds: toIds(payload.body?.entryIds),
-    influencerIds: toIds(payload.body?.influencerIds),
-  };
+  return { kind: 'records', channelIds: toIds(payload.body?.channelIds) };
 };

@@ -152,6 +152,12 @@ Want to go deeper? Read the <a href="https://docs.twenty.com/user-guide/introduc
 
 <br />
 
+# Agent Setup
+
+Agent rules are maintained in [`.ruler/`](.ruler/authoring.md). After editing
+them, run `yarn ruler:apply`. Skills live in [`.agents/skills/`](.agents/skills/),
+and settled owner choices are indexed in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+
 # Stack
 
 - <a href="https://www.typescriptlang.org/"><img src="./packages/twenty-website/public/images/readme/stack-typescript.svg" width="14" height="14"/> TypeScript</a>

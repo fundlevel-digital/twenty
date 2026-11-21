@@ -14,21 +14,20 @@ const buildResult = (
   missingIdentity: 0,
   channelsNotFound: 0,
   quota: { channelsList: 1, playlistItemsList: 2, videosList: 2, total: 5 },
-  exhaustedKeyTools: [],
+  unavailableCredentialIds: [],
   failures: [],
   ...overrides,
 });
 
 const failure = {
   entryId: 'entry-1',
-  influencerId: 'influencer-1',
   reason: 'YouTube channel not found',
 };
 
 describe('buildRefreshSnackbarParams', () => {
   it('reports success', () => {
     expect(buildRefreshSnackbarParams(buildResult({}))).toEqual({
-      message: 'Refreshed YouTube analytics for 2 entries.',
+      message: 'Refreshed YouTube analytics for 2 channels.',
       variant: 'success',
     });
   });
@@ -43,7 +42,7 @@ describe('buildRefreshSnackbarParams', () => {
         }),
       ),
     ).toEqual({
-      message: 'Could not refresh 1 of 2 YouTube analytics entries.',
+      message: 'Could not refresh 1 of 2 YouTube channels.',
       variant: 'warning',
       detailedMessage: 'YouTube channel not found',
     });
