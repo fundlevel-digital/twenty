@@ -14,7 +14,8 @@ yarn twenty auth login --url https://your-twenty.example.com --name your-workspa
 yarn twenty app apply --create --no-prune --remote your-workspace
 ```
 
-Open **Apps preferences → PlusVibe → Sync** and follow the three steps:
+Open **Apps preferences → PlusVibe → Sync**, connect an account, then choose
+workspaces and enable sync:
 
 1. **Connect PlusVibe.** Twenty's native connection form accepts the PlusVibe API
    key and stores it encrypted. It validates the key, creates the messaging
@@ -55,10 +56,14 @@ presented as a member’s personal connection.
   source Leads remain available with Person Match = Unmatched.
 - **Unibox sharing:** Participants and dates only (`METADATA`, the default), Share
   subject (`SUBJECT`), or Share everything (`SHARE_EVERYTHING`). The connection
-  owner keeps full access. Saving updates that owner’s existing Unibox channels.
+  owner keeps full access. Changes save immediately and update that owner’s existing Unibox channels.
 - Campaign-sent history and campaign send webhooks use fully shared outreach
   channels. Unibox history, manual sends, and replies use separate native channels
   governed by the preference, including replies associated with a campaign.
+
+Preferences use native Twenty account cards, switches, and sharing choices.
+Temporary route failures retry once; if loading still fails, the page offers Retry
+without showing default preferences or a false disconnected account.
 
 ## Upgrade boundary
 

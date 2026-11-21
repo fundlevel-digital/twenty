@@ -1,20 +1,24 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { THEME_DARK, THEME_LIGHT, ThemeProvider } from 'twenty-ui/theme';
 
-const { get, post, query, navigate } = vi.hoisted(() => ({
-  get: vi.fn(),
-  post: vi.fn(),
-  query: vi.fn(),
-  navigate: vi.fn(),
-}));
+const { get, post, query, navigate, enqueueSnackbar, viewOptions } = vi.hoisted(
+  () => ({
+    get: vi.fn(),
+    post: vi.fn(),
+    query: vi.fn(),
+    navigate: vi.fn(),
+    enqueueSnackbar: vi.fn(),
+    viewOptions: { colorScheme: 'light' as 'light' | 'dark' },
+  }),
+);
 vi.mock('twenty-client-sdk/metadata', () => ({
   MetadataApiClient: class {
     query = query;
   },
 }));
-vi.mock('twenty-client-sdk/rest', () => ({
+vi.mock('twenty-client-sdk/rest', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('twenty-client-sdk/rest')>()),
   RestApiClient: class {
     get = get;
     post = post;
@@ -23,6 +27,8 @@ vi.mock('twenty-client-sdk/rest', () => ({
 vi.mock('twenty-sdk/front-component', () => ({
   t: (value: string) => value,
   navigate,
+  enqueueSnackbar,
+  useColorScheme: () => viewOptions.colorScheme,
   AppPath: { SettingsCatchAll: '/settings/*' },
   useLocation: () => ({
     pathname: '/settings/app-preferences/app-1',
@@ -67,15 +73,10 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const renderSettings = (colorScheme: 'light' | 'dark' = 'light') =>
-  render(
-    <ThemeProvider
-      colorScheme={colorScheme}
-      theme={colorScheme === 'dark' ? THEME_DARK : THEME_LIGHT}
-    >
-      <PlusvibeSettings />
-    </ThemeProvider>,
-  );
+const renderSettings = (colorScheme: 'light' | 'dark' = 'light') => {
+  viewOptions.colorScheme = colorScheme;
+  return render(<PlusvibeSettings />);
+};
 
 describe('PlusVibe settings', () => {
   it.each(['light', 'dark'] as const)(
@@ -85,7 +86,7 @@ describe('PlusVibe settings', () => {
       renderSettings(colorScheme);
       await screen.findByText('Agency North America');
       await user.click(screen.getByRole('button', { name: 'Select' }));
-      await user.click(screen.getByRole('button', { name: 'Save changes' }));
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }));
       await screen.findByText('Sync settings saved.');
       expect(post).toHaveBeenCalledWith('/s/plusvibe/workspaces', {
         workspaceIds: ['workspace-1', 'workspace-2'],
@@ -102,7 +103,7 @@ describe('PlusVibe settings', () => {
         .getByRole('button', { name: 'Reconnect PlusVibe' })
         .hasAttribute('disabled'),
     ).toBe(true);
-    await user.click(screen.getByRole('button', { name: 'Stop syncing' }));
+    await user.click(screen.getByRole('button', { name: 'Stop Syncing' }));
     await screen.findByText('Sync stopped. Existing records are kept.');
     expect(post).toHaveBeenCalledWith('/s/plusvibe/workspaces', {
       workspaceIds: [],
@@ -130,7 +131,7 @@ describe('PlusVibe settings', () => {
           .hasAttribute('disabled'),
       ).toBe(false),
     );
-    expect(screen.queryByText('2. Choose workspaces')).toBeNull();
+    expect(screen.queryByText('Workspaces')).toBeNull();
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'Connect PlusVibe' }));
@@ -151,15 +152,15 @@ describe('PlusVibe settings', () => {
   it('enables sync only after the user explicitly selects workspaces', async () => {
     status = { ...status, selectedWorkspaceIds: [], imports: {} };
     renderSettings();
-    await screen.findByRole('button', { name: 'Enable sync' });
+    await screen.findByRole('button', { name: 'Enable Sync' });
     expect(
       screen
-        .getByRole('button', { name: 'Enable sync' })
+        .getByRole('button', { name: 'Enable Sync' })
         .hasAttribute('disabled'),
     ).toBe(true);
     const user = userEvent.setup();
     await user.click(screen.getAllByRole('button', { name: 'Select' })[0]);
-    await user.click(screen.getByRole('button', { name: 'Enable sync' }));
+    await user.click(screen.getByRole('button', { name: 'Enable Sync' }));
     await screen.findByText('Sync enabled. Import started.');
     expect(post).toHaveBeenCalledWith('/s/plusvibe/workspaces', {
       workspaceIds: ['workspace-1'],
@@ -198,7 +199,7 @@ describe('PlusVibe settings', () => {
       'Could not verify the PlusVibe account. Refresh or reconnect to continue.',
     );
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Stop syncing' }));
+    await user.click(screen.getByRole('button', { name: 'Stop Syncing' }));
     await screen.findByText('Sync stopped. Existing records are kept.');
     expect(
       screen
@@ -232,7 +233,7 @@ describe('PlusVibe settings', () => {
     const user = userEvent.setup();
     renderSettings();
     await screen.findByRole('button', { name: 'PlusVibe #2' });
-    await user.click(screen.getByRole('button', { name: 'Add connection' }));
+    await user.click(screen.getByRole('button', { name: 'Add Connection' }));
     expect(navigate).toHaveBeenCalledWith(
       '/settings/*',
       { '*': 'applications/app-1/connect/plusvibe-user' },
@@ -243,7 +244,7 @@ describe('PlusVibe settings', () => {
     await screen.findByText('Agency North America');
     expect(screen.queryByText('Outbound sales')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Select' }));
-    await user.click(screen.getByRole('button', { name: 'Enable sync' }));
+    await user.click(screen.getByRole('button', { name: 'Enable Sync' }));
     expect(post).toHaveBeenCalledWith('/s/plusvibe/workspaces', {
       accountConnectionId: 'connection-2',
       workspaceIds: ['workspace-2'],
@@ -280,7 +281,7 @@ describe('PlusVibe settings', () => {
     expect(screen.getByRole('button', { name: 'Select' })).toBeDefined();
     expect(
       screen
-        .getByRole('button', { name: 'Enable sync' })
+        .getByRole('button', { name: 'Enable Sync' })
         .hasAttribute('disabled'),
     ).toBe(true);
     expect(post).not.toHaveBeenCalled();
@@ -290,16 +291,14 @@ describe('PlusVibe settings', () => {
     get.mockRejectedValueOnce(new Error('Unavailable'));
     renderSettings();
     await screen.findByText(
-      'Could not load PlusVibe settings. Check your API key and try again.',
+      'Could not load your PlusVibe connection. Try again.',
     );
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: 'Refresh' }));
+      .click(screen.getByRole('button', { name: 'Retry' }));
     await screen.findByText('Outbound sales');
     expect(
-      screen.queryByText(
-        'Could not load PlusVibe settings. Check your API key and try again.',
-      ),
+      screen.queryByText('Could not load your PlusVibe connection. Try again.'),
     ).toBeNull();
   });
 
@@ -309,12 +308,10 @@ describe('PlusVibe settings', () => {
     await screen.findByText('Outbound sales');
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: 'Save changes' }));
+      .click(screen.getByRole('button', { name: 'Save Changes' }));
     await waitFor(() =>
       expect(
-        screen.getByText(
-          'Could not update PlusVibe. Check your API key, workspace access, and webhook status, then retry.',
-        ),
+        screen.getByText('Could not save your changes. Try again.'),
       ).toBeDefined(),
     );
     expect(screen.queryByText('Sync settings saved.')).toBeNull();
@@ -350,43 +347,85 @@ it('saves import and sharing preferences for the active connection and restores 
   await screen.findByRole('button', { name: 'PlusVibe #2' });
   await user.click(screen.getByRole('button', { name: 'PlusVibe #2' }));
   expect(
-    (
-      screen.getByRole('checkbox', {
-        name: 'Automatically create People from leads',
-      }) as HTMLInputElement
-    ).checked,
-  ).toBe(false);
+    screen
+      .getByRole('switch', { name: 'Create People Automatically' })
+      .getAttribute('aria-checked'),
+  ).toBe('false');
   expect(
-    (
-      screen.getByRole('combobox', {
-        name: 'Unibox sharing',
-      }) as HTMLSelectElement
-    ).value,
-  ).toBe('SUBJECT');
-  await user.selectOptions(
-    screen.getByRole('combobox', { name: 'Unibox sharing' }),
-    'SHARE_EVERYTHING',
+    screen.getByRole('radio', { name: 'Subject' }).getAttribute('aria-checked'),
+  ).toBe('true');
+  await user.click(screen.getByRole('radio', { name: 'Everything' }));
+  await waitFor(() =>
+    expect(enqueueSnackbar).toHaveBeenCalledWith({
+      message: 'Preferences saved.',
+      variant: 'success',
+    }),
   );
-  await user.click(screen.getByRole('button', { name: 'Save preferences' }));
-  await screen.findByText('Import and sharing preferences saved.');
   expect(post).toHaveBeenCalledWith('/s/plusvibe/preferences', {
     accountConnectionId: 'connection-2',
     autoCreatePeople: false,
     uniboxVisibility: 'SHARE_EVERYTHING',
   });
+  expect(get).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole('button', { name: 'PlusVibe #1' }));
   expect(
-    (
-      screen.getByRole('checkbox', {
-        name: 'Automatically create People from leads',
-      }) as HTMLInputElement
-    ).checked,
-  ).toBe(true);
+    screen
+      .getByRole('switch', { name: 'Create People Automatically' })
+      .getAttribute('aria-checked'),
+  ).toBe('true');
   expect(
-    (
-      screen.getByRole('combobox', {
-        name: 'Unibox sharing',
-      }) as HTMLSelectElement
-    ).value,
-  ).toBe('METADATA');
+    screen
+      .getByRole('radio', { name: 'Metadata Only' })
+      .getAttribute('aria-checked'),
+  ).toBe('true');
+});
+
+it('shows a retry action instead of default preferences or a false disconnected account after loading fails', async () => {
+  get.mockRejectedValueOnce(new Error('Unavailable'));
+  renderSettings();
+  await screen.findByText(
+    'Could not load your PlusVibe connection. Try again.',
+  );
+  expect(screen.queryByRole('button', { name: 'Connect PlusVibe' })).toBeNull();
+  expect(
+    screen.queryByRole('switch', { name: 'Create People Automatically' }),
+  ).toBeNull();
+  expect(
+    screen.queryByRole('radiogroup', { name: 'Unibox Sharing' }),
+  ).toBeNull();
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
+  await screen.findByText('Outbound sales');
+});
+
+it('restores the previous preference and reports the failure if an immediate save fails', async () => {
+  status = {
+    ...status,
+    accounts: [
+      {
+        id: 'connection-1',
+        name: 'PlusVibe #1',
+        hasAccountError: false,
+        isMailConnected: true,
+        workspaces: [],
+        selectedWorkspaceIds: [],
+        preferences: { autoCreatePeople: true, uniboxVisibility: 'METADATA' },
+      },
+    ],
+  };
+  post.mockRejectedValueOnce(new Error('Unavailable'));
+  renderSettings();
+  const toggle = await screen.findByRole('switch', {
+    name: 'Create People Automatically',
+  });
+  await userEvent.setup().click(toggle);
+  await waitFor(() =>
+    expect(enqueueSnackbar).toHaveBeenCalledWith({
+      message: 'Could not save your preferences. Try again.',
+      variant: 'error',
+    }),
+  );
+  expect(toggle.getAttribute('aria-checked')).toBe('true');
+  expect(enqueueSnackbar).not.toHaveBeenCalledWith(
+    expect.objectContaining({ variant: 'success' }),
+  );
 });
