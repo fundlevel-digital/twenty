@@ -26,5 +26,6 @@ identify scope, decisions, implementation and verification limits.
 | [0003](decisions/0003-ruler-decisions-and-session-documentation.md) | 2026-11-21 | Adopt the existing Ruler/decisions conventions, document this session, and omit the preview skill | accepted |
 | [0004](decisions/0004-defer-production-deployment.md) | 2026-11-21 | Defer production deployment after merging PR #8 | superseded by 0005 |
 | [0005](decisions/0005-roll-out-six-sessions-to-live-crm.md) | 2026-11-21 | Roll out the six merged sessions to the live CRM | accepted |
+| [0006](decisions/0006-connect-linkedin-after-the-rollout.md) | 2026-11-21 | Leave LinkedIn connection and dependent history migration for later | accepted |
 
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).

@@ -25,3 +25,5 @@ The migration-stage app is now installed in production, with native connection,
 message migration and final pruning still pending.
 
 [Repository decision 0005](../0005-roll-out-six-sessions-to-live-crm.md) resumes production rollout on 2026-11-21.
+
+[Repository decision 0006](../0006-connect-linkedin-after-the-rollout.md) defers LinkedIn connection setup and history migration until the owner is ready.
