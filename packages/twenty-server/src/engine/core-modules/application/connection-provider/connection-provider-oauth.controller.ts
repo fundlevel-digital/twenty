@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { type Request, type Response } from 'express';
 import { ApiPath } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -194,6 +195,19 @@ export class ConnectionProviderOAuthController {
     @Res() res: Response,
   ) {
     const browserNonces = this.flowCookieService.readBrowserNonces(req);
+
+    if (browserNonces.length === 0 && isNonEmptyString(state)) {
+      const workspaceHostCallbackUrl =
+        await this.flowRedirectService.findWorkspaceHostCallbackUrl({
+          state,
+          requestHost: req.get('host'),
+          requestOriginalUrl: req.originalUrl,
+        });
+
+      if (isDefined(workspaceHostCallbackUrl)) {
+        return res.redirect(workspaceHostCallbackUrl);
+      }
+    }
 
     if (errorParam) {
       return this.flowRedirectService.redirectToErrorFromState({

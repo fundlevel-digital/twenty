@@ -2,6 +2,8 @@ import { Field, InputType } from '@nestjs/graphql';
 
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsEnum,
   IsNotEmpty,
@@ -13,6 +15,7 @@ import {
 import { AggregateOperations } from 'twenty-shared/types';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
+import { VIEW_FIELD_LOOKUP_MAX_RELATION_HOPS } from 'src/engine/metadata-modules/flat-view-field/constants/view-field-lookup-max-relation-hops.constant';
 
 @InputType()
 class UpdateViewFieldInputUpdates {
@@ -45,6 +48,17 @@ class UpdateViewFieldInputUpdates {
   @IsUUID()
   @Field(() => UUIDScalarType, { nullable: true })
   relationTargetFieldMetadataId?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(VIEW_FIELD_LOOKUP_MAX_RELATION_HOPS - 1)
+  @IsUUID('all', { each: true })
+  @Field(() => [UUIDScalarType], {
+    nullable: true,
+    description:
+      'Relation fields followed, in order, between fieldMetadataId and relationTargetFieldMetadataId. Empty or null for a one-hop lookup.',
+  })
+  relationPathFieldMetadataIds?: string[] | null;
 }
 
 @InputType()

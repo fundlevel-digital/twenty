@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { msg, t } from '@lingui/core/macro';
 import { ALL_METADATA_NAME } from 'twenty-shared/metadata';
 import { ViewType } from 'twenty-shared/types';
-import { isDefined, isWidgetViewType } from 'twenty-shared/utils';
+import { isDefined } from 'twenty-shared/utils';
 
 import { findFlatEntityByUniversalIdentifier } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-universal-identifier.util';
 import { findManyFlatEntityByUniversalIdentifierInUniversalFlatEntityMapsOrThrow } from 'src/engine/metadata-modules/flat-entity/utils/find-many-flat-entity-by-universal-identifier-in-universal-flat-entity-maps-or-throw.util';
@@ -15,6 +15,7 @@ import { FlatEntityUpdateValidationArgs } from 'src/engine/workspace-manager/wor
 import { UniversalFlatEntityValidationArgs } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/types/universal-flat-entity-validation-args.type';
 import { validateFlatViewFieldRelationTarget } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/utils/validate-flat-view-field-relation-target.util';
 import { validateFlatViewFieldRelationTargetNotOverridden } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/utils/validate-flat-view-field-relation-target-not-overridden.util';
+import { validateFlatViewFieldNonCanonicalInWidgetView } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/utils/validate-flat-view-field-non-canonical-in-widget-view.util';
 import { validateLabelIdentifierFieldMetadataIdFlatViewField } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/utils/validate-label-identifier-field-metadata-id-flat-view-field.util';
 
 @Injectable()
@@ -122,6 +123,13 @@ export class FlatViewFieldValidatorService {
 
       return validationResult;
     }
+
+    validationResult.errors.push(
+      ...validateFlatViewFieldNonCanonicalInWidgetView({
+        flatViewField: updatedFlatViewField,
+        flatView,
+      }),
+    );
 
     if (
       flatView.type !== ViewType.FIELDS_WIDGET &&
@@ -298,16 +306,12 @@ export class FlatViewFieldValidatorService {
       return validationResult;
     }
 
-    if (
-      !flatViewFieldToValidate.isCanonical &&
-      isWidgetViewType(flatView.type)
-    ) {
-      validationResult.errors.push({
-        code: ViewExceptionCode.INVALID_VIEW_DATA,
-        message: t`Non-canonical view fields are not supported in widget views`,
-        userFriendlyMessage: msg`Extra columns are not supported here`,
-      });
-    }
+    validationResult.errors.push(
+      ...validateFlatViewFieldNonCanonicalInWidgetView({
+        flatViewField: flatViewFieldToValidate,
+        flatView,
+      }),
+    );
 
     if (
       !flatViewFieldToValidate.isCanonical &&

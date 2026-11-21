@@ -5,6 +5,7 @@ import { type FlatApplication } from 'src/engine/core-modules/application/types/
 import { type AllFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/all-flat-entity-maps.type';
 import { resolveEntityRelationUniversalIdentifiers } from 'src/engine/metadata-modules/flat-entity/utils/resolve-entity-relation-universal-identifiers.util';
 import { DEFAULT_VIEW_FIELD_SIZE } from 'src/engine/metadata-modules/flat-view-field/constants/default-view-field-size.constant';
+import { fromRelationPathFieldMetadataIdsToUniversalRelationPathFieldMetadataIds } from 'src/engine/metadata-modules/flat-view-field/utils/from-relation-path-field-metadata-ids-to-universal-relation-path-field-metadata-ids.util';
 import { type CreateViewFieldInput } from 'src/engine/metadata-modules/view-field/dtos/inputs/create-view-field.input';
 import { type UniversalFlatViewField } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-view-field.type';
 
@@ -30,6 +31,7 @@ export const fromCreateViewFieldInputToFlatViewFieldToCreate = ({
     viewId,
     viewFieldGroupId,
     relationTargetFieldMetadataId,
+    relationPathFieldMetadataIds,
     ...createViewFieldInput
   } = trimAndRemoveDuplicatedWhitespacesFromObjectStringProperties(
     rawCreateViewFieldInput,
@@ -84,6 +86,12 @@ export const fromCreateViewFieldInputToFlatViewFieldToCreate = ({
     universalOverrides: null,
     viewFieldGroupUniversalIdentifier,
     relationTargetFieldMetadataUniversalIdentifier,
+    universalRelationPathFieldMetadataIds:
+      fromRelationPathFieldMetadataIdsToUniversalRelationPathFieldMetadataIds({
+        relationPathFieldMetadataIds,
+        fieldMetadataUniversalIdentifierById:
+          flatFieldMetadataMaps.universalIdentifierById,
+      }),
     applicationUniversalIdentifier: flatApplication.universalIdentifier,
   };
 };

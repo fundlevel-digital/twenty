@@ -10,6 +10,7 @@ import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/
 import { resolveEntityRelationUniversalIdentifiers } from 'src/engine/metadata-modules/flat-entity/utils/resolve-entity-relation-universal-identifiers.util';
 import { FLAT_VIEW_FIELD_EDITABLE_PROPERTIES } from 'src/engine/metadata-modules/flat-view-field/constants/flat-view-field-editable-properties.constant';
 import { type FlatViewFieldMaps } from 'src/engine/metadata-modules/flat-view-field/types/flat-view-field-maps.type';
+import { fromRelationPathFieldMetadataIdsToUniversalRelationPathFieldMetadataIds } from 'src/engine/metadata-modules/flat-view-field/utils/from-relation-path-field-metadata-ids-to-universal-relation-path-field-metadata-ids.util';
 import { fromViewFieldOverridesToUniversalOverrides } from 'src/engine/metadata-modules/flat-view-field/utils/from-view-field-overrides-to-universal-overrides.util';
 import { isCallerOverridingEntity } from 'src/engine/metadata-modules/overrides/utils/is-caller-overriding-entity.util';
 import { sanitizeOverridableEntityInput } from 'src/engine/metadata-modules/overrides/utils/sanitize-overridable-entity-input.util';
@@ -105,6 +106,12 @@ export const fromUpdateViewFieldInputToFlatViewFieldToUpdateOrThrow = ({
     viewFieldGroupUniversalIdentifier;
   flatViewFieldToUpdate.relationTargetFieldMetadataUniversalIdentifier =
     relationTargetFieldMetadataUniversalIdentifier;
+  flatViewFieldToUpdate.universalRelationPathFieldMetadataIds =
+    fromRelationPathFieldMetadataIdsToUniversalRelationPathFieldMetadataIds({
+      relationPathFieldMetadataIds: mergedRecord.relationPathFieldMetadataIds,
+      fieldMetadataUniversalIdentifierById:
+        flatFieldMetadataMaps.universalIdentifierById,
+    });
 
   if (isDefined(overrides)) {
     flatViewFieldToUpdate.universalOverrides =

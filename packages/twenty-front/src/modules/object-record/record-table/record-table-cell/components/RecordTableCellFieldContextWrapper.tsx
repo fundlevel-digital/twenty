@@ -1,4 +1,5 @@
 import { RecordTableCellLookupFieldContext } from '@/object-record/record-column-lookup/components/RecordTableCellLookupFieldContext';
+import { RecordTableCellLookupPathFieldContext } from '@/object-record/record-column-lookup/components/RecordTableCellLookupPathFieldContext';
 import { type RecordField } from '@/object-record/record-field/types/RecordField';
 import { RecordFieldComponentInstanceContext } from '@/object-record/record-field/ui/states/contexts/RecordFieldComponentInstanceContext';
 import { useRecordIndexContextOrThrow } from '@/object-record/record-index/contexts/RecordIndexContext';
@@ -41,6 +42,19 @@ export const RecordTableCellFieldContextWrapper = ({
 
   const lookupTarget =
     columnDescriptorByRecordFieldId[recordField.id]?.lookupTarget;
+
+  if (lookupTarget?.isMultiLevel === true) {
+    return (
+      <RecordTableCellLookupPathFieldContext
+        key={instanceId}
+        recordFieldId={recordField.id}
+        fieldMetadataItem={fieldMetadataItem}
+        lookupTarget={lookupTarget}
+      >
+        {children}
+      </RecordTableCellLookupPathFieldContext>
+    );
+  }
 
   if (isDefined(lookupTarget)) {
     return (

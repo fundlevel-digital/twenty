@@ -1,0 +1,57 @@
+name: Fundlevel build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: fundlevel-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and publish the Twenty image
+    runs-on: boat
+    timeout-minutes: 90
+    env:
+      IMAGE: ghcr.io/fundlevel-digital/twenty
+      DOCKERFILE: packages/twenty-docker/twenty/Dockerfile
+      DOCKER_BUILDKIT: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # The front build asks for an 8 GB heap, which is the whole runner
+      - name: Add swap
+        run: |
+          sudo fallocate -l 8G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile || true
+          free -h
+
+      - name: Log in to the container registry
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      # One stage at a time so the server and front builds never share memory
+      - name: Build the server
+        run: docker build --file "$DOCKERFILE" --target twenty-server-build .
+
+      - name: Build the front end
+        run: docker build --file "$DOCKERFILE" --target twenty-front-build .
+
+      - name: Build the image
+        run: |
+          docker build --file "$DOCKERFILE" --target twenty \
+            --tag "$IMAGE:$GITHUB_SHA" --tag "$IMAGE:main" .
+
+      - name: Publish the image
+        run: |
+          docker push "$IMAGE:$GITHUB_SHA"
+          docker push "$IMAGE:main"

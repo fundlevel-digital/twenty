@@ -16,7 +16,7 @@ type TestField = ComputedFieldBindableSchemaField & {
   inverseFieldUniversalIdentifier?: string;
 };
 
-const { NUMBER, TEXT, CURRENCY, RELATION } = FieldMetadataType;
+const { NUMBER, TEXT, DATE_TIME, CURRENCY, RELATION } = FieldMetadataType;
 
 const FIELDS: TestField[] = [
   { objectName: 'project', name: 'budget', type: NUMBER },
@@ -39,6 +39,7 @@ const FIELDS: TestField[] = [
   { objectName: 'company', name: 'name', type: TEXT },
   { objectName: 'task', name: 'points', type: NUMBER },
   { objectName: 'task', name: 'status', type: TEXT },
+  { objectName: 'task', name: 'dueAt', type: DATE_TIME },
   {
     objectName: 'task',
     name: 'project',
@@ -87,6 +88,14 @@ const ROLLUP: FieldMetadataComputation = {
   filter: "status != 'points' and assignee.name == 'Acme'",
 };
 
+const LATEST: FieldMetadataComputation = {
+  kind: 'ROLLUP',
+  relationFieldName: 'tasks',
+  operation: 'LATEST',
+  expression: 'status',
+  orderBy: 'dueAt',
+};
+
 const bind = (computation: FieldMetadataComputation) =>
   computeComputedFieldBindings({
     computation,
@@ -112,6 +121,18 @@ describe('computeComputedFieldBindings', () => {
       'tasks.assignee': 'task.assignee',
       'tasks.assignee.name': 'company.name',
     });
+  });
+
+  it('binds what the orderBy of a LATEST rollup reads', () => {
+    expect(bind(LATEST)).toEqual({
+      tasks: 'project.tasks',
+      'tasks.status': 'task.status',
+      'tasks.dueAt': 'task.dueAt',
+    });
+  });
+
+  it('returns nothing when the orderBy reads an unknown field', () => {
+    expect(bind({ ...LATEST, orderBy: 'unknown' })).toBeUndefined();
   });
 
   it.each(['budget + unknown', 'companyId', 'budget +'])(
@@ -170,6 +191,36 @@ describe('renameComputedFieldComputationFields', () => {
         'todos.status': 'task.status',
         'todos.assignee': 'task.assignee',
         'todos.assignee.label': 'company.name',
+      },
+    });
+  });
+
+  it('rewrites the orderBy of a LATEST rollup', () => {
+    const latest: FieldMetadataComputation = {
+      ...LATEST,
+      orderBy: "assignee.name == 'Acme' ? dueAt : dueAt",
+    };
+
+    expect(
+      renameComputedFieldComputationFields({
+        computation: { ...latest, bindings: bind(latest) },
+        fieldNameByUniversalIdentifier: new Map([
+          ['task.dueAt', 'deadline'],
+          ['company.name', 'label'],
+        ]),
+      }),
+    ).toEqual({
+      kind: 'ROLLUP',
+      relationFieldName: 'tasks',
+      operation: 'LATEST',
+      expression: 'status',
+      orderBy: "assignee.label == 'Acme' ? deadline : deadline",
+      bindings: {
+        tasks: 'project.tasks',
+        'tasks.status': 'task.status',
+        'tasks.assignee': 'task.assignee',
+        'tasks.assignee.label': 'company.name',
+        'tasks.deadline': 'task.dueAt',
       },
     });
   });

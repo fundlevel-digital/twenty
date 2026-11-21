@@ -23,6 +23,12 @@ export const createUnipileHostedAuthLink = async ({
       expires_on: new Date(
         Date.now() + UNIPILE_HOSTED_AUTH_LINK_TTL_MILLISECONDS,
       ).toISOString(),
+      config: {
+        global: {
+          allow_user_proxy_override: true,
+          allow_user_country_override: true,
+        },
+      },
     },
   });
 

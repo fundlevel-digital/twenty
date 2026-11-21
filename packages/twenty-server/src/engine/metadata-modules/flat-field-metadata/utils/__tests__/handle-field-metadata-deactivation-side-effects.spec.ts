@@ -105,6 +105,8 @@ describe('handleFieldMetadataDeactivationSideEffects', () => {
       relationTargetFieldMetadataId: 'target-field-id',
       relationTargetFieldMetadataUniversalIdentifier:
         'target-field-universal-identifier',
+      relationPathFieldMetadataIds: null,
+      universalRelationPathFieldMetadataIds: null,
       isActive: true,
       isSystemSideEffect: false,
       isCanonical: false,
@@ -136,5 +138,60 @@ describe('handleFieldMetadataDeactivationSideEffects', () => {
     });
 
     expect(result.flatViewFieldsToDelete).toEqual([lookupViewField]);
+  });
+
+  it('deletes lookup view fields whose relation path goes through the deactivated field', () => {
+    const multiHopLookupViewField: FlatViewField = {
+      id: 'multi-hop-lookup-view-field-id',
+      universalIdentifier: 'multi-hop-lookup-view-field-universal-identifier',
+      workspaceId: 'workspace-id',
+      applicationId: 'application-id',
+      applicationUniversalIdentifier: 'application-universal-identifier',
+      fieldMetadataId: 'relation-field-id',
+      fieldMetadataUniversalIdentifier: 'relation-field-universal-identifier',
+      viewId: 'view-id',
+      viewUniversalIdentifier: 'view-universal-identifier',
+      viewFieldGroupId: null,
+      viewFieldGroupUniversalIdentifier: null,
+      isVisible: true,
+      size: 150,
+      position: 1,
+      aggregateOperation: null,
+      relationTargetFieldMetadataId: 'target-field-id',
+      relationTargetFieldMetadataUniversalIdentifier:
+        'target-field-universal-identifier',
+      relationPathFieldMetadataIds: ['hop-field-id'],
+      universalRelationPathFieldMetadataIds: ['hop-field-universal-identifier'],
+      isActive: true,
+      isSystemSideEffect: false,
+      isCanonical: false,
+      overrides: null,
+      universalOverrides: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      deletedAt: null,
+    };
+    const fromFlatFieldMetadata = getFlatFieldMetadataMock({
+      id: 'hop-field-id',
+      objectMetadataId: 'object-id',
+      universalIdentifier: 'hop-field-universal-identifier',
+      type: FieldMetadataType.RELATION,
+    });
+
+    const result = handleFieldMetadataDeactivationSideEffects({
+      fromFlatFieldMetadata,
+      toFlatFieldMetadata: {
+        ...fromFlatFieldMetadata,
+        isActive: false,
+      },
+      ...getEmptyRelatedMaps(),
+      flatViewMaps: createEmptyFlatEntityMaps(),
+      flatViewFieldMaps: addFlatEntityToFlatEntityMapsOrThrow({
+        flatEntity: multiHopLookupViewField,
+        flatEntityMaps: createEmptyFlatEntityMaps(),
+      }),
+    });
+
+    expect(result.flatViewFieldsToDelete).toEqual([multiHopLookupViewField]);
   });
 });

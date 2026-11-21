@@ -1,0 +1,1 @@
+export const REFRESH_YOUTUBE_ANALYTICS_CRON_PATTERN = '0 5 * * *';

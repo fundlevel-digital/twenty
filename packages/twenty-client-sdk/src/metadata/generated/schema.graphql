@@ -1967,6 +1967,11 @@ input CreateViewFieldInput {
   isCanonical: Boolean = true
   isVisible: Boolean = true
   position: Float = 0
+
+  """
+  Relation fields followed, in order, between fieldMetadataId and relationTargetFieldMetadataId. Empty or null for a one-hop lookup.
+  """
+  relationPathFieldMetadataIds: [UUID!]
   relationTargetFieldMetadataId: UUID
   size: Float = 0
   viewFieldGroupId: UUID
@@ -5773,6 +5778,11 @@ input UpdateViewFieldInputUpdates {
   aggregateOperation: AggregateOperations
   isVisible: Boolean
   position: Float
+
+  """
+  Relation fields followed, in order, between fieldMetadataId and relationTargetFieldMetadataId. Empty or null for a one-hop lookup.
+  """
+  relationPathFieldMetadataIds: [UUID!]
   relationTargetFieldMetadataId: UUID
   size: Float
   viewFieldGroupId: UUID
@@ -6028,9 +6038,21 @@ input UpsertViewWidgetViewFieldInput {
   fieldMetadataId: UUID
   isVisible: Boolean!
   position: Float!
+
+  """
+  Relation fields followed, in order, between fieldMetadataId and relationTargetFieldMetadataId. Empty or null for a one-hop lookup.
+  """
+  relationPathFieldMetadataIds: [UUID!]
+
+  """
+  Makes the column a lookup column showing this field of the related record(s). Lookup columns are extra (non-canonical) columns.
+  """
+  relationTargetFieldMetadataId: UUID
   size: Float
 
-  """The id of an existing view field to update."""
+  """
+  The id of an existing view field to update. For a new lookup column, the id to create it with.
+  """
   viewFieldId: UUID
 }
 
@@ -6422,6 +6444,7 @@ type ViewField {
   isSystemSideEffect: Boolean!
   isVisible: Boolean!
   position: Float!
+  relationPathFieldMetadataIds: [UUID!]
   relationTargetFieldMetadataId: UUID
   size: Float!
   universalIdentifier: UUID!

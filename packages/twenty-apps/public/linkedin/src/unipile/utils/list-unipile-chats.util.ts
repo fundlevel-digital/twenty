@@ -1,5 +1,6 @@
 import { UnipileMessaging } from '@unipile/sdk';
 
+import { UNIPILE_CHATS_PAGE_MAX_SIZE } from 'src/unipile/constants/unipile-chats-page-max-size.constant';
 import { type UnipileChat } from 'src/unipile/types/unipile-chat.type';
 import { type UnipilePage } from 'src/unipile/types/unipile-page.type';
 import { requestUnipile } from 'src/unipile/utils/request-unipile.util';
@@ -24,7 +25,10 @@ export const listUnipileChats = async ({
       new UnipileMessaging().getInboxChatsList({
         ...getUnipileRequestOptions(),
         path: { account_id: accountId, inbox_id: inboxId },
-        query: { cursor, limit },
+        query: {
+          cursor,
+          limit: Math.min(limit, UNIPILE_CHATS_PAGE_MAX_SIZE),
+        },
       }),
     { deadlineAtMs },
   );

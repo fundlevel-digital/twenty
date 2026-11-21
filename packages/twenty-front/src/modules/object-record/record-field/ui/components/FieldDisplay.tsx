@@ -1,5 +1,7 @@
 import { useContext } from 'react';
 
+import { LookupMultipleValuesFieldDisplay } from '@/object-record/record-column-lookup/components/LookupMultipleValuesFieldDisplay';
+import { LookupLeafRecordIdsContext } from '@/object-record/record-column-lookup/contexts/LookupLeafRecordIdsContext';
 import { useCoreRecordReferenceField } from '@/object-record/record-field/ui/hooks/useCoreRecordReferenceField';
 import { ActorFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/ActorFieldDisplay';
 import { CoreRecordReferenceFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/CoreRecordReferenceFieldDisplay';
@@ -75,8 +77,18 @@ export const FieldDisplay = () => {
     fieldName: fieldDefinition.metadata.fieldName,
   });
 
+  const lookupLeafRecordIds = useContext(LookupLeafRecordIdsContext);
+
   if (isDefined(isForbidden) && isForbidden) {
     return <ForbiddenFieldDisplay />;
+  }
+
+  if (isDefined(lookupLeafRecordIds)) {
+    return (
+      <LookupMultipleValuesFieldDisplay leafRecordIds={lookupLeafRecordIds}>
+        <FieldDisplay />
+      </LookupMultipleValuesFieldDisplay>
+    );
   }
 
   if (isDefined(coreRecordReferenceField)) {

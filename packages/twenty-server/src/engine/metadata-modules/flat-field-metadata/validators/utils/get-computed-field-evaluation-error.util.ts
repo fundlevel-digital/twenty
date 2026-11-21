@@ -1,4 +1,7 @@
-import { type ComputedFieldValueType } from 'twenty-shared/types';
+import {
+  type ComputedFieldValueType,
+  type FieldMetadataDefaultOption,
+} from 'twenty-shared/types';
 import {
   ComputedFieldExpressionError,
   getComputedFieldExpressionFieldPaths,
@@ -96,9 +99,12 @@ const assertComputationCanBeEvaluatedOrThrow = ({
     valueTypeBySlotProperty[slot.property] = type;
   }
 
+  const fieldOptions: FieldMetadataDefaultOption[] = field.options ?? [];
+
   COMPUTED_FIELD_KIND_DESCRIPTIONS[computation.kind].assertIsValidOrThrow({
     computation,
     fieldType: field.type,
+    fieldOptionValues: fieldOptions.map(({ value }) => value),
     valueTypeBySlotProperty,
   });
 };

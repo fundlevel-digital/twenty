@@ -7,18 +7,24 @@ const validate = ({
   ownerApplication,
   callerApplication,
   relationTargetFieldMetadataUniversalIdentifier,
+  universalRelationPathFieldMetadataIds = null,
 }: {
   ownerApplication: string;
   callerApplication: string;
   relationTargetFieldMetadataUniversalIdentifier: string | null;
+  universalRelationPathFieldMetadataIds?: string[] | null;
 }) =>
   validateFlatViewFieldRelationTargetNotOverridden({
     existingFlatViewField: {
       applicationUniversalIdentifier: ownerApplication,
       isSystemSideEffect: false,
       relationTargetFieldMetadataUniversalIdentifier: 'name-field',
+      universalRelationPathFieldMetadataIds: null,
     },
-    updatedFlatViewField: { relationTargetFieldMetadataUniversalIdentifier },
+    updatedFlatViewField: {
+      relationTargetFieldMetadataUniversalIdentifier,
+      universalRelationPathFieldMetadataIds,
+    },
     buildOptions: {
       applicationUniversalIdentifier: callerApplication,
       workspaceCustomApplicationUniversalIdentifier:
@@ -73,6 +79,28 @@ describe('validateFlatViewFieldRelationTargetNotOverridden', () => {
         ownerApplication: OTHER_APPLICATION,
         callerApplication: WORKSPACE_CUSTOM_APPLICATION,
         relationTargetFieldMetadataUniversalIdentifier: 'name-field',
+      }),
+    ).toEqual([]);
+  });
+
+  it('rejects a workspace change to the relation path of an application-owned column', () => {
+    expect(
+      validate({
+        ownerApplication: OTHER_APPLICATION,
+        callerApplication: WORKSPACE_CUSTOM_APPLICATION,
+        relationTargetFieldMetadataUniversalIdentifier: 'name-field',
+        universalRelationPathFieldMetadataIds: ['people-field'],
+      }),
+    ).toHaveLength(1);
+  });
+
+  it('treats an empty relation path like no path', () => {
+    expect(
+      validate({
+        ownerApplication: OTHER_APPLICATION,
+        callerApplication: WORKSPACE_CUSTOM_APPLICATION,
+        relationTargetFieldMetadataUniversalIdentifier: 'name-field',
+        universalRelationPathFieldMetadataIds: [],
       }),
     ).toEqual([]);
   });

@@ -3,16 +3,17 @@ import {
   type FieldMetadataRollupComputation,
   FieldMetadataType,
 } from 'twenty-shared/types';
+import { ComputedFieldExpressionError } from 'twenty-shared/utils';
 
 import { type ComputedFieldKindDescription } from 'src/engine/metadata-modules/computed-field/types/computed-field-kind-description.type';
 import { assertComputedValueFitsFieldTypeOrThrow } from 'src/engine/metadata-modules/computed-field/utils/assert-computed-value-fits-field-type-or-throw.util';
 import { getRollupComputedValueTypeOrThrow } from 'src/engine/metadata-modules/computed-field/utils/get-rollup-computed-value-type-or-throw.util';
 
-// Whether the expression is needed, and what it may return, depends on the operation: a rule, not a slot
+// Whether the expression and orderBy are needed, and what the expression may return, depends on the operation: a rule, not a slot
 export const ROLLUP_COMPUTED_FIELD_KIND_DESCRIPTION: ComputedFieldKindDescription<FieldMetadataRollupComputation> =
   {
     readableShape:
-      'a rollup with a relation, an operation and optional expression and filter',
+      'a rollup with a relation, an operation and optional expression, orderBy and filter',
     sourceRelationProperty: 'relationFieldName',
     allowedValuesByProperty: { operation: FIELD_METADATA_ROLLUP_OPERATIONS },
     expressionSlots: [
@@ -20,6 +21,16 @@ export const ROLLUP_COMPUTED_FIELD_KIND_DESCRIPTION: ComputedFieldKindDescriptio
         property: 'expression',
         evaluatedOn: 'RELATED_RECORD',
         isRequired: false,
+      },
+      {
+        property: 'orderBy',
+        evaluatedOn: 'RELATED_RECORD',
+        isRequired: false,
+        valueTypes: [
+          FieldMetadataType.NUMBER,
+          FieldMetadataType.DATE,
+          FieldMetadataType.DATE_TIME,
+        ],
       },
       {
         property: 'filter',
@@ -32,12 +43,19 @@ export const ROLLUP_COMPUTED_FIELD_KIND_DESCRIPTION: ComputedFieldKindDescriptio
       computation,
       fieldType,
       valueTypeBySlotProperty,
-    }) =>
+    }) => {
+      if (fieldType === FieldMetadataType.SELECT) {
+        throw new ComputedFieldExpressionError(
+          'a rollup cannot be a select; read the rollup from a formula of type SELECT instead',
+        );
+      }
+
       assertComputedValueFitsFieldTypeOrThrow({
         fieldType,
         valueType: getRollupComputedValueTypeOrThrow({
           computation,
           expressionValueType: valueTypeBySlotProperty.expression,
         }),
-      }),
+      });
+    },
   };

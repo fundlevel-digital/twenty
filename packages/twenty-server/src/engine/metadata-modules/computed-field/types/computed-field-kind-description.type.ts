@@ -18,6 +18,7 @@ export type ComputedFieldKindDescription<
   assertIsValidOrThrow(args: {
     computation: TComputation;
     fieldType: FieldMetadataType;
+    fieldOptionValues: string[];
     valueTypeBySlotProperty: Record<string, ComputedFieldValueType | undefined>;
   }): void;
 };

@@ -1,4 +1,5 @@
 import { msg, t } from '@lingui/core/macro';
+import isEqual from 'lodash.isequal';
 
 import { isCallerOverridingEntity } from 'src/engine/metadata-modules/overrides/utils/is-caller-overriding-entity.util';
 import { ViewExceptionCode } from 'src/engine/metadata-modules/view/exceptions/view.exception';
@@ -6,7 +7,7 @@ import { type FlatEntityValidationError } from 'src/engine/workspace-manager/wor
 import { type WorkspaceMigrationValidationBuildOptions } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/types/workspace-migration-builder-options.type';
 import { type UniversalFlatViewField } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-view-field.type';
 
-// The relation target is not overridable: a change from another application would land on
+// The relation target and path are not overridable: a change from another application would land on
 // the owner's column and be undone by the owner's next sync, so it is rejected instead.
 export const validateFlatViewFieldRelationTargetNotOverridden = ({
   existingFlatViewField,
@@ -18,10 +19,12 @@ export const validateFlatViewFieldRelationTargetNotOverridden = ({
     | 'applicationUniversalIdentifier'
     | 'isSystemSideEffect'
     | 'relationTargetFieldMetadataUniversalIdentifier'
+    | 'universalRelationPathFieldMetadataIds'
   >;
   updatedFlatViewField: Pick<
     UniversalFlatViewField,
-    'relationTargetFieldMetadataUniversalIdentifier'
+    | 'relationTargetFieldMetadataUniversalIdentifier'
+    | 'universalRelationPathFieldMetadataIds'
   >;
   buildOptions: Pick<
     WorkspaceMigrationValidationBuildOptions,
@@ -31,7 +34,11 @@ export const validateFlatViewFieldRelationTargetNotOverridden = ({
 }): FlatEntityValidationError<ViewExceptionCode>[] => {
   if (
     existingFlatViewField.relationTargetFieldMetadataUniversalIdentifier ===
-    updatedFlatViewField.relationTargetFieldMetadataUniversalIdentifier
+      updatedFlatViewField.relationTargetFieldMetadataUniversalIdentifier &&
+    isEqual(
+      existingFlatViewField.universalRelationPathFieldMetadataIds ?? [],
+      updatedFlatViewField.universalRelationPathFieldMetadataIds ?? [],
+    )
   ) {
     return [];
   }

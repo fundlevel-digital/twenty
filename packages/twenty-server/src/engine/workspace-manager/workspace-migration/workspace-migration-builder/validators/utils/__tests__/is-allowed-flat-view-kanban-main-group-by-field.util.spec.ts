@@ -18,6 +18,17 @@ describe('isAllowedFlatViewKanbanMainGroupByField', () => {
     ).toBe(true);
   });
 
+  it('should allow a computed SELECT field', () => {
+    expect(
+      isAllowedFlatViewKanbanMainGroupByField({
+        mainGroupByFieldMetadata: buildField({
+          type: FieldMetadataType.SELECT,
+          computation: { kind: 'FORMULA', expression: "'US'" },
+        }),
+      }),
+    ).toBe(true);
+  });
+
   it('should allow a MANY_TO_ONE relation field', () => {
     expect(
       isAllowedFlatViewKanbanMainGroupByField({

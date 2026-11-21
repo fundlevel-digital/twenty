@@ -23,6 +23,7 @@ import { WORKSPACE_MIGRATION_ADDITIONAL_CACHE_DATA_MAPS_KEY } from 'src/engine/w
 import { IdByUniversalIdentifierByMetadataName } from 'src/engine/workspace-manager/workspace-migration/services/utils/enrich-create-workspace-migration-action-with-ids.util';
 import { getComputedFieldBoundFieldApplicationIds } from 'src/engine/workspace-manager/workspace-migration/services/utils/get-computed-field-bound-field-application-ids.util';
 import { getTimelineActivityTypeTargetRelationApplicationIds } from 'src/engine/workspace-manager/workspace-migration/services/utils/get-timeline-activity-type-target-relation-application-ids.util';
+import { getViewFieldRelationPathApplicationIds } from 'src/engine/workspace-manager/workspace-migration/services/utils/get-view-field-relation-path-application-ids.util';
 import { WorkspaceMigrationBuilderAdditionalCacheDataMaps } from 'src/engine/workspace-manager/workspace-migration/types/workspace-migration-builder-additional-cache-data-maps.type';
 import { FromToAllUniversalFlatEntityMaps } from 'src/engine/workspace-manager/workspace-migration/types/workspace-migration-orchestrator.type';
 import { computeUniversalFlatEntityMapsFromToThroughMutation } from 'src/engine/workspace-manager/workspace-migration/utils/compute-universal-flat-entity-maps-from-to-through-mutation.util';
@@ -289,6 +290,16 @@ export class WorkspaceMigrationFlatEntityMapsService {
       },
     )) {
       applicationIds.add(boundFieldApplicationId);
+    }
+
+    for (const relationPathApplicationId of getViewFieldRelationPathApplicationIds(
+      {
+        viewFieldOperations:
+          allFlatEntityOperationRecordByMetadataName.viewField,
+        flatFieldMetadataMaps: allRelatedFlatEntityMaps.flatFieldMetadataMaps,
+      },
+    )) {
+      applicationIds.add(relationPathApplicationId);
     }
 
     for (const metadataName of Object.keys(

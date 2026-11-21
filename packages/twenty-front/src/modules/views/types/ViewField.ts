@@ -15,6 +15,7 @@ export type ViewField = {
   aggregateOperation?: AggregateOperations | null;
   viewFieldGroupId?: string | null;
   relationTargetFieldMetadataId?: string | null;
+  relationPathFieldMetadataIds?: string[] | null;
   definition?:
     | ColumnDefinition<FieldMetadata>
     | RecordBoardFieldDefinition<FieldMetadata>;

@@ -14,6 +14,7 @@ import { BaseTool } from 'src/engine/core-modules/tool-provider/interfaces/base-
 import { type ToolExecuteArgs } from 'src/engine/core-modules/tool-provider/types/tool-execute-args.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { VIEW_WRITE_BY_VISIBILITY_ACCESS_POLICY } from 'src/engine/metadata-modules/view/constants/view-write-by-visibility-access-policy.constant';
+import { VIEW_FIELD_LOOKUP_MAX_RELATION_HOPS } from 'src/engine/metadata-modules/flat-view-field/constants/view-field-lookup-max-relation-hops.constant';
 import { CREATABLE_VIEW_TYPES } from 'src/engine/metadata-modules/view/tools/constants/creatable-view-types.constant';
 import { CompleteViewUpsertService } from 'src/engine/metadata-modules/view/tools/services/complete-view-upsert.service';
 import { ViewAccessService } from 'src/engine/permissions/metadata-permissions/services/view-access.service';
@@ -47,6 +48,19 @@ const upsertCompleteViewFieldSchema = z.object({
     .optional()
     .default(150)
     .describe('Column width. Defaults to 150.'),
+  relationTargetFieldMetadataId: z
+    .uuid()
+    .optional()
+    .describe(
+      'Makes this an extra lookup column on a relation field: the UUID of the field to show from the related record(s). It must belong to the object reached at the end of the relation path. Lookup columns are read-only.',
+    ),
+  relationPathFieldMetadataIds: z
+    .array(z.uuid())
+    .max(VIEW_FIELD_LOOKUP_MAX_RELATION_HOPS - 1)
+    .optional()
+    .describe(
+      'Multi-level lookup: UUIDs of the relation fields to follow, in order, after the column field (the first relation, on the view object) and before relationTargetFieldMetadataId. Each must be a many-to-one or one-to-many relation field on the object the previous relation points to; at most 5 relations in total, of which at most one is one-to-many. Omit for a one-level lookup.',
+    ),
 });
 
 const upsertCompleteViewFilterSchema = z.object({
@@ -179,6 +193,8 @@ DECLARATIVE CHILDREN (replace semantics): fields, filters, and sorts each descri
 - Omitting the key leaves existing entries untouched.
 This means you never need to fetch child ids to edit a view — just pass the desired end state. For surgical single-entry edits, the granular tools (create_view_filter, update_view_sort, etc.) remain available.
 
+LOOKUP COLUMNS: a field entry with relationTargetFieldMetadataId shows a field of related records instead of the relation itself, and can sit next to the plain column of the same relation. Example on a production view: { fieldName: "influencer", relationPathFieldMetadataIds: [<influencer.contactLinks id>, <influencerContact.person id>, <person.lastEmail id>], relationTargetFieldMetadataId: <message.subject id> }. Get the ids with get_field_metadata on each object along the path. Lookup columns are allowed in TABLE and TABLE_WIDGET views.
+
 VIEW TYPES: TABLE (default), LIST, KANBAN (requires mainGroupByFieldName, a SELECT field), CALENDAR (requires calendarFieldName + calendarLayout).`,
 })
 export class UpsertCompleteViewTool extends BaseTool<
@@ -237,6 +253,8 @@ export class UpsertCompleteViewTool extends BaseTool<
               }),
             isVisible: field.isVisible,
             size: field.size,
+            relationTargetFieldMetadataId: field.relationTargetFieldMetadataId,
+            relationPathFieldMetadataIds: field.relationPathFieldMetadataIds,
           })),
         )
       : undefined;

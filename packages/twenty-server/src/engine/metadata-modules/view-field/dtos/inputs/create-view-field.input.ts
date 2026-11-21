@@ -1,6 +1,8 @@
 import { Field, HideField, InputType } from '@nestjs/graphql';
 
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsEnum,
   IsNumber,
@@ -10,6 +12,7 @@ import {
 import { AggregateOperations } from 'twenty-shared/types';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
+import { VIEW_FIELD_LOOKUP_MAX_RELATION_HOPS } from 'src/engine/metadata-modules/flat-view-field/constants/view-field-lookup-max-relation-hops.constant';
 
 @InputType()
 export class CreateViewFieldInput {
@@ -60,6 +63,17 @@ export class CreateViewFieldInput {
   @IsUUID()
   @Field(() => UUIDScalarType, { nullable: true })
   relationTargetFieldMetadataId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(VIEW_FIELD_LOOKUP_MAX_RELATION_HOPS - 1)
+  @IsUUID('all', { each: true })
+  @Field(() => [UUIDScalarType], {
+    nullable: true,
+    description:
+      'Relation fields followed, in order, between fieldMetadataId and relationTargetFieldMetadataId. Empty or null for a one-hop lookup.',
+  })
+  relationPathFieldMetadataIds?: string[];
 
   @HideField()
   universalIdentifier?: string;

@@ -45,6 +45,8 @@ import {
   ViewException,
   ViewExceptionCode,
 } from 'src/engine/metadata-modules/view/exceptions/view.exception';
+import { buildViewFieldLookupProperties } from 'src/engine/metadata-modules/view/utils/build-view-field-lookup-properties.util';
+import { isSameViewFieldLookup } from 'src/engine/metadata-modules/view/utils/is-same-view-field-lookup.util';
 import { sortViewFilterGroupInputsParentsFirst } from 'src/engine/metadata-modules/view/utils/sort-view-filter-group-inputs-parents-first.util';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
@@ -478,12 +480,27 @@ export class ViewWidgetUpsertService {
         ? existingViewFields.find((f) => f.id === inputField.viewFieldId)
         : undefined;
 
+      const isLookupInputField = isDefined(
+        inputField.relationTargetFieldMetadataId,
+      );
+
       const existingFieldByFieldMetadataId = isDefined(
         inputField.fieldMetadataId,
       )
-        ? existingViewFields.find(
-            (f) =>
-              f.isCanonical && f.fieldMetadataId === inputField.fieldMetadataId,
+        ? existingViewFields.find((existingViewField) =>
+            isLookupInputField
+              ? !existingViewField.isCanonical &&
+                isSameViewFieldLookup({
+                  viewField: existingViewField,
+                  fieldMetadataId: inputField.fieldMetadataId,
+                  relationTargetFieldMetadataId:
+                    inputField.relationTargetFieldMetadataId,
+                  relationPathFieldMetadataIds:
+                    inputField.relationPathFieldMetadataIds,
+                })
+              : existingViewField.isCanonical &&
+                existingViewField.fieldMetadataId ===
+                  inputField.fieldMetadataId,
           )
         : undefined;
 
@@ -505,7 +522,29 @@ export class ViewWidgetUpsertService {
             effectiveExistingField.aggregateOperation !==
               inputField.aggregateOperation);
 
-        if (!hasChanged) {
+        const { relationTargetFieldMetadataId, relationPathFieldMetadataIds } =
+          mergeUpdateInExistingRecord({
+            existing: existingField,
+            properties: [
+              'relationTargetFieldMetadataId',
+              'relationPathFieldMetadataIds',
+            ],
+            update: {
+              relationTargetFieldMetadataId:
+                inputField.relationTargetFieldMetadataId,
+              relationPathFieldMetadataIds:
+                inputField.relationPathFieldMetadataIds,
+            },
+          });
+
+        const hasLookupChanged = !isSameViewFieldLookup({
+          viewField: existingField,
+          fieldMetadataId: existingField.fieldMetadataId,
+          relationTargetFieldMetadataId,
+          relationPathFieldMetadataIds,
+        });
+
+        if (!hasChanged && !hasLookupChanged) {
           continue;
         }
 
@@ -540,6 +579,13 @@ export class ViewWidgetUpsertService {
         const updatedField: FlatViewField = {
           ...existingField,
           ...sanitizedFieldProps,
+          ...(hasLookupChanged
+            ? buildViewFieldLookupProperties({
+                relationTargetFieldMetadataId,
+                relationPathFieldMetadataIds,
+                flatFieldMetadataMaps,
+              })
+            : {}),
           overrides,
           updatedAt: now,
         };
@@ -584,11 +630,15 @@ export class ViewWidgetUpsertService {
           },
         });
 
+      const viewFieldId = isLookupInputField
+        ? (inputField.viewFieldId ?? v4())
+        : v4();
+
       fieldsToCreate.push({
-        id: v4(),
+        id: viewFieldId,
         workspaceId,
         applicationId,
-        universalIdentifier: v4(),
+        universalIdentifier: viewFieldId,
         applicationUniversalIdentifier,
         fieldMetadataId: inputField.fieldMetadataId,
         fieldMetadataUniversalIdentifier,
@@ -600,13 +650,18 @@ export class ViewWidgetUpsertService {
         size: inputField.size ?? DEFAULT_VIEW_FIELD_SIZE,
         position: inputField.position,
         aggregateOperation: inputField.aggregateOperation ?? null,
-        relationTargetFieldMetadataId: null,
-        relationTargetFieldMetadataUniversalIdentifier: null,
+        ...buildViewFieldLookupProperties({
+          relationTargetFieldMetadataId:
+            inputField.relationTargetFieldMetadataId ?? null,
+          relationPathFieldMetadataIds:
+            inputField.relationPathFieldMetadataIds ?? null,
+          flatFieldMetadataMaps,
+        }),
         overrides: null,
         universalOverrides: null,
         isActive: true,
         isSystemSideEffect: false,
-        isCanonical: true,
+        isCanonical: !isLookupInputField,
         createdAt: now,
         updatedAt: now,
         deletedAt: null,

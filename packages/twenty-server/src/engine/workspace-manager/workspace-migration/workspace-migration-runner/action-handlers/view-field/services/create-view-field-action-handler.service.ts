@@ -11,6 +11,7 @@ import {
   FlatCreateViewFieldAction,
   UniversalCreateViewFieldAction,
 } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/builders/view-field/types/workspace-migration-view-field-action.type';
+import { fromUniversalRelationPathFieldMetadataIdsToRelationPathFieldMetadataIds } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/action-handlers/view-field/services/utils/from-universal-relation-path-field-metadata-ids-to-relation-path-field-metadata-ids.util';
 import { fromUniversalOverridesToViewFieldOverrides } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/action-handlers/view-field/services/utils/from-universal-overrides-to-view-field-overrides.util';
 import {
   WorkspaceMigrationActionRunnerArgs,
@@ -63,6 +64,14 @@ export class CreateViewFieldActionHandlerService extends WorkspaceMigrationRunne
         viewId,
         viewFieldGroupId,
         relationTargetFieldMetadataId,
+        relationPathFieldMetadataIds:
+          fromUniversalRelationPathFieldMetadataIdsToRelationPathFieldMetadataIds(
+            {
+              universalRelationPathFieldMetadataIds:
+                action.flatEntity.universalRelationPathFieldMetadataIds,
+              flatFieldMetadataMaps: allFlatEntityMaps.flatFieldMetadataMaps,
+            },
+          ),
         overrides,
         id: action.id ?? v4(),
         applicationId: flatApplication.id,

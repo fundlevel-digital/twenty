@@ -115,6 +115,7 @@ const VIEW_FIELD_MANIFEST: ViewFieldManifest = {
   aggregateOperation: AggregateOperations.COUNT,
   viewFieldGroupUniversalIdentifier: VIEW_FIELD_GROUP_UID,
   relationTargetFieldMetadataUniversalIdentifier: FIELD_UID,
+  relationPathFieldMetadataUniversalIdentifiers: [FIELD_UID],
 };
 
 const STANDALONE_VIEW_FIELD_MANIFEST: StandaloneViewFieldManifest = {
@@ -571,7 +572,10 @@ const EXPORTED_KINDS: ExportedKind[] = [
         }),
       }),
     ),
-    renamedProperties: {},
+    renamedProperties: {
+      universalRelationPathFieldMetadataIds:
+        'relationPathFieldMetadataUniversalIdentifiers',
+    },
     workspaceLocalProperties: ['isActive', 'universalOverrides'],
     knownGaps: VIEW_KIND_GAPS,
   },

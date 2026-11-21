@@ -4,6 +4,8 @@ import { WorkflowVersionOnDeleteSideEffectHandlerService } from 'src/engine/meta
 import { WorkflowVersionDependenciesOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/workflow-version/services/workflow-version-dependencies-on-delete-side-effect-handler.service';
 import { Module } from '@nestjs/common';
 
+import { FieldLookupViewFieldsOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-lookup-view-fields-on-delete-side-effect-handler.service';
+import { ObjectLookupViewFieldsOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/object-metadata/services/object-lookup-view-fields-on-delete-side-effect-handler.service';
 import { FieldRelatedRecordPathsOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-related-record-paths-on-delete-side-effect-handler.service';
 import { FieldSearchFieldMetadataOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-search-field-metadata-on-create-side-effect-handler.service';
 import { FieldSearchFieldMetadataOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-search-field-metadata-on-delete-side-effect-handler.service';
@@ -62,6 +64,7 @@ import { ObjectValidationRulesOnDeleteSideEffectHandlerService } from 'src/engin
     FieldComputedFieldsOnUpdateSideEffectHandlerService,
     FieldValidationRulesOnDeleteSideEffectHandlerService,
     FieldRelatedRecordPathsOnDeleteSideEffectHandlerService,
+    FieldLookupViewFieldsOnDeleteSideEffectHandlerService,
     ObjectSystemFieldsOnCreateSideEffectHandlerService,
     ObjectIndexViewOnCreateSideEffectHandlerService,
     ObjectRecordPageOnCreateSideEffectHandlerService,
@@ -77,6 +80,7 @@ import { ObjectValidationRulesOnDeleteSideEffectHandlerService } from 'src/engin
     ObjectSystemSideEffectsOnDeleteSideEffectHandlerService,
     ObjectValidationRulesOnDeleteSideEffectHandlerService,
     ObjectRelatedRecordPathsOnDeleteSideEffectHandlerService,
+    ObjectLookupViewFieldsOnDeleteSideEffectHandlerService,
   ],
 })
 export class MetadataSideEffectHandlersModule {}

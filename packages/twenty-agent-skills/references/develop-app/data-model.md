@@ -127,12 +127,12 @@ computation: { kind: 'FORMULA', expression: 'round(budget / openTaskCount, 2)' }
 computation: {
   kind: 'ROLLUP',
   relationFieldName: 'tasks',
-  operation: 'COUNT', // or SUM, AVG, MIN, MAX with an `expression`
+  operation: 'COUNT', // or SUM, AVG, MIN, MAX with an `expression`; LATEST with an `expression` and an `orderBy`
   filter: "status != 'DONE'",
 },
 ```
 
-Expressions reference fields by name: `amount.amountMicros` for a composite sub-field, `company.name` for a field of a to-one relation (its id is `company.id`, not `companyId`), and other computed fields by their name. A value is null when its reader cannot read a field or object it uses. A field that a row-level permission rule hides on some records reads as empty on those records. A field read by a computed field cannot be deleted; renaming it updates the computed field.
+`LATEST` reads `expression` on the related record with the greatest `orderBy` (a number or date; records without one are skipped, ties go to the greatest id). Expressions reference fields by name: `amount.amountMicros` for a composite sub-field, `company.name` for a field of a to-one relation (its id is `company.id`, not `companyId`), and other computed fields by their name. A value is null when its reader cannot read a field or object it uses. A field that a row-level permission rule hides on some records reads as empty on those records. A field read by a computed field cannot be deleted; renaming it updates the computed field.
 
 ## Roles And Permissions
 

@@ -2087,6 +2087,8 @@ export type CreateViewFieldInput = {
   isCanonical?: InputMaybe<Scalars['Boolean']['input']>;
   isVisible?: InputMaybe<Scalars['Boolean']['input']>;
   position?: InputMaybe<Scalars['Float']['input']>;
+  /** Relation fields followed, in order, between fieldMetadataId and relationTargetFieldMetadataId. Empty or null for a one-hop lookup. */
+  relationPathFieldMetadataIds?: InputMaybe<Array<Scalars['UUID']['input']>>;
   relationTargetFieldMetadataId?: InputMaybe<Scalars['UUID']['input']>;
   size?: InputMaybe<Scalars['Float']['input']>;
   viewFieldGroupId?: InputMaybe<Scalars['UUID']['input']>;
@@ -8183,6 +8185,8 @@ export type UpdateViewFieldInputUpdates = {
   aggregateOperation?: InputMaybe<AggregateOperations>;
   isVisible?: InputMaybe<Scalars['Boolean']['input']>;
   position?: InputMaybe<Scalars['Float']['input']>;
+  /** Relation fields followed, in order, between fieldMetadataId and relationTargetFieldMetadataId. Empty or null for a one-hop lookup. */
+  relationPathFieldMetadataIds?: InputMaybe<Array<Scalars['UUID']['input']>>;
   relationTargetFieldMetadataId?: InputMaybe<Scalars['UUID']['input']>;
   size?: InputMaybe<Scalars['Float']['input']>;
   viewFieldGroupId?: InputMaybe<Scalars['UUID']['input']>;
@@ -8410,8 +8414,12 @@ export type UpsertViewWidgetViewFieldInput = {
   fieldMetadataId?: InputMaybe<Scalars['UUID']['input']>;
   isVisible: Scalars['Boolean']['input'];
   position: Scalars['Float']['input'];
+  /** Relation fields followed, in order, between fieldMetadataId and relationTargetFieldMetadataId. Empty or null for a one-hop lookup. */
+  relationPathFieldMetadataIds?: InputMaybe<Array<Scalars['UUID']['input']>>;
+  /** Makes the column a lookup column showing this field of the related record(s). Lookup columns are extra (non-canonical) columns. */
+  relationTargetFieldMetadataId?: InputMaybe<Scalars['UUID']['input']>;
   size?: InputMaybe<Scalars['Float']['input']>;
-  /** The id of an existing view field to update. */
+  /** The id of an existing view field to update. For a new lookup column, the id to create it with. */
   viewFieldId?: InputMaybe<Scalars['UUID']['input']>;
 };
 
@@ -8824,6 +8832,7 @@ export type ViewField = {
   isSystemSideEffect: Scalars['Boolean']['output'];
   isVisible: Scalars['Boolean']['output'];
   position: Scalars['Float']['output'];
+  relationPathFieldMetadataIds?: Maybe<Array<Scalars['UUID']['output']>>;
   relationTargetFieldMetadataId?: Maybe<Scalars['UUID']['output']>;
   size: Scalars['Float']['output'];
   universalIdentifier: Scalars['UUID']['output'];
