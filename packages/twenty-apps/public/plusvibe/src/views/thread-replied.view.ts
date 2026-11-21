@@ -19,7 +19,7 @@ import {
 
 export default defineView({
   universalIdentifier: THREAD_REPLIED_VIEW_UNIVERSAL_IDENTIFIER,
-  name: 'PlusVibe \\u00b7 Replied',
+  name: 'PlusVibe · Replied',
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
   type: ViewType.TABLE,
