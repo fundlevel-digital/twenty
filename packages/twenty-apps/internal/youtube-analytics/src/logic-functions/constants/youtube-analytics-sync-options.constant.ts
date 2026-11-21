@@ -5,7 +5,11 @@ import { type YoutubeAnalyticsSyncOptions } from 'src/logic-functions/types/yout
 export const YOUTUBE_ANALYTICS_SYNC_OPTIONS: YoutubeAnalyticsSyncOptions = {
   lookback: 12,
   recentWindowDays: 60,
-  maxUploads: 60,
+  maxUploads: 5000,
   minimumDurationSeconds: 181,
   concurrency: 2,
+  timeframeDays: [30, 60, 90],
+  numberTimeframeDays: [30, 60, 90],
+  percentageTimeframeDays: [30, 60, 90],
+  metricFormat: 'BOTH',
 };

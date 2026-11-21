@@ -12,9 +12,9 @@ type GraphqlResponse<TData> = {
   errors?: { message?: string }[];
 };
 
-// The typed CoreApiClient only knows standard and app-owned objects; the
-// workspace's custom objects are reachable through raw GraphQL.
-export const createWorkspaceGraphqlClient = (): WorkspaceGraphqlClient => {
+export const createWorkspaceGraphqlClient = (
+  apiPath: '/graphql' | '/metadata' = '/graphql',
+): WorkspaceGraphqlClient => {
   const restApiClient = new RestApiClient({ runAs: 'application' });
 
   return {
@@ -23,7 +23,7 @@ export const createWorkspaceGraphqlClient = (): WorkspaceGraphqlClient => {
       variables: Record<string, unknown>,
     ): Promise<TData> => {
       const response = await restApiClient.post<GraphqlResponse<TData>>(
-        '/graphql',
+        apiPath,
         { query, variables },
       );
 

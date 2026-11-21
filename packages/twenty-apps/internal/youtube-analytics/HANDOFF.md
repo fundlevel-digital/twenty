@@ -2,6 +2,184 @@
 
 Written 2026-11-20. Branch `fundlevel/youtube-analytics-app`, based on `91e6edbf31` ("Add the YouTube Analytics app"). That commit is also on `main`, so `main` already holds the app.
 
+## Continuation: 2026-11-21, App Preferences Placement
+
+Owner correction: use App Preferences like the LinkedIn app, superseding the
+workspace Configuration tab. Matched LinkedIn's defineFrontComponent plus USER-
+scoped defineSettingsMenuItem pattern. Menu title is Analytics; stable component
+and menu identifiers are retained. Controls now say Save Preferences. The form
+explains the shared workspace effect: existing calculation variable scope and
+values stay unchanged because channel records/columns and the cron are shared.
+Native workspace API key provider remains unchanged for scheduled refreshes.
+
+Preview path: /settings/app-preferences/54459250-eb7b-4c4f-9a89-f77d046dd641
+#eb75b601-a4c2-4b39-8b72-6fd55018cdb7 (Analytics tab).
+125 existing behavior tests cover unchanged parsing/calculations; direct tsgo and
+lint and app build passed for this placement change (zero diagnostics). Browser
+verified the App Preferences listing, Analytics tab, retained tags, validation,
+clearing an invalid draft, removal of the old Configuration tab, and preserved
+workspace connection management, with zero page errors. Production is unchanged.
+
+## Continuation: 2026-11-21, Validated Day Tags (Supersedes Pickers)
+
+Owner rejected the full predefined option list. The requested day range is now
+**1–366**, superseding the prior max266. A custom native Configuration tab replaces
+the automatic Variables tab and renders removable day chips with an input and
+Enter/Add action, inline errors, duplicate rejection and up to10 windows/group.
+The same strict parser is shared with the refresh runtime; it rejects letters,
+decimals, hex/exponent notation, infinities, booleans, empty values and out-of-range
+days. Native array storage preserves existing settings and legacyCSV is readable.
+
+The tab also preserves Metric Format and Recent Video Window controls.
+Embedded-renderer compatibility: Base UI Field.Root's native validity reads
+crash on radio changes and invalid recent-video edits, because the remote DOM
+has no HTMLInputElement.validity. Use native Input/SegmentedControl without
+Field.Root, accessible Text-rendered labels, and the shared app validator.
+This preserves the existing design-system controls without changing shared UI. Pending
+tag input blocks Save until committed/cleared. Save validates both groups and the
+2..30 video window before writing app variables as the current settings user.
+The native twenty-ui2.59 dependency supplies chips, inputs, controls and tokens;
+no shared CRM component or production server behavior was changed. The app
+also needs APPLICATIONS permission for the settings component's metadata reads
+and variable writes (confirmed by a native FORBIDDEN response before the grant).
+
+125 unit tests, direct tsgo and oxlint pass; VM apply and app build have zero
+manifest diagnostics. Browser checks reject letters, 0, 367, decimals, exponent
+input and duplicate30; accept/save1 and366 tags; then remove the test tags and
+save the original selections. Native app metadata permission fix was verified.
+The owner API-key connections and selected windows were preserved. Production
+remains unchanged. Prior instructions describing CSV/dropdown UI are historical.
+
+## Continuation: 2026-11-21, Native Multi-Value Pickers
+
+The owner rejected CSV-style configuration. The two day-window settings now
+use native MULTI_SELECT inputs with searchable 1 Day through 266 Days options,
+checkbox selection and individual tags. Defaults are string arrays for 30/60/90.
+RECENT_VIDEO_COUNT is labeled Recent Video Window (2–30 Videos), separating the
+latest-N-video calculation from rolling day windows. The runtime accepts native
+JSON-array values, with backward compatibility for existing saved CSV values.
+The VM's saved selections are converted through GraphQL without changing their
+day values. No new frontend components or global styling changes were needed.
+99 unit tests, tsgo, oxlint and CLI build (zero diagnostics) passed. Browser
+verified searching, selecting/deselecting 7 Days, finding the 266 Days option,
+and saving the unchanged selections. A real JSON-settings refresh wrote one
+record with zero failures (19 Google requests). Production remains unchanged.
+
+Preview access incident: backend/proxy both returned200; public anonymous HTTP
+returned401 Sign in to view this preview. Re-registered port3002 with Conductor;
+owner confirmed the preview was available again. No data/service reset occurred.
+
+## Continuation: 2026-11-21, Configurable Multi-Timeframe Columns
+
+Owner corrections: all field/object display labels use Title Case; multiple
+native CRM timeframe columns must support filters/sorts; counts (views, likes,
+comments) and percentages are independently selectable. Day windows must accept
+whole-day increments from 1 through **266**, as specified in the attachment.
+
+New native settings: NUMBER_TIMEFRAME_DAYS and PERCENTAGE_TIMEFRAME_DAYS, each
+up to 10 comma-separated day windows (default 30,60,90); METRIC_FORMAT dropdown
+NUMBERS / PERCENTAGES / BOTH; RECENT_VIDEO_COUNT remains 2..30 (default12).
+Count/percentage day windows can differ. On refresh, schema synchronization
+creates native NUMBER fields whose stable API names encode their timeframes.
+Percentage fields use fractional storage and native percent rendering. It only
+updates the app table and the channel Fields widgets; removing windows/formats
+hides columns without deleting their values, fields, filters or custom tables.
+Fixed legacy metrics remain populated but hidden for compatibility.
+
+The role now requests DATA_MODEL and VIEWS flags so the runtime can synchronize
+columns. Creation is bounded to the channel object by its universal identifier
+and managed prefix/description, with conflicts rejected. Dynamic fields belong
+to the workspace custom application and survive manifest pruning; review their
+data/dependencies when uninstalling. Settings take effect on the next refresh.
+
+Collection now scans through 365 days (posting cadence), continuing farther when
+needed for the recent-video count; all configured metrics reuse this fetched set.
+The former 60-upload/five-posts-month cap is replaced by a 100-page/5,000-upload
+safety limit. Hitting it before coverage fails instead of storing partial metrics.
+
+Verification: 89 unit tests, direct tsgo and oxlint passed. VM default Both run
+succeeded, one record written, zero failed, 19 Google requests. Native integration
+checks passed Percentages Only (30/90 days), Numbers Only (1/7/266 days), then
+restored Both with 30/60/90-day defaults. Filter + descending sort on the native
+30-day average-views field returned the READY public demo channel. App build
+has zero diagnostics. Browser verified the Variables tab's four settings and
+native table headers for all configured windows. Title Case applies to app-defined
+fields; native system fields (Creation date, Last update, Created by, etc.) reject
+label changes with FIELD_MUTATION_NOT_ALLOWED. No server workaround was added.
+Preview worker
+is running (PID638958, exec81860) to process deferred schema/index operations;
+without it app apply can report pending deferred actions. Production unchanged.
+
+## Owner Preference: 2026-11-21, Title Case
+
+All object and field display labels must use Title Case. Applied to the
+YouTube Channels fields and related app setting, connection provider and
+refresh action labels. API names and identifiers retain their existing casing.
+
+## Continuation: 2026-11-21, YouTube Channels (source + VM preview)
+
+The owner requested **one YouTube Channels object** for identity, subscriber
+counts and calculations, superseding writes to Influencer analytics entries.
+The new source defines that object, its table view and object sidebar item, a selected-
+record refresh action and a role limited to the new object. Existing Influencer,
+Person and Company records are not modified by the new refresh job. No records
+are automatically migrated from the old analytics object.
+
+The app setting RECENT_VIDEO_COUNT defaults to 12 and accepts only whole numbers
+from 2 to 30. It controls recent-video metrics; the separate 60-day window and
+60-upload collection cap remain. README documents the five-posts/month limit.
+Channel identity and subscribers are saved alongside metrics; failed refreshes
+keep previous metrics. Blank names use the public channel title.
+
+Native individual API key connections and the owner's supplied logo remain.
+The VM fixture under .context/youtube-key-settings-preview is rebuilt from this
+source with its cron omitted, so preview refreshes are manual. Preserve owner-
+added connections when updating it. Earlier notes about an empty settings-only
+fixture and no supplied keys are historical. Production still runs the previous
+installed version; this continuation does not deploy to production.
+
+Verification: 65 unit tests, direct tsgo, oxlint and Twenty CLI app build passed
+with zero manifest diagnostics. The full app is installed in the VM Apple demo
+workspace, with cron omitted. A public Google for Developers channel refresh
+succeeded: one record written, zero failures, nine Google requests, and native
+table rendering verified. The owner-added key connection was preserved. The
+preview backend needs SERVER_INTERNAL_URL=http://localhost:3000 so job callbacks
+bypass the Conductor preview edge authentication. Production was not deployed. Hindsight is unavailable
+in this cloud workspace (private profile missing).
+
+## Continuation: 2026-11-21, multiple API keys (local, not deployed)
+
+The owner's final choice is **multiple API keys**, superseding the OAuth option
+considered earlier. This source calls Google directly without treg or OAuth.
+See README.md for settings and migration steps. Historical treg instructions
+below describe the prior deployed version and are superseded for this source.
+
+- Owner correction: use proper individual key entries, not a delimited setting.
+  Native `youtube` connection provider has type `api-key`, scope `WORKSPACE`,
+  and display name `YouTube API Keys`. Add each key using Add connection.
+  `listConnections` loads encrypted credentials for the job; duplicate keys are
+  deduplicated in order. No app variables or OAuth settings are defined.
+- New requests rotate across healthy keys. Transient errors retry on the same
+  key; invalid, restricted or quota-exhausted keys are skipped for that run.
+- Keys from the same Google Cloud project share its quota.
+- Local verification: 51 unit tests across 8 files, direct app typecheck, oxlint,
+  and Twenty CLI 2.59.0 app build pass. The built manifest has one workspace
+  API-key connection provider and no application variables.
+- The owner-supplied YouTube symbol is stored at `public/youtube.png` and used
+  by `logo` in the application config.
+- A VM-only key-settings preview is installed in the local Apple demo workspace;
+  its fixture under `.context/` includes the real provider and image but no
+  analytics runtime or production CRM records. Browser verification passed login,
+  the logo, and creation of two separate demo key entries; both test keys were
+  removed, with zero remaining key connections confirmed in the local database.
+- No API keys have been supplied and no production app deployment was performed. Keep the
+  working installed treg version until keys are ready for the rollout.
+- Read-only production check at 2026-11-21 11:22 UTC found all 90 enabled entries
+  READY, last calculated at 05:00:09.297 UTC that day, with zero errors.
+- Browser refresh verification and the 60-video / five-posts-per-month cap remain
+  open. No metric definitions changed.
+- Hindsight remains unavailable in this cloud workspace (private profile missing).
+
 ## Continuation: 2026-11-20, Codex
 
 Continued in Conductor workspace `memphis`, on
@@ -64,7 +242,7 @@ This fork brings that back as a Twenty app, adds a button to refresh a creator o
 
 The decisions, all made by the owner:
 - Build it as a Twenty app rather than a Twenty workflow.
-- Use treg for the YouTube API keys.
+- Use treg for the YouTube API Keys.
 - Call the app "YouTube Analytics".
 - Stop the Attio worker.
 
@@ -80,7 +258,7 @@ The decisions, all made by the owner:
 - One logic function, `refresh-youtube-analytics` (`src/logic-functions/refresh-youtube-analytics.ts`), with a 900 s timeout and two triggers:
   - **Cron** `0 5 * * *` UTC: every `influencerAnalyticsEntry` with `calculationsEnabled = true` (90 entries).
   - **HTTP route** `POST /s/youtube-analytics/refresh`, auth required, with body `{ entryIds?: string[], influencerIds?: string[] }`.
-- Two command menu items labelled "Refresh YouTube analytics" (RECORD_SELECTION, hidden on select-all):
+- Two command menu items labelled "Refresh YouTube Analytics" (RECORD_SELECTION, hidden on select-all):
   - on **influencerAnalyticsEntry**: `src/command-menu-items/refresh-analytics-entries.ts`
   - on **influencer**: `refresh-influencers.ts`, which refreshes all of that influencer's entries
   - Each uses a headless front component in `src/front-components/` that calls the route and shows a snackbar.

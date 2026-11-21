@@ -1,3 +1,3 @@
 export type AnalyticsEntrySelection =
   | { kind: 'calculationsEnabled' }
-  | { kind: 'records'; entryIds: string[]; influencerIds: string[] };
+  | { kind: 'records'; channelIds: string[] };

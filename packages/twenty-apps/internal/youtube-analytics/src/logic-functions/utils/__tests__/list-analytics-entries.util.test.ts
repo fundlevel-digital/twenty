@@ -13,13 +13,13 @@ describe('listAnalyticsEntries', () => {
           const isFirstPage = variablesSeen.length === 1;
 
           return {
-            influencerAnalyticsEntries: {
+            youtubeChannels: {
               edges: [
                 {
                   node: {
                     id: isFirstPage ? 'entry-1' : 'entry-2',
                     name: 'Entry',
-                    influencer: null,
+                    youtubeId: null,
                   },
                 },
               ],
@@ -35,14 +35,14 @@ describe('listAnalyticsEntries', () => {
 
     const entries = await listAnalyticsEntries({
       client,
-      selection: { kind: 'records', entryIds: ['entry-1'], influencerIds: [] },
+      selection: { kind: 'records', channelIds: ['entry-1'] },
     });
 
     expect(entries.map((entry) => entry.id)).toEqual(['entry-1', 'entry-2']);
     expect(variablesSeen).toEqual([
-      { filter: { or: [{ id: { in: ['entry-1'] } }] }, first: 200 },
+      { filter: { id: { in: ['entry-1'] } }, first: 200 },
       {
-        filter: { or: [{ id: { in: ['entry-1'] } }] },
+        filter: { id: { in: ['entry-1'] } },
         first: 200,
         after: 'cursor-1',
       },

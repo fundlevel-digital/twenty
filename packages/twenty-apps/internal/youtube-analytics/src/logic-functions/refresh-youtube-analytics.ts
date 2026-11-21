@@ -15,7 +15,7 @@ export default defineLogicFunction({
     REFRESH_YOUTUBE_ANALYTICS_LOGIC_FUNCTION_UNIVERSAL_IDENTIFIER,
   name: 'refresh-youtube-analytics',
   description:
-    'Recomputes YouTube views, engagement, view rate and posting cadence for influencer analytics entries: every entry with calculations enabled on the daily cron, or the entries or influencers sent to the route.',
+    'Recomputes YouTube views, engagement, view rate and posting cadence for YouTube Channels: enabled channels on the daily cron, or channel records selected for manual refresh.',
   timeoutSeconds: REFRESH_YOUTUBE_ANALYTICS_TIMEOUT_SECONDS,
   handler,
   cronTriggerSettings: {

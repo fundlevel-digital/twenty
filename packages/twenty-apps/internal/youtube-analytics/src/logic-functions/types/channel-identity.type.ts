@@ -1,6 +1,8 @@
 export type ChannelIdentity = {
-  influencerId: string;
+  recordId: string;
   channelId: string;
   uploadsPlaylistId: string;
+  title: string | null;
+  handle: string | null;
   subscriberCount: number | null;
 };

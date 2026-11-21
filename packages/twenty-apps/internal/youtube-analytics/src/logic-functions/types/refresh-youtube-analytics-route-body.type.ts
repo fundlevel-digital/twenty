@@ -1,4 +1,1 @@
-export type RefreshYoutubeAnalyticsRouteBody = {
-  entryIds?: string[];
-  influencerIds?: string[];
-};
+export type RefreshYoutubeAnalyticsRouteBody = { channelIds?: string[] };
