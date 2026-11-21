@@ -2,7 +2,14 @@
 
 Date: 2026-11-21. Repository: `fundlevel-digital/twenty`.
 
-## State at Handoff
+## Release Follow-Up
+
+PR #8 merged as `c62fc55d3ec72905d80fd0a9ca0eab02989bdbd9` on 2026-11-21.
+The owner subsequently cancelled deployment during preparation. Production was
+not upgraded; temporary deployment access was revoked. See
+[0004](../decisions/0004-defer-production-deployment.md).
+
+## State at Original Handoff
 
 The changes are committed locally on `conductor/api-only-features`. The
 production-seeded Conductor preview is running the updated UI. The requested
