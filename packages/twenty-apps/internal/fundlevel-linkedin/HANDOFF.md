@@ -5,6 +5,10 @@ Do not rename the branch or apply this rebuild to production without a separate
 production cutover request. Owner decisions and the exchange behind them are in
 [root docs](../../../../docs/decisions/linkedin/DECISIONS.md).
 
+## Combined Production Rollout
+
+The owner renewed deployment authorization in [repository decision 0005](../../../../docs/decisions/0005-roll-out-six-sessions-to-live-crm.md). The updated core and this app’s migration stage are now installed live. All 821 legacy messages remain intact; native connection, account ownership, privacy verification and staged migration remain pending. The separate official LinkedIn app was retained. See the [rollout handoff](../../../../docs/handoffs/2026-11-21-live-crm-rollout.md) for current status. The sections below record the earlier session and cancellation.
+
 ## Latest Upstream Integration
 
 The branch incorporates `origin/main` at `ce46a29e1b`, including the upstream

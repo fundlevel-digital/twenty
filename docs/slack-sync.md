@@ -1,6 +1,6 @@
 # Slack sync
 
-Updated 2026-11-21. This documents the Slack MVP in this branch and its local preview, not a production rollout. Owner choices and their exchanges are recorded in the [Slack decision index](decisions/slack/DECISIONS.md). The app's [README](../packages/twenty-apps/internal/slack-sync/README.md) owns installation details and required scopes.
+Updated 2026-11-21. This documents the Slack MVP and its preview history. The updated core and Slack Sync app were installed live in the [combined rollout](handoffs/2026-11-21-live-crm-rollout.md); native OAuth and live events remain pending at the owner’s request. Owner choices and their exchanges are recorded in the [Slack decision index](decisions/slack/DECISIONS.md). The app's [README](../packages/twenty-apps/internal/slack-sync/README.md) owns installation details and required scopes.
 
 ## Current state
 
@@ -153,7 +153,7 @@ Verified in the local VM:
 
 After integrating main, 330 focused tests pass: 77 app, 127 server, 46 frontend, 71 CLI and 9 SDK. App typecheck/lint and the scoped frontend typecheck pass. The expanded scoped server typecheck reports four diagnostics in files unchanged from main: missing semver declarations and error `status` typing. Do not describe the full monorepo typecheck as passing.
 
-Still needed for a live rollout: configure the installed app's own Slack credentials and callback/events URLs, complete native OAuth, verify live event delivery and membership changes, apply the fork's required upgrades to the target instance, and deploy the fork/app there. Use the current-version migration rules in Twenty's engineering instructions. Do not treat the VM snapshot or a connected Slack tool as native OAuth authorization.
+The core upgrade and application install are complete. Still needed for Slack activation: configure the installed app's own Slack credentials and callback/events URLs, complete native OAuth, verify live event delivery and membership changes, verify the configured live app against its target Slack workspace. Use the current-version migration rules in Twenty's engineering instructions. Do not treat the VM snapshot or a connected Slack tool as native OAuth authorization.
 
 The preview frontend, backend and worker are supervised. Their local scripts, credentials and private test artifacts are gitignored under `.context`; credentials and actual customer message bodies must never be copied into these docs or decision records.
 

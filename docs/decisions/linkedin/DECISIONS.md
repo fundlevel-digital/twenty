@@ -19,7 +19,9 @@ choices are identified separately from Kareem's decisions.
 | [0009](0009-cancel-the-production-deployment.md) | 2026-11-21 | Cancel deployment while retaining the completed merge and push | superseded by repository 0005 |
 
 See the [app handoff](../../../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md)
-for verified completion, preview limitations and production status. Record 0009 cancels the production deployment authorization from 0008;
-the rebuild remains preview-only.
+for verified completion, preview limitations and production status. Record 0009
+previously cancelled deployment; repository decision 0005 supersedes that cancellation.
+The migration-stage app is now installed in production, with native connection,
+message migration and final pruning still pending.
 
 [Repository decision 0005](../0005-roll-out-six-sessions-to-live-crm.md) resumes production rollout on 2026-11-21.
