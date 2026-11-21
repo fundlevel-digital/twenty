@@ -59,7 +59,12 @@ field prefix/description; existing conflicting user fields are not overwritten.
 
 ## Stored Fields And Calculations
 
-Identity includes name, channel ID, handle, URL and uploads playlist ID. Audience
+Identity includes name, channel ID, handle, URL and uploads playlist ID. Each
+refresh imports the largest available channel photo into the native Avatar file
+field. Unchanged photos are reused. Missing photos or failed imports preserve the
+previous avatar and do not block metric updates. Avatar URL tracks the last
+successfully imported source image. Downloads have a 2 MB limit and each request
+has a 10-second timeout. Audience
 includes public subscribers, or empty when unavailable. Posting fields include
 last post date and posts per month. Refresh fields include enabled, status, error,
 statistics date, last successful calculation timestamp, and the recent-video
@@ -89,6 +94,9 @@ New requests rotate across healthy keys. Network, 429, 5xx and Google rate-limit
 failures retry the same key up to four attempts, with 4/8/16-second backoffs and
 longer Retry-After delays honored. Invalid, restricted or quota-exhausted keys
 are skipped for that run. Errors identify connection IDs, never secret keys.
+After transient retries are exhausted, the affected channel fails and keeps its
+previous metrics; that request does not switch keys. Unavailable-key tracking is
+in memory for the current run and resets on the next run.
 
 Enable YouTube Data API v3 in the keys' Google Cloud projects. Multiple keys from
 the same project share its quota. Additional keys do not increase that project's

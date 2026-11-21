@@ -3,4 +3,6 @@ import { type YoutubeChannelRecordIdentity } from 'src/logic-functions/types/you
 export type AnalyticsEntry = Omit<YoutubeChannelRecordIdentity, 'recordId'> & {
   id: string;
   name: string | null;
+  avatarUrl: string | null;
+  hasAvatar: boolean;
 };

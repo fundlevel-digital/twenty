@@ -28,7 +28,15 @@ type YoutubeClientOptions = {
 
 type YoutubeChannelResource = {
   id?: string;
-  snippet?: { title?: string; customUrl?: string };
+  snippet?: {
+    title?: string;
+    customUrl?: string;
+    thumbnails?: {
+      default?: { url?: string };
+      medium?: { url?: string };
+      high?: { url?: string };
+    };
+  };
   contentDetails?: { relatedPlaylists?: { uploads?: string } };
   statistics?: {
     subscriberCount?: string;
@@ -241,10 +249,18 @@ export class YoutubeClient {
         ? null
         : Number(item.statistics?.subscriberCount ?? 0);
 
+    const thumbnails = item.snippet?.thumbnails;
+    const avatarUrl = [
+      thumbnails?.high?.url,
+      thumbnails?.medium?.url,
+      thumbnails?.default?.url,
+    ].find(isNonEmptyString);
+
     return {
       recordId,
       channelId,
       uploadsPlaylistId,
+      avatarUrl: avatarUrl ?? null,
       title: isNonEmptyString(item.snippet?.title) ? item.snippet.title : null,
       handle:
         item.snippet?.customUrl?.startsWith('@') === true
