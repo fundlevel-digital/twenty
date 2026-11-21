@@ -133,7 +133,7 @@ ambiguous matching and concurrent updates. The real preview database was also
 used to verify create/update, stale replay protection and contact/calendar links.
 The bundled preview host exposes the shared-workspace connection card. Its older
 frontend does not expose the newer personal App Preferences routes in this
-checkout. Live OAuth authorization, webhook registration and a 100-booking import are
+checkout. Preview OAuth authorization, webhook registration and a 100-booking import are
 verified. A repeated import retained 100 distinct real booking UIDs. Token refresh
 and external webhook delivery remain unverified; the preview edge rejects
 external POSTs.
@@ -164,5 +164,16 @@ new frontend bundle.
 The sync role includes the legacy Person write grant because scoped app tokens
 still derive creation permission from that grant. Actual sync code creates
 missing People only when enabled; it never updates existing People's names or
-emails. Live verification with the owner's two selected links linked 39 bookings
+emails. Preview verification with the owner's two selected links linked 39 bookings
 to 28 People without assigning repeated emails to multiple Person records.
+
+
+### Production Installation
+
+[PR #16](https://github.com/fundlevel-digital/twenty/pull/16) is merged, and the
+app from commit `a07620c917d9b2df5c036df9c58665b7c623fe1a` is installed at
+`https://crm-login.fundlevel.co`. Both live OAuth variables are filled. Live
+account consent and imports remain pending verification; the verified 100-booking
+import and 39 Person links above belong to the isolated preview. See the
+[release handoff](../../../../docs/handoffs/2026-11-21-cal-com-preview.md#production-release)
+for deployment evidence and remaining setup.

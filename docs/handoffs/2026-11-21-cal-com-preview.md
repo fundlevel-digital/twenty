@@ -1,7 +1,9 @@
 # Cal.com OAuth App And Preview
 
-Date: 2026-11-21. Source implementation and an isolated preview are complete;
-no production deployment or real Cal.com account authorization was performed.
+Date: 2026-11-21. The app is merged and installed in the live CRM. Preview
+OAuth and imports are verified. Live credentials are filled, but live account
+consent and imports remain unverified; see the production release section below.
+Earlier sections preserve the successive preview verification stages.
 
 ## Implementation
 
@@ -232,3 +234,43 @@ Secondary email addresses and additional guests are not matched. Bookings outsid
 the saved watched-link/history selection are preserved without being reprocessed.
 All inspection and documentation use aggregate counts; no customer records or
 credentials are included here.
+
+
+## Production Release
+
+On 2026-11-21, [PR #16](https://github.com/fundlevel-digital/twenty/pull/16)
+merged as `a07620c917d9b2df5c036df9c58665b7c623fe1a`. Direct TypeScript,
+app lint, SDK build and 38 behavior tests passed before release. The production
+package was installed with SDK/CLI 2.59.0 from that merged commit, using the
+owner's saved native CLI authentication. The Conductor proxy fixture was excluded.
+
+The initial production apply created 137 metadata entries, updated/deleted none,
+and reported no destructive changes. A subsequent plan reported zero changes.
+The installed application is `4cf5da81-7345-405c-8631-0e05e1204b96`, with
+registration `4616fe48-76bd-4bde-9dc6-cdfdd1bbc83d` on
+`https://crm-login.fundlevel.co`. Ten logic functions, the six-hour reconciliation
+schedule and the booking GraphQL schema were verified. No core image deployment
+or production database reset was required.
+
+The production webhook handler is publicly reachable: a request with an unknown
+connection returns its expected 404 response. The authenticated settings route
+returns 200 directly at `/s/cal-com/settings`; no preview routing workaround is
+needed in production. This establishes endpoint reachability, not signed delivery
+from Cal.com.
+
+Kareem reported: "Configured live credentials and connected". A native metadata
+query selecting only credential keys and `isFilled`/`isSecret` confirmed both
+live OAuth variables are filled. At 23:38 UTC, the settings API and read-only
+aggregate queries across both Cal.com providers still found zero saved live
+connections; the booking count was zero. The owner was asked whether Add
+Connection completed and whether the Cal.com client contains the live callback:
+`https://crm-login.fundlevel.co/auth/apps/callback`. No secret values were read,
+transferred or recorded. Live consent, registration of its Cal.com webhook and
+initial import remain pending verification.
+
+The preview connection and saved watched-link/contact preferences are isolated;
+they are not copied into production. A new connection defaults to all links,
+all history and matching existing People, with missing-Person creation disabled.
+After connecting live, review **Configure Cal.com**, save the desired links and
+contact preferences, then run **Sync Now**. Existing imported records are never
+deleted when the selection changes.
