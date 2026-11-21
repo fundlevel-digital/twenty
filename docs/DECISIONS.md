@@ -7,6 +7,7 @@ supersession. Operational instructions stay with their package or skill.
 
 | Area | Index | Implementation And Handoff |
 | --- | --- | --- |
+| Cal.com | [Decisions](decisions/cal-com/DECISIONS.md) | [App README](../packages/twenty-apps/public/cal-com/README.md) |
 | Slack Sync | [Decisions](decisions/slack/DECISIONS.md) | [Implementation](slack-sync.md) |
 | LinkedIn Sync | [Decisions](decisions/linkedin/DECISIONS.md) | [App README](../packages/twenty-apps/internal/fundlevel-linkedin/README.md), [handoff](../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md) |
 | YouTube Analytics | [Decisions](decisions/youtube-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/youtube-analytics/README.md), [handoff](../packages/twenty-apps/internal/youtube-analytics/HANDOFF.md) |
