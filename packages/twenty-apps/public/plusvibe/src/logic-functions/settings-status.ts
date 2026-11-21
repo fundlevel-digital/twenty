@@ -48,13 +48,31 @@ export const settingsStatusHandler = async () => {
   }
   const jobIds = Object.entries(imports).flatMap(([workspaceId, value]) => {
     const state = value as PlusvibeImportState | null;
-    return state &&
-      ['campaigns', 'leads', 'emails', 'archivedEmails'].includes(state.phase)
-      ? [
-          `plusvibe-${workspaceId}-${state.runId}-${state.phase}-${state.cursor ?? 'start'}`,
-        ]
-      : [];
+    if (!state) return [];
+    const phases = ['campaigns', 'leads', 'emails', 'archivedEmails'];
+    return (
+      state.phase === 'failed'
+        ? phases
+        : phases.filter((phase) => phase === state.phase)
+    ).map(
+      (phase) =>
+        `plusvibe-${workspaceId}-${state.runId}-${phase}-${state.cursor ?? 'start'}`,
+    );
   });
+  const emailFailures: NonNullable<PlusvibeSettingsStatus['emailFailures']> =
+    Object.fromEntries(
+      await Promise.all(
+        selectedWorkspaceIds.map(async (workspaceId) => [
+          workspaceId,
+          await kv.get<{ runId: string; failedAt: string; jobId?: string }>(
+            getEmailFailureKey(workspaceId),
+          ),
+        ]),
+      ),
+    );
+  for (const failure of Object.values(emailFailures)) {
+    if (failure?.jobId) jobIds.push(failure.jobId);
+  }
   const jobs = jobIds.length > 0 ? await getJobs(jobIds) : [];
   const status: PlusvibeSettingsStatus = {
     isApiKeySet,
@@ -62,16 +80,7 @@ export const settingsStatusHandler = async () => {
     hasAccountError,
     isMailConnected:
       isApiKeySet && !hasAccountError && Boolean(await findMailConnection()),
-    emailFailures: Object.fromEntries(
-      await Promise.all(
-        selectedWorkspaceIds.map(async (workspaceId) => [
-          workspaceId,
-          await kv.get<{ runId: string; failedAt: string }>(
-            getEmailFailureKey(workspaceId),
-          ),
-        ]),
-      ),
-    ),
+    emailFailures,
     workspaces,
     selectedWorkspaceIds,
     imports,

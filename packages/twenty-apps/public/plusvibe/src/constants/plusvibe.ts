@@ -55,7 +55,10 @@ export type PlusvibeSettingsStatus = {
   isMailConnected?: boolean;
   accountConnectionId?: string;
   hasAccountError?: boolean;
-  emailFailures?: Record<string, { runId: string; failedAt: string } | null>;
+  emailFailures?: Record<
+    string,
+    { runId: string; failedAt: string; jobId?: string } | null
+  >;
   isApiKeySet: boolean;
   workspaces: PlusvibeWorkspace[];
   selectedWorkspaceIds: string[];

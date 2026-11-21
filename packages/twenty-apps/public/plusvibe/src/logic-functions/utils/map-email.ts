@@ -24,6 +24,8 @@ const EMAIL_SCHEMA = z.looseObject({
   sender_email: TEXT,
   from_address_email: TEXT,
   from_email: TEXT,
+  to_address_email_list: TEXT,
+  to_address_json: z.array(z.object({ address: TEXT })).nullish(),
   thread_id: TEXT,
   last_thread_id: TEXT,
   sent_on: TEXT,
@@ -48,6 +50,7 @@ export const mapEmail = (
   workspaceName: string,
   leadEmail?: string,
   campaignEmail = false,
+  fallbackSender?: string,
 ): NativeEmail => {
   const email = EMAIL_SCHEMA.parse(value);
   if (
@@ -55,12 +58,52 @@ export const mapEmail = (
     email.workspace_id !== workspaceId
   )
     throw new Error('Foreign PlusVibe email workspace');
+  const account = [
+    email.eaccount,
+    email.email_account_name,
+    email.sender_email,
+  ].find(isNonEmptyString);
+  const sourceLead = [
+    leadEmail,
+    email.lead,
+    email.lead_email,
+    email.email,
+  ].find(isNonEmptyString);
+  const from = [email.from_address_email, email.from_email].find(
+    isNonEmptyString,
+  );
+  const recipient = [
+    ...(email.to_address_json?.map(({ address }) => address) ?? []),
+    ...(email.to_address_email_list?.split(',').map((value) => value.trim()) ??
+      []),
+  ].find((value) => z.email().safeParse(value).success);
+  const sourceDirection = (email.direction ?? email.type)?.toUpperCase();
+  const direction =
+    campaignEmail ||
+    ['OUT', 'OUTBOUND', 'OUTGOING', 'SENT'].includes(sourceDirection ?? '')
+      ? 'OUT'
+      : ['IN', 'INBOUND', 'INCOMING', 'RECEIVED'].includes(
+            sourceDirection ?? '',
+          )
+        ? 'IN'
+        : isNonEmptyString(from) && isNonEmptyString(account)
+          ? from.toLowerCase() === account.toLowerCase()
+            ? 'OUT'
+            : 'IN'
+          : undefined;
+  if (!direction) throw new Error('PlusVibe email direction is missing');
   const sender =
-    email.eaccount ?? email.email_account_name ?? email.sender_email;
-  const lead = leadEmail ?? email.lead ?? email.lead_email ?? email.email;
-  const identifier = email.message_id ?? email.id ?? email._id;
-  const receivedAt =
-    email.sent_on ?? email.timestamp_created ?? email.date ?? email.modified_at;
+    account ?? (direction === 'OUT' ? from : recipient) ?? fallbackSender;
+  const lead = sourceLead ?? (direction === 'OUT' ? recipient : from);
+  const identifier = [email.message_id, email.id, email._id].find(
+    isNonEmptyString,
+  );
+  const receivedAt = [
+    email.sent_on,
+    email.timestamp_created,
+    email.date,
+    email.modified_at,
+  ].find(isNonEmptyString);
   if (
     !isNonEmptyString(sender) ||
     !isNonEmptyString(lead) ||
@@ -68,7 +111,14 @@ export const mapEmail = (
     !isNonEmptyString(receivedAt)
   )
     throw new Error(
-      'PlusVibe email is missing identity, participants or timestamp',
+      `PlusVibe email is missing: ${[
+        !isNonEmptyString(sender) && 'sender',
+        !isNonEmptyString(lead) && 'lead',
+        !isNonEmptyString(identifier) && 'identifier',
+        !isNonEmptyString(receivedAt) && 'receivedAt',
+      ]
+        .filter(Boolean)
+        .join(', ')}`,
     );
   const plainText =
     email.text_body ??
@@ -81,18 +131,6 @@ export const mapEmail = (
     : isNonEmptyString(html)
       ? convert(html, { wordwrap: false })
       : (email.content_preview ?? '');
-  const from = email.from_address_email ?? email.from_email;
-  const direction =
-    campaignEmail || email.type === 'sent' || email.direction === 'OUT'
-      ? 'OUT'
-      : email.type === 'received' || email.direction === 'IN'
-        ? 'IN'
-        : isNonEmptyString(from)
-          ? from.toLowerCase() === sender.toLowerCase()
-            ? 'OUT'
-            : 'IN'
-          : undefined;
-  if (!direction) throw new Error('PlusVibe email direction is missing');
   return {
     externalId: normalizeMessageId(identifier),
     workspaceId,

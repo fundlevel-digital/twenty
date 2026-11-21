@@ -19,6 +19,50 @@ const CAMPAIGN_EMAIL = {
 };
 
 describe('PlusVibe email API formats', () => {
+  it('recovers incoming participants from headers when source account and lead are blank', () => {
+    expect(
+      mapEmail(
+        {
+          ...CAMPAIGN_EMAIL,
+          direction: 'IN',
+          eaccount: '',
+          lead: '',
+          from_address_email: 'lead@example.com',
+          to_address_json: [{ address: 'sender@example.com' }],
+        },
+        'workspace-1',
+        'Sales',
+      ),
+    ).toMatchObject({
+      direction: 'IN',
+      sender: 'sender@example.com',
+      leadEmail: 'lead@example.com',
+    });
+  });
+
+  it('recovers outgoing participants and falls back to the provider record identity', () => {
+    expect(
+      mapEmail(
+        {
+          ...CAMPAIGN_EMAIL,
+          direction: 'OUT',
+          eaccount: '',
+          lead: '',
+          message_id: '',
+          from_address_email: 'sender@example.com',
+          to_address_email_list: 'lead@example.com',
+        },
+        'workspace-1',
+        'Sales',
+      ),
+    ).toMatchObject({
+      direction: 'OUT',
+      sender: 'sender@example.com',
+      leadEmail: 'lead@example.com',
+      externalId: 'provider-message',
+    });
+  });
+
   it('accepts legacy campaign arrays without dropping records', () => {
     expect(PAGE_SCHEMA.parse([{ id: 'campaign-1' }])).toMatchObject({
       data: [{ id: 'campaign-1' }],

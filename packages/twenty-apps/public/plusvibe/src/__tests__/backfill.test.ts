@@ -1,13 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { values, plusvibeRequest, syncPerson, syncCampaign, enqueueImportPage } =
-  vi.hoisted(() => ({
-    values: new Map<string, unknown>(),
-    plusvibeRequest: vi.fn(),
-    syncPerson: vi.fn(),
-    syncCampaign: vi.fn(),
-    enqueueImportPage: vi.fn(),
-  }));
+const {
+  values,
+  plusvibeRequest,
+  syncPerson,
+  syncCampaign,
+  enqueueImportPage,
+  findMailConnection,
+  enqueueLeadEmails,
+} = vi.hoisted(() => ({
+  values: new Map<string, unknown>(),
+  plusvibeRequest: vi.fn(),
+  syncPerson: vi.fn(),
+  syncCampaign: vi.fn(),
+  enqueueImportPage: vi.fn(),
+  findMailConnection: vi.fn(),
+  enqueueLeadEmails: vi.fn(),
+}));
 vi.mock('twenty-sdk/logic-function', async (importOriginal) => ({
   ...(await importOriginal<typeof import('twenty-sdk/logic-function')>()),
   kv: {
@@ -35,14 +44,14 @@ import {
   SELECTION_KEY,
 } from 'src/constants/plusvibe';
 vi.mock('src/logic-functions/utils/native-email', () => ({
-  findMailConnection: async () => undefined,
+  findMailConnection,
   syncNativeEmail: vi.fn(),
 }));
 vi.mock('src/logic-functions/utils/sync-workspace', () => ({
   syncWorkspace: vi.fn(),
 }));
 vi.mock('src/logic-functions/lead-emails', () => ({
-  enqueueLeadEmails: vi.fn(),
+  enqueueLeadEmails,
 }));
 
 import { backfillHandler } from 'src/logic-functions/backfill';
@@ -65,6 +74,7 @@ const CONTEXT = {
 beforeEach(() => {
   vi.clearAllMocks();
   values.clear();
+  findMailConnection.mockResolvedValue(undefined);
   values.set(SELECTION_KEY, [WORKSPACE_ID]);
   values.set(getRegistrationKey(WORKSPACE_ID), {
     workspaceName: 'Test',
@@ -78,6 +88,31 @@ beforeEach(() => {
 });
 
 describe('PlusVibe paginated import', () => {
+  it('spaces out lead history jobs before starting another discovery page', async () => {
+    findMailConnection.mockResolvedValue({ id: 'connection' });
+    plusvibeRequest.mockResolvedValueOnce({
+      data: [{ email: 'first@example.com' }, { email: 'second@example.com' }],
+      has_more: true,
+      next_starting_after: 'next',
+    });
+    await backfillHandler(PAYLOAD, CONTEXT);
+    expect(enqueueLeadEmails).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ leadEmail: 'first@example.com' }),
+      2000,
+    );
+    expect(enqueueLeadEmails).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ leadEmail: 'second@example.com' }),
+      5000,
+    );
+    expect(enqueueImportPage).toHaveBeenCalledWith(
+      WORKSPACE_ID,
+      expect.objectContaining({ cursor: 'next' }),
+      8000,
+    );
+  });
+
   it('imports a page and checkpoints its cursor', async () => {
     plusvibeRequest.mockResolvedValueOnce({
       data: [{ email: 'lead@example.com', workspace_id: WORKSPACE_ID }],
@@ -93,7 +128,8 @@ describe('PlusVibe paginated import', () => {
     expect(enqueueImportPage).toHaveBeenCalledOnce();
   });
 
-  it('moves from campaigns to leads and email history', async () => {
+  it('imports conversations before scanning the full lead directory', async () => {
+    findMailConnection.mockResolvedValue({ id: 'connection' });
     values.set(getImportKey(WORKSPACE_ID), {
       runId: 'run-1',
       phase: 'campaigns',
@@ -108,12 +144,35 @@ describe('PlusVibe paginated import', () => {
       expect.objectContaining({ name: 'Outreach' }),
     );
     expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
+      phase: 'emails',
+    });
+    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
+    await backfillHandler({ ...PAYLOAD, phase: 'emails' }, CONTEXT);
+    expect(plusvibeRequest).toHaveBeenLastCalledWith(
+      '/unibox/emails',
+      expect.anything(),
+      {
+        query: {
+          workspace_id: WORKSPACE_ID,
+          starting_after: '',
+          email_type: 'all',
+          preview_only: 'false',
+        },
+        retryRateLimits: true,
+      },
+    );
+    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
+      phase: 'archivedEmails',
+    });
+    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
+    await backfillHandler({ ...PAYLOAD, phase: 'archivedEmails' }, CONTEXT);
+    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
       phase: 'leads',
     });
     plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
     await backfillHandler(PAYLOAD, CONTEXT);
     expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'emails',
+      phase: 'complete',
     });
   });
 

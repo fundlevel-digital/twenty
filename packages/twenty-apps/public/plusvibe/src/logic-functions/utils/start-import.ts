@@ -11,6 +11,7 @@ import { BACKFILL_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifie
 export const enqueueImportPage = async (
   workspaceId: string,
   state: PlusvibeImportState,
+  delayMilliseconds = 2000,
 ) => {
   const result = await enqueueJobs({
     logicFunctionUniversalIdentifier: BACKFILL_UNIVERSAL_IDENTIFIER,
@@ -26,7 +27,7 @@ export const enqueueImportPage = async (
       },
     ],
     retryLimit: 3,
-    delayMs: 2000,
+    delayMs: delayMilliseconds,
   });
   if (!result.enqueued) throw new Error('Could not queue PlusVibe import');
 };
@@ -36,7 +37,7 @@ export const startImport = async (workspaceId: string, force = false) => {
   if (
     current &&
     !force &&
-    current.version === 2 &&
+    current.version === 3 &&
     ['campaigns', 'leads', 'emails', 'archivedEmails'].includes(
       current.phase,
     ) &&
@@ -48,7 +49,7 @@ export const startImport = async (workspaceId: string, force = false) => {
     if (job && !['COMPLETED', 'FAILED'].includes(job.state)) return;
   }
   const state: PlusvibeImportState = {
-    version: 2,
+    version: 3,
     runId: randomUUID(),
     phase: 'campaigns',
     processed: 0,

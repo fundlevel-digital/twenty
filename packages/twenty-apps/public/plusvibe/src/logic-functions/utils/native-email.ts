@@ -24,6 +24,9 @@ import {
 import { syncWorkspace } from 'src/logic-functions/utils/sync-workspace';
 import { type PlusvibeLead } from 'src/logic-functions/utils/normalize-event';
 
+const MAX_NATIVE_EMAIL_TEXT_LENGTH = 262_144;
+const MAX_NATIVE_EMAIL_SUBJECT_LENGTH = 998;
+
 export type NativeEmail = {
   externalId: string;
   workspaceId: string;
@@ -260,8 +263,8 @@ export const syncNativeEmail = async (email: NativeEmail) => {
       {
         externalId: `${email.workspaceId}:${email.externalId}`,
         threadExternalId: `${email.workspaceId}:${nativeThreadExternalId}`,
-        subject: email.subject,
-        text: email.text,
+        subject: email.subject.slice(0, MAX_NATIVE_EMAIL_SUBJECT_LENGTH),
+        text: email.text.slice(0, MAX_NATIVE_EMAIL_TEXT_LENGTH),
         receivedAt: new Date(email.receivedAt),
         participants: [
           {

@@ -5,11 +5,13 @@ import {
 import {
   ACTIVITY_NAVIGATION_UNIVERSAL_IDENTIFIER,
   ACTIVITY_UNIVERSAL_IDENTIFIER,
+  FOLDER_NAVIGATION_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineNavigationMenuItem({
   universalIdentifier: ACTIVITY_NAVIGATION_UNIVERSAL_IDENTIFIER,
   type: NavigationMenuItemType.OBJECT,
-  position: 1,
+  parentUniversalIdentifier: FOLDER_NAVIGATION_UNIVERSAL_IDENTIFIER,
+  position: 4,
   targetObjectUniversalIdentifier: ACTIVITY_UNIVERSAL_IDENTIFIER,
 });

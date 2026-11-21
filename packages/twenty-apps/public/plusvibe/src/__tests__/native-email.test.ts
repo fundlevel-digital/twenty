@@ -116,6 +116,20 @@ beforeEach(() => {
 });
 
 describe('Native PlusVibe emails', () => {
+  it('keeps oversized emails within native ingestion limits', async () => {
+    await syncNativeEmail({
+      ...EMAIL,
+      text: 'x'.repeat(262_145),
+      subject: 's'.repeat(999),
+    });
+    expect(ingestMessages.mock.calls[0][0].messages[0].text).toHaveLength(
+      262_144,
+    );
+    expect(ingestMessages.mock.calls[0][0].messages[0].subject).toHaveLength(
+      998,
+    );
+  });
+
   it('retains the source lead identity when a reply uses an alternate address', async () => {
     await syncNativeEmail({
       ...EMAIL,

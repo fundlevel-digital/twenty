@@ -69,10 +69,20 @@ labels are categorized as Other.
 
 ## Import and live updates
 
-Campaigns and leads import in checkpointed pages. Each lead queues an import of
-its campaign-sent email history. A separate pass imports Unibox messages and
-archived messages. Bodies are converted to plain text for Twenty's native email
-renderer. Attachments are not imported yet.
+Campaigns, Unibox messages, archived messages, and leads import in checkpointed
+pages, in that order. Conversations appear before the full lead directory has
+been scanned. Each lead queues an import of its campaign-sent email history.
+History jobs are spaced out, and background requests back off on provider rate
+limits. Bodies are converted to plain text for Twenty's native email
+renderer. Imported bodies are capped at Twenty's 262,144-character ingestion
+limit so a very large email does not stop the history import. The full original
+remains in PlusVibe. Attachments are not imported yet.
+
+When PlusVibe leaves sender or lead fields blank, Unibox participants are
+recovered from the email headers. Campaign history without a sender uses an
+existing conversation only when the same workspace, campaign, and person have
+one unambiguous sender. Missing or ambiguous sender history is reported as a
+failed email job rather than assigned an invented address.
 
 New sends and replies arrive through signed webhooks. HMAC-SHA256 is checked
 against the exact raw body before any message writes. Selected workspace and
@@ -123,5 +133,6 @@ Protocol references: [workspaces](https://developer.plusvibe.ai/get-workspaces-3
 [webhooks](https://developer.plusvibe.ai/webhooks-overview-2268181m0).
 
 An application manager can execute `plusvibe-sync-health` with a selected
-`workspaceId` to check source pagination and native message/thread counts without
-returning contact records or email content.
+`workspaceId` to check source pagination, email mapping, and native message/thread
+counts without returning contact records or email content. Settings status also
+includes failed discovery and email-history queue jobs for troubleshooting.

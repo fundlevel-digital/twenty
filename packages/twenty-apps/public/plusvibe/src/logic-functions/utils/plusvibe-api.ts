@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { setTimeout } from 'node:timers/promises';
 import { isNonEmptyString, isObject } from '@sniptt/guards';
 import { z } from 'zod';
 import { kv, listConnections } from 'twenty-sdk/logic-function';
@@ -59,24 +60,60 @@ export const plusvibeRequest = async <TData>(
     body?: unknown;
     query?: Record<string, string>;
     apiKey?: string;
+    retryRateLimits?: boolean;
   } = {},
 ): Promise<TData> => {
   const url = new URL(`${PLUSVIBE_API_URL}${path}`);
   for (const [key, value] of Object.entries(options.query ?? {})) {
     url.searchParams.set(key, value);
   }
-  const response = await fetch(url, {
+  const request = {
     method: options.method ?? 'GET',
     headers: {
       'x-api-key': options.apiKey ?? (await getApiKey()),
       'Content-Type': 'application/json',
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    signal: AbortSignal.timeout(20_000),
-  });
+  };
+  let response: globalThis.Response;
+  for (let attempt = 0; ; attempt++) {
+    response = await fetch(url, {
+      ...request,
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (response.status !== 429 || !options.retryRateLimits || attempt >= 3)
+      break;
+    const retryAfter = response.headers.get('retry-after');
+    const retryAfterMilliseconds = retryAfter
+      ? Number.isFinite(Number(retryAfter))
+        ? Number(retryAfter) * 1000
+        : Date.parse(retryAfter) - Date.now()
+      : 0;
+    const delayMilliseconds = Math.min(
+      60_000,
+      Math.max(15_000 * 2 ** attempt, retryAfterMilliseconds || 0),
+    );
+    await response.body?.cancel();
+    await setTimeout(delayMilliseconds + Math.random() * 1000);
+  }
   if (!response.ok) {
     // Provider response bodies can echo credentials or lead data.
-    throw new Error(`PlusVibe request failed (${response.status})`);
+    const details =
+      response.status === 400
+        ? JSON.stringify(await response.json().catch(() => null))
+        : '';
+    const rejectedFields = [
+      'starting_after',
+      'limit',
+      'email_type',
+      'preview_only',
+      'workspace_id',
+      'api_key',
+      'Invalid API key',
+    ].filter((field) => details.includes(field));
+    throw new Error(
+      `PlusVibe request failed (${response.status})${rejectedFields.length ? `: ${rejectedFields.join(', ')}` : ''}`,
+    );
   }
   const result: unknown = await response.json();
   if (isObject(result) && 'status' in result && result.status === 'error') {

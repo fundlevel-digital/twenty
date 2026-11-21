@@ -2,11 +2,16 @@ import { RestApiClient } from 'twenty-client-sdk/rest';
 import { defineLogicFunction } from 'twenty-sdk/define';
 import { kv, Response } from 'twenty-sdk/logic-function';
 import { z } from 'zod';
+import { isNonEmptyString } from '@sniptt/guards';
 
 import { SELECTION_KEY } from 'src/constants/plusvibe';
 import { canManageApplication } from 'src/logic-functions/utils/require-application-manager';
-import { CURSOR_PAGE_SCHEMA } from 'src/logic-functions/utils/page-schema';
+import {
+  CURSOR_PAGE_SCHEMA,
+  PAGE_SCHEMA,
+} from 'src/logic-functions/utils/page-schema';
 import { plusvibeRequest } from 'src/logic-functions/utils/plusvibe-api';
+import { mapEmail } from 'src/logic-functions/utils/map-email';
 
 const inspectPagination = async (path: string, workspaceId: string) => {
   const query = { workspace_id: workspaceId, limit: '10' };
@@ -49,6 +54,50 @@ export const syncHealthHandler = async (payload: unknown) => {
     );
   const campaigns = await inspectPagination('/campaign/list-all', workspaceId);
   const leads = await inspectPagination('/lead/workspace-leads', workspaceId);
+  const emails = await plusvibeRequest('/unibox/emails', PAGE_SCHEMA, {
+    query: {
+      workspace_id: workspaceId,
+      starting_after: '',
+      email_type: 'all',
+      preview_only: 'false',
+    },
+  });
+  const emailFields = Object.fromEntries(
+    Object.entries(
+      z.record(z.string(), z.unknown()).parse(emails.data[0] ?? {}),
+    ).map(([field, value]) => [
+      field,
+      { type: typeof value, nonEmpty: isNonEmptyString(value) },
+    ]),
+  );
+  let firstEmail: ReturnType<typeof mapEmail> | undefined;
+  const mappingErrors = emails.data.map((value) => {
+    try {
+      const email = mapEmail(value, workspaceId, '');
+      firstEmail ??= email;
+      return {
+        validSender: z.email().safeParse(email.sender).success,
+        validLead: z.email().safeParse(email.leadEmail).success,
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Mapping failed',
+      };
+    }
+  });
+  const campaignEmails = firstEmail
+    ? await plusvibeRequest('/unibox/campaign-emails', PAGE_SCHEMA, {
+        query: { workspace_id: workspaceId, lead: firstEmail.leadEmail },
+      })
+    : undefined;
+  const campaignEmailFields = Object.fromEntries(
+    Object.entries(
+      z.record(z.string(), z.unknown()).parse(campaignEmails?.data[0] ?? {}),
+    ).map(([field, value]) => [
+      field,
+      { type: typeof value, nonEmpty: isNonEmptyString(value) },
+    ]),
+  );
   const native = await new RestApiClient({ runAs: 'application' }).post(
     '/graphql',
     {
@@ -59,6 +108,11 @@ export const syncHealthHandler = async (payload: unknown) => {
   return {
     campaigns,
     leads,
+    emails: { count: emails.data.length, fields: emailFields, mappingErrors },
+    campaignEmails: {
+      count: campaignEmails?.data.length ?? 0,
+      fields: campaignEmailFields,
+    },
     native,
   };
 };

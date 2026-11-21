@@ -103,6 +103,8 @@ export const backfillHandler = async (
     };
     if (state.cursor) query.starting_after = state.cursor;
     if (state.phase === 'emails' || state.phase === 'archivedEmails') {
+      delete query.limit;
+      query.starting_after = state.cursor ?? '';
       query.email_type = 'all';
       query.preview_only = 'false';
     }
@@ -114,8 +116,9 @@ export const backfillHandler = async (
           ? '/lead/workspace-leads'
           : '/unibox/emails',
       CURSOR_PAGE_SCHEMA,
-      { query },
+      { query, retryRateLimits: true },
     );
+    let emailImportDelayMilliseconds = 2000;
     for (const data of page.data) {
       if (state.phase === 'campaigns') {
         const campaign = CAMPAIGN_SCHEMA.parse(data);
@@ -132,12 +135,13 @@ export const backfillHandler = async (
           throw new Error('PlusVibe returned a foreign workspace lead');
         if (!z.email().safeParse(lead.email).success) continue;
         await syncPerson(lead, workspaceId);
-        if (connection && lead.email)
-          await enqueueLeadEmails({
-            workspaceId,
-            runId,
-            leadEmail: lead.email,
-          });
+        if (connection && lead.email) {
+          await enqueueLeadEmails(
+            { workspaceId, runId, leadEmail: lead.email },
+            emailImportDelayMilliseconds,
+          );
+          emailImportDelayMilliseconds += 3000;
+        }
       } else {
         await syncNativeEmail(
           mapEmail(data, workspaceId, registration.workspaceName),
@@ -155,11 +159,11 @@ export const backfillHandler = async (
       phase: page.has_more
         ? state.phase
         : state.phase === 'campaigns'
-          ? 'leads'
-          : state.phase === 'leads'
-            ? 'emails'
-            : state.phase === 'emails'
-              ? 'archivedEmails'
+          ? 'emails'
+          : state.phase === 'emails'
+            ? 'archivedEmails'
+            : state.phase === 'archivedEmails'
+              ? 'leads'
               : 'complete',
       cursor: page.has_more
         ? (page.next_starting_after ?? undefined)
@@ -170,7 +174,8 @@ export const backfillHandler = async (
     const current = await kv.get<PlusvibeImportState>(key);
     if (current?.runId !== runId) return { skipped: true };
     await kv.set(key, next);
-    if (next.phase !== 'complete') await enqueueImportPage(workspaceId, next);
+    if (next.phase !== 'complete')
+      await enqueueImportPage(workspaceId, next, emailImportDelayMilliseconds);
     return { success: true };
   } catch (error) {
     if (error instanceof z.ZodError || context.retryCount >= context.maxRetries)
