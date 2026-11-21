@@ -5,6 +5,25 @@ Do not rename the branch or apply this rebuild to production without a separate
 production cutover request. Owner decisions and the exchange behind them are in
 [root docs](../../../../docs/decisions/linkedin/DECISIONS.md).
 
+## Latest Upstream Integration
+
+The branch incorporates `origin/main` at `ce46a29e1b`, including the upstream
+integration/computed-field editor and PlusVibe app. Shared decision indexes retain
+LinkedIn, YouTube, PlusVibe and repository records; root agent instructions are
+regenerated from all Ruler sources.
+
+Upstream changed permission principals from one `roleId` to `roleIds`. The source
+privacy fix now preserves every main-principal role share while excluding delegated
+application/agent role shares. A multi-role regression check accompanies the existing
+three cases. The isolated preview still runs the earlier, compatible single-role
+helper on its original image; do not copy the new multi-role helper into that old
+runtime. A future deployment must use the matching server/runtime version.
+Production deployment remains canceled under decision 0009.
+
+Verification after this integration: 287 app tests, 12 legacy tests and four
+core privacy tests pass (303 total), along with direct app typecheck/lint, core
+privacy lint and a focused typecheck using the current server/shared source types.
+
 ## Latest Branch And Deployment Status
 
 On 2026-11-21, `origin/main` was merged, conflicts resolved and the result pushed

@@ -8,7 +8,7 @@ describe('getPermissionsPrincipalsShareKeys', () => {
         mainPrincipal: {
           type: 'workspaceMember',
           workspaceMemberId: 'member',
-          roleId: 'member-role',
+          roleIds: ['member-role'],
         },
         applicationPrincipal: {
           type: 'application',
@@ -24,6 +24,29 @@ describe('getPermissionsPrincipalsShareKeys', () => {
     ).toEqual(['member', 'member-role']);
   });
 
+  it('preserves all caller role shares without adding delegated role shares', () => {
+    expect(
+      getPermissionsPrincipalsShareKeys({
+        workspaceId: 'workspace',
+        mainPrincipal: {
+          type: 'workspaceMember',
+          workspaceMemberId: 'member',
+          roleIds: ['member-role', 'additional-member-role', 'member-role'],
+        },
+        applicationPrincipal: {
+          type: 'application',
+          applicationId: 'application',
+          roleId: 'application-role',
+        },
+        limitingPrincipal: {
+          type: 'agent',
+          agentId: 'agent',
+          roleId: 'agent-role',
+        },
+      }),
+    ).toEqual(['member', 'member-role', 'additional-member-role']);
+  });
+
   it('preserves shares granted to an application acting on its own', () => {
     expect(
       getPermissionsPrincipalsShareKeys({
@@ -31,7 +54,7 @@ describe('getPermissionsPrincipalsShareKeys', () => {
         mainPrincipal: {
           type: 'application',
           applicationId: 'application',
-          roleId: 'application-role',
+          roleIds: ['application-role'],
         },
         applicationPrincipal: {
           type: 'application',
@@ -49,7 +72,7 @@ describe('getPermissionsPrincipalsShareKeys', () => {
         mainPrincipal: {
           type: 'apiKey',
           apiKeyId: 'key',
-          roleId: 'key-role',
+          roleIds: ['key-role'],
         },
         applicationPrincipal: {
           type: 'application',

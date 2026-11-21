@@ -17,7 +17,8 @@ export const getRecordFieldColumnDescriptor = ({
 }): RecordFieldColumnDescriptor => {
   const lookupTargetFieldMetadataItem =
     lookupTarget?.lookupTargetFieldMetadataItem;
-  const isLookupColumn = isDefined(lookupTarget);
+  const isUnsupportedLookup =
+    lookupTarget?.isMultiLevel === true || lookupTarget?.isMultiValued === true;
 
   return {
     lookupTarget,
@@ -28,8 +29,7 @@ export const getRecordFieldColumnDescriptor = ({
     description:
       lookupTargetFieldMetadataItem?.description ??
       fieldMetadataItem.description,
-    // Filter, sort and totals would act on the relation, not on the looked-up field
-    isFilterable: isFilterable && !isLookupColumn,
-    isSortable: isSortable && !isLookupColumn,
+    isFilterable: isFilterable && !isUnsupportedLookup,
+    isSortable: isSortable && !isUnsupportedLookup,
   };
 };

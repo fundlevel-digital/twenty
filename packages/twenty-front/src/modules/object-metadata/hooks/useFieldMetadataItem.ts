@@ -19,6 +19,7 @@ export const useFieldMetadataItem = () => {
       | 'label'
       | 'icon'
       | 'description'
+      | 'computation'
       | 'defaultValue'
       | 'type'
       | 'options'

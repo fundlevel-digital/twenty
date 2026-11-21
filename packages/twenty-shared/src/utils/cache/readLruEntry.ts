@@ -1,4 +1,4 @@
-import { isDefined } from '@/utils/validation/isDefined';
+import { isUndefined } from '@sniptt/guards';
 
 export const readLruEntry = <TKey, TValue>({
   map,
@@ -9,7 +9,7 @@ export const readLruEntry = <TKey, TValue>({
 }): TValue | undefined => {
   const value = map.get(key);
 
-  if (!isDefined(value)) {
+  if (isUndefined(value)) {
     return undefined;
   }
 

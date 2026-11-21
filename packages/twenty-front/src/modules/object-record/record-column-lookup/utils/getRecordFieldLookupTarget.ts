@@ -117,7 +117,9 @@ export const getRecordFieldLookupTarget = ({
   recordField,
   fieldMetadataItem,
   objectMetadataItems,
+  isLookupColumnsEnabled = true,
 }: {
+  isLookupColumnsEnabled?: boolean;
   recordField: Pick<
     RecordField,
     'relationTargetFieldMetadataId' | 'relationPathFieldMetadataIds'
@@ -125,7 +127,10 @@ export const getRecordFieldLookupTarget = ({
   fieldMetadataItem: FieldMetadataItem;
   objectMetadataItems: EnrichedObjectMetadataItem[];
 }): RecordFieldLookupTarget | undefined => {
-  if (!isDefined(recordField.relationTargetFieldMetadataId)) {
+  if (
+    !isLookupColumnsEnabled ||
+    !isDefined(recordField.relationTargetFieldMetadataId)
+  ) {
     return undefined;
   }
 

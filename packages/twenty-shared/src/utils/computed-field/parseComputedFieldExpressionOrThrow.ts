@@ -9,17 +9,22 @@ import { buildComputedFieldExpressionTreeOrThrow } from '@/utils/computed-field/
 
 const PARSED_EXPRESSION_CACHE_MAX_SIZE = 500;
 
-const parseOrThrow = memoizeLeastRecentlyUsed((expression) => {
-  try {
-    return buildComputedFieldExpressionTreeOrThrow(
-      computedFieldExpressionParser.parse(expression).tokens,
-    );
-  } catch (error) {
-    throw new ComputedFieldExpressionError(
-      error instanceof Error ? error.message : 'The expression cannot be read',
-    );
-  }
-}, PARSED_EXPRESSION_CACHE_MAX_SIZE);
+const parseOrThrow = memoizeLeastRecentlyUsed({
+  compute: (expression) => {
+    try {
+      return buildComputedFieldExpressionTreeOrThrow(
+        computedFieldExpressionParser.parse(expression).tokens,
+      );
+    } catch (error) {
+      throw new ComputedFieldExpressionError(
+        error instanceof Error
+          ? error.message
+          : 'The expression cannot be read',
+      );
+    }
+  },
+  maxEntries: PARSED_EXPRESSION_CACHE_MAX_SIZE,
+});
 
 export const parseComputedFieldExpressionOrThrow = (
   expression: string,

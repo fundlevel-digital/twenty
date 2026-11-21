@@ -31,6 +31,14 @@ Install from the `agent-skills` branch, which contains only the built app skills
 
 These are what a bare-repository listing (`npx skills add twentyhq/twenty --list`) returns. Use the `agent-skills` branch above for app development.
 
+## Recording local decisions
+
+The [decisions skill](.agents/skills/decisions/SKILL.md), adapted from
+`fundlevel-digital/mono`, preserves owner choices and their exchanges. Start at
+[docs/DECISIONS.md](docs/DECISIONS.md); the initial backfill covers PlusVibe only.
+Canonical skills live in `.agents/skills`; Claude and Pi use aliases. Shared
+agent rules come from `.ruler/` and regenerate with `yarn ruler:apply`.
+
 ## Shipped inside apps
 
 `packages/twenty-apps/**/src/skills` holds skills that a specific Twenty app ships to its users. They are part of that app, not of this collection.

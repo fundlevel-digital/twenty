@@ -6,13 +6,11 @@ import { isPermissionMainPrincipalWorkspaceMember } from 'src/engine/permissions
 export const getPermissionsPrincipalsShareKeys = (
   principals: PermissionsPrincipalsWithRolesContext,
 ): string[] => [
-  ...new Set(
-    [
-      ...(isPermissionMainPrincipalWorkspaceMember(principals.mainPrincipal)
-        ? [principals.mainPrincipal.workspaceMemberId]
-        : []),
-      // A delegated app or agent narrows the caller; its shares cannot expand caller access.
-      principals.mainPrincipal.roleId,
-    ],
-  ),
+  ...new Set([
+    ...(isPermissionMainPrincipalWorkspaceMember(principals.mainPrincipal)
+      ? [principals.mainPrincipal.workspaceMemberId]
+      : []),
+    // A delegated app or agent narrows the caller; its shares cannot expand caller access.
+    ...principals.mainPrincipal.roleIds,
+  ]),
 ];

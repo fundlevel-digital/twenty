@@ -5,6 +5,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { isDefined } from 'twenty-shared/utils';
 
 import { VALIDATION_RULE_HIGHLIGHT_CLASS_NAME_PREFIX } from '@/validation-rules/constants/ValidationRuleHighlightClassNamePrefix';
+import { type ExpressionEditorMode } from '@/validation-rules/types/ExpressionEditorMode';
 import { type ValidationRuleEditorSegment } from '@/validation-rules/types/ValidationRuleEditorSegment';
 import { type ValidationRuleFieldNodeAttributes } from '@/validation-rules/types/ValidationRuleFieldNodeAttributes';
 import { buildValidationRuleEditorParagraphContent } from '@/validation-rules/utils/buildValidationRuleEditorParagraphContent';
@@ -15,6 +16,7 @@ import { getValidationRuleEditorText } from '@/validation-rules/utils/getValidat
 import { readValidationRuleEditorSegments } from '@/validation-rules/utils/readValidationRuleEditorSegments';
 
 type ValidationRuleExpressionExtensionOptions = {
+  mode: ExpressionEditorMode;
   getFieldNodeAttributes: (
     path: string,
   ) => ValidationRuleFieldNodeAttributes | null;
@@ -32,11 +34,12 @@ export const ValidationRuleExpressionExtension =
     name: 'validationRuleExpression',
 
     addOptions: () => ({
+      mode: 'condition',
       getFieldNodeAttributes: () => null,
     }),
 
     addProseMirrorPlugins() {
-      const { getFieldNodeAttributes } = this.options;
+      const { getFieldNodeAttributes, mode } = this.options;
 
       return [
         new Plugin({
@@ -109,6 +112,7 @@ export const ValidationRuleExpressionExtension =
                 doc,
                 computeValidationRuleExpressionHighlights(
                   getValidationRuleEditorText(doc),
+                  mode,
                 ).flatMap(({ kind, start, end }) => {
                   const from = getValidationRuleEditorPositionFromTextOffset(
                     doc,

@@ -48,6 +48,7 @@ export const useUpdateOneFieldMetadataItem = () => {
       | 'isSearchable'
       | 'label'
       | 'name'
+      | 'computation'
       | 'defaultValue'
       | 'options'
       | 'settings'
