@@ -1,3 +1,7 @@
+
+
+<!-- Source: .ruler/instructions.md -->
+
 # CLAUDE.md
 
 Twenty is an open-source CRM — an Nx / Yarn 4 monorepo. Main packages: `twenty-front` (React 18, Jotai, Linaria, Vite), `twenty-server` (NestJS, TypeORM, PostgreSQL, Redis, GraphQL), `twenty-shared` (isomorphic types/utils), `twenty-ui`, `twenty-sdk` (application definitions and runtime), `twenty-cli` (standalone CLI), `twenty-e2e-testing` (Playwright).
@@ -75,3 +79,56 @@ Use only `twenty-crm-self-host`. Verify recalled claims against current source
 and deployment evidence. If memory is unavailable, report a safe status and
 continue independent work. Connection details and CLI fallback are in the
 [memory runbook](packages/twenty-docker/operations/hindsight-memory.md).
+
+
+
+<!-- Source: .ruler/authoring.md -->
+
+# Agent Configuration Sources
+
+Repository instructions are owned by `.ruler/*.md`. Run `yarn ruler:apply`
+after changing them. `CLAUDE.md` is generated and stays tracked so fresh
+checkouts have instructions before installing tools. The existing `AGENTS.md`
+symlink points to that same file for Codex, Cursor, Pi and OpenCode.
+Edit the Ruler sources, not the generated file. Keep package-specific instructions
+in place; this configuration generates repository-root instructions only.
+Paths in these instruction sources are relative to the repository root.
+
+Shared skills live in `.agents/skills/<name>/SKILL.md`. Claude and Pi aliases
+link to those canonical directories from `.claude/skills/` and `.pi/skills/`.
+Codex, Cursor and OpenCode discover `.agents/skills/` directly. Skill edits need
+no Ruler regeneration. Preserve the existing Claude-only skills unless their
+migration is part of the task.
+
+This setup follows `fundlevel-digital/mono` and `fundlevel-digital/sunny`.
+Ruler is pinned to 0.3.46, matching sunny. Its MCP and experimental skill
+management are disabled: existing `.mcp.json`, agent settings and skill sources
+have their own owners and must not be overwritten by `ruler:apply`.
+
+
+
+<!-- Source: .ruler/documentation.md -->
+
+# Documentation and Decisions
+
+Use the decisions skill at `.agents/skills/decisions/SKILL.md` before substantial
+repository work, before reopening a settled question, and when the owner chooses,
+corrects, rejects or reverses an approach. Read `docs/DECISIONS.md` and the relevant
+area index first. Record the decision and its exchange before the handoff.
+
+All decision records live under root `docs/decisions/`; use numbered records and
+link them from the appropriate index. Keep durable product and operational
+explanations with their consuming package when appropriate. Session handoffs live
+under `docs/handoffs/`, linked from `docs/README.md`, and explain what changed,
+why, verification, limitations and remaining work. Link to commits and maintained
+source rather than duplicating code or raw logs.
+
+Keep intended, implemented, merged and deployed states distinct. Quote relevant
+owner instructions exactly, including corrections, without turning an agent's
+implementation choice into an owner decision. Documentation and decision records
+do not grant authorization for later deployments or external actions.
+
+Never copy credentials, tokens, private keys, connection strings containing
+credentials, or customer CRM records into documentation. Describe private runtime
+configuration by its location and purpose. Redact any secret from a quoted
+exchange explicitly.

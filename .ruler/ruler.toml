@@ -1,0 +1,15 @@
+# AGENTS.md already links to CLAUDE.md, which all agents can read.
+default_agents = ["claude"]
+nested = false
+
+[gitignore]
+enabled = false
+
+[backup]
+enabled = false
+
+[mcp]
+enabled = false
+
+[skills]
+enabled = false
