@@ -4,11 +4,11 @@ import {
   tokenizeValidationRuleExpression,
 } from 'twenty-shared/utils';
 
-import { VALIDATION_RULE_KEYWORDS } from '@/validation-rules/constants/ValidationRuleKeywords';
+import { type ExpressionEditorMode } from '@/validation-rules/types/ExpressionEditorMode';
 import { type ValidationRuleEditorField } from '@/validation-rules/types/ValidationRuleEditorField';
 import { type ValidationRuleHelperContext } from '@/validation-rules/types/ValidationRuleHelperContext';
 import { type ValidationRuleHelperItem } from '@/validation-rules/types/ValidationRuleHelperItem';
-import { getValidationRuleFunctionDefinitions } from '@/validation-rules/utils/getValidationRuleFunctionDefinitions';
+import { getExpressionEditorSyntax } from '@/validation-rules/utils/getExpressionEditorSyntax';
 
 const WORD_BEFORE_CURSOR_PATTERN =
   /(?:([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\.)?([A-Za-z_$][\w$]*)?$/;
@@ -23,25 +23,26 @@ const getLastPathSegment = (path: string) => path.split('.').at(-1) ?? path;
 const computeRootItems = ({
   query,
   fields,
+  mode,
 }: {
   query: string;
   fields: ValidationRuleEditorField[];
+  mode: ExpressionEditorMode;
 }): ValidationRuleHelperItem[] => {
+  const { functions, keywords } = getExpressionEditorSyntax(mode);
   const fieldItems: ValidationRuleHelperItem[] = fields
     .filter((field) => !field.path.includes('.'))
     .filter((field) => !field.isSystem || query.length > 0)
     .filter((field) => matchesQuery([field.path, field.label], query))
     .map((field) => ({ kind: 'field', field }));
 
-  const functionItems: ValidationRuleHelperItem[] =
-    getValidationRuleFunctionDefinitions()
-      .filter((definition) => matchesQuery([definition.name], query))
-      .map((definition) => ({ kind: 'function', definition }));
+  const functionItems: ValidationRuleHelperItem[] = functions
+    .filter((definition) => matchesQuery([definition.name], query))
+    .map((definition) => ({ kind: 'function', definition }));
 
-  const keywordItems: ValidationRuleHelperItem[] =
-    VALIDATION_RULE_KEYWORDS.filter((definition) =>
-      matchesQuery([definition.name], query),
-    ).map((definition) => ({ kind: 'keyword', definition }));
+  const keywordItems: ValidationRuleHelperItem[] = keywords
+    .filter((definition) => matchesQuery([definition.name], query))
+    .map((definition) => ({ kind: 'keyword', definition }));
 
   return [...fieldItems, ...functionItems, ...keywordItems];
 };
@@ -50,10 +51,12 @@ export const computeValidationRuleHelperContext = ({
   textBeforeCursor,
   isCursorAfterField,
   fields,
+  mode = 'condition',
 }: {
   textBeforeCursor: string;
   isCursorAfterField: boolean;
   fields: ValidationRuleEditorField[];
+  mode?: ExpressionEditorMode;
 }): ValidationRuleHelperContext => {
   const cursorOffset = textBeforeCursor.length;
   const lastToken = tokenizeValidationRuleExpression(textBeforeCursor).at(-1);
@@ -65,7 +68,7 @@ export const computeValidationRuleHelperContext = ({
   if (isCursorAfterField) {
     return {
       replaceFromOffset: cursorOffset,
-      items: computeRootItems({ query: '', fields }),
+      items: computeRootItems({ query: '', fields, mode }),
     };
   }
 
@@ -75,7 +78,7 @@ export const computeValidationRuleHelperContext = ({
   if (!isDefined(parentPath)) {
     return {
       replaceFromOffset: cursorOffset - partialWord.length,
-      items: computeRootItems({ query: partialWord, fields }),
+      items: computeRootItems({ query: partialWord, fields, mode }),
     };
   }
 

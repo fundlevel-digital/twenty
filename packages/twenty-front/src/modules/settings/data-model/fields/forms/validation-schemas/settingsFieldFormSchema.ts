@@ -1,3 +1,4 @@
+import { settingsFieldComputationSchema } from '@/settings/data-model/fields/forms/validation-schemas/settingsFieldComputationSchema';
 import { settingsDataModelFieldDescriptionFormSchema } from '@/settings/data-model/fields/forms/components/SettingsDataModelFieldDescriptionForm';
 import { settingsDataModelFieldIconLabelFormSchema } from '@/settings/data-model/fields/forms/components/SettingsDataModelFieldIconLabelForm';
 import { settingsDataModelFieldSettingsFormSchema } from '@/settings/data-model/fields/forms/validation-schemas/settingsDataModelFieldSettingsFormSchema';
@@ -23,7 +24,32 @@ export const settingsFieldFormSchema = (
     )
     .extend(settingsDataModelFieldDescriptionFormSchema().shape)
     .extend(settingsDataModelFieldTypeFormSchema.shape)
-    .and(settingsDataModelFieldSettingsFormSchema)
+    .and(
+      z.union([
+        settingsDataModelFieldSettingsFormSchema.and(
+          z.object({ computation: z.null().optional() }),
+        ),
+        z
+          .object({
+            type: z.enum([
+              FieldMetadataType.NUMBER,
+              FieldMetadataType.TEXT,
+              FieldMetadataType.BOOLEAN,
+              FieldMetadataType.DATE,
+              FieldMetadataType.DATE_TIME,
+              FieldMetadataType.SELECT,
+            ]),
+            computation: settingsFieldComputationSchema,
+            settings: z.unknown().optional(),
+            options: z.unknown().optional(),
+          })
+          .refine(
+            (data) =>
+              data.type !== FieldMetadataType.SELECT ||
+              data.computation.kind === 'FORMULA',
+          ),
+      ]),
+    )
     .refine((data) => {
       const formData = data as {
         type?: FieldMetadataType;

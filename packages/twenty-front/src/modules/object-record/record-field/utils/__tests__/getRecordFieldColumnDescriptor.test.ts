@@ -40,7 +40,7 @@ describe('getRecordFieldColumnDescriptor', () => {
     });
   });
 
-  it('describes a lookup column with the looked-up field, without filter or sort', () => {
+  it('describes a lookup column with the looked-up field and upstream filter and sort actions', () => {
     expect(
       getRecordFieldColumnDescriptor({
         fieldMetadataItem: companyField,
@@ -52,8 +52,8 @@ describe('getRecordFieldColumnDescriptor', () => {
       label: `${companyField.label} › ${employeesField.label}`,
       icon: employeesField.icon,
       description: employeesField.description,
-      isFilterable: false,
-      isSortable: false,
+      isFilterable: true,
+      isSortable: true,
     });
   });
 });

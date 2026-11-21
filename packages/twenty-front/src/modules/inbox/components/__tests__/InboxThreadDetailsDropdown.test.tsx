@@ -6,8 +6,8 @@ import { type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
 import { InboxThreadDetailsDropdown } from '@/inbox/components/InboxThreadDetailsDropdown';
-import { aiChatThreadParticipantsState } from '@/ai/states/aiChatThreadParticipantsState';
-import { setAiChatThreadPermissions } from '@/ai/testing/setAiChatThreadPermissions';
+import { aiChatThreadParticipantsState } from '@/ai-chat/threads/states/aiChatThreadParticipantsState';
+import { setAiChatThreadPermissions } from '@/ai-chat/threads/testing/setAiChatThreadPermissions';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
@@ -50,11 +50,11 @@ const mockThread: { current: ObjectRecord | undefined } = {
   current: undefined,
 };
 
-jest.mock('@/ai/hooks/useAttachChatThreadToRecord', () => ({
+jest.mock('@/ai-chat/threads/hooks/useAttachChatThreadToRecord', () => ({
   useAttachChatThreadToRecord: () => ({ attachChatThreadToRecord }),
 }));
 
-jest.mock('@/ai/hooks/useDetachChatThreadFromRecord', () => ({
+jest.mock('@/ai-chat/threads/hooks/useDetachChatThreadFromRecord', () => ({
   useDetachChatThreadFromRecord: () => ({
     detachChatThreadFromRecord: (linkIds: string[]) =>
       detachChatThreadFromRecord(linkIds),
@@ -63,7 +63,7 @@ jest.mock('@/ai/hooks/useDetachChatThreadFromRecord', () => ({
 
 const executeAiChatThreadStatusAction = jest.fn();
 
-jest.mock('@/ai/hooks/useExecuteAiChatThreadStatusAction', () => ({
+jest.mock('@/ai-chat/threads/hooks/useExecuteAiChatThreadStatusAction', () => ({
   useExecuteAiChatThreadStatusAction: () => ({
     executeAiChatThreadStatusAction,
     isPending: false,
@@ -239,17 +239,20 @@ const renderDetails = async ({
         buildWorkspaceMember(WRITER_ID, 'Writer'),
       ]);
       store.set(aiChatThreadParticipantsState.atom, {
-        [THREAD_ID]: {
-          __typename: 'AgentChatThreadParticipant',
-          id: 'participant-1',
-          threadId: THREAD_ID,
-          lastReadAt: null,
-          archivedAt: null,
-          snoozedUntil: null,
-          isSubscribed,
-          lastMentionedAt: null,
-          mentionsResolvedAt: null,
-          updatedAt: '2020-01-01T00:00:00.000Z',
+        isLoaded: true,
+        rowsByThreadId: {
+          [THREAD_ID]: {
+            __typename: 'AgentChatThreadParticipant',
+            id: 'participant-1',
+            threadId: THREAD_ID,
+            lastReadAt: null,
+            archivedAt: null,
+            snoozedUntil: null,
+            isSubscribed,
+            lastMentionedAt: null,
+            mentionsResolvedAt: null,
+            updatedAt: '2020-01-01T00:00:00.000Z',
+          },
         },
       });
     },

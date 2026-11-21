@@ -1,3 +1,4 @@
+import { SettingsDataModelFieldComputationForm } from '@/settings/data-model/fields/forms/components/SettingsDataModelFieldComputationForm';
 import { WorkspaceRouteUnavailable } from '@/ui/layout/page/components/WorkspaceRouteUnavailable';
 import { isValidReturnToPath } from '@/auth/utils/isValidReturnToPath';
 import { isDDLLockedState } from '@/client-config/states/isDDLLockedState';
@@ -162,6 +163,7 @@ export const SettingsObjectFieldEdit = () => {
       isLabelSyncedWithName: fieldMetadataItem?.isLabelSyncedWithName ?? true,
       settings,
       defaultValue,
+      computation: fieldMetadataItem?.computation ?? null,
     },
   });
 
@@ -412,27 +414,36 @@ export const SettingsObjectFieldEdit = () => {
                 readonly={isFieldPropertiesReadonly}
               />
             </Section.Root>
-            {!isReverseJunctionRelation && (
-              <Section.Root>
-                {fieldMetadataItem.isUnique ? (
-                  <Section.Header
-                    title={t`Values`}
-                    description={t`The values of this field must be unique`}
+            <SettingsDataModelFieldComputationForm
+              objectMetadataItem={objectMetadataItem}
+              fieldType={fieldMetadataItem.type}
+              isCreationMode={false}
+              storedComputation={fieldMetadataItem.computation}
+              disabled={isFieldPropertiesReadonly || !isCustomField}
+            />
+            {!isReverseJunctionRelation &&
+              (!isDefined(fieldMetadataItem.computation) ||
+                fieldMetadataItem.type === FieldMetadataType.SELECT) && (
+                <Section.Root>
+                  {fieldMetadataItem.isUnique ? (
+                    <Section.Header
+                      title={t`Values`}
+                      description={t`The values of this field must be unique`}
+                    />
+                  ) : (
+                    <Section.Header
+                      title={t`Values`}
+                      description={t`The values of this field`}
+                    />
+                  )}
+                  <SettingsDataModelFieldSettingsFormCard
+                    fieldType={fieldMetadataItem.type}
+                    existingFieldMetadataId={fieldMetadataItem.id}
+                    objectNameSingular={objectMetadataItem.nameSingular}
+                    disabled={isFieldPropertiesReadonly}
                   />
-                ) : (
-                  <Section.Header
-                    title={t`Values`}
-                    description={t`The values of this field`}
-                  />
-                )}
-                <SettingsDataModelFieldSettingsFormCard
-                  fieldType={fieldMetadataItem.type}
-                  existingFieldMetadataId={fieldMetadataItem.id}
-                  objectNameSingular={objectMetadataItem.nameSingular}
-                  disabled={isFieldPropertiesReadonly}
-                />
-              </Section.Root>
-            )}
+                </Section.Root>
+              )}
             <Section.Root>
               <Section.Header
                 title={t`Description`}
