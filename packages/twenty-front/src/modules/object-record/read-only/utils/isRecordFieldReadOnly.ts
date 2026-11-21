@@ -13,7 +13,10 @@ import {
 type IsRecordFieldReadOnlyParams = {
   isRecordReadOnly: boolean;
   objectMetadataId: string;
-  fieldMetadataItem: Pick<FieldMetadataItem, 'id' | 'isUIEditable'>;
+  fieldMetadataItem: Pick<
+    FieldMetadataItem,
+    'id' | 'isUIEditable' | 'computation'
+  >;
   objectPermissionsByObjectMetadataId: ObjectPermissionsByObjectMetadataId;
   fieldDefinition?: FieldDefinition<FieldMetadata>;
 };
@@ -25,7 +28,11 @@ export const isRecordFieldReadOnly = ({
   objectPermissionsByObjectMetadataId,
   fieldDefinition,
 }: IsRecordFieldReadOnlyParams) => {
-  if (isRecordReadOnly || !(fieldMetadataItem.isUIEditable ?? true)) {
+  if (
+    isRecordReadOnly ||
+    isDefined(fieldMetadataItem.computation) ||
+    !(fieldMetadataItem.isUIEditable ?? true)
+  ) {
     return true;
   }
 

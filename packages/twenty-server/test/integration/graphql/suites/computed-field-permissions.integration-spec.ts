@@ -17,12 +17,11 @@ import { deleteOneObjectMetadata } from 'test/integration/metadata/suites/object
 import { updateOneObjectMetadata } from 'test/integration/metadata/suites/object-metadata/utils/update-one-object-metadata.util';
 import { revokeObjectRecordsPermissions } from 'test/integration/metadata/suites/object-permission/utils/revoke-object-records-permissions.util';
 import { upsertObjectPermissions } from 'test/integration/metadata/suites/object-permission/utils/upsert-object-permissions.util';
-import { upsertRowLevelPermissionPredicates } from 'test/integration/metadata/suites/row-level-permission-predicate/utils/upsert-row-level-permission-predicates.util';
+import { upsertRowLevelPermissionRules } from 'test/integration/metadata/suites/row-level-permission-predicate/utils/upsert-row-level-permission-rules.util';
 import { findOneRoleByLabel } from 'test/integration/metadata/suites/role/utils/find-one-role-by-label.util';
 import {
   type FieldMetadataComputation,
   FieldMetadataType,
-  RowLevelPermissionPredicateGroupLogicalOperator,
   RowLevelPermissionPredicateOperand,
 } from 'twenty-shared/types';
 import { v4 } from 'uuid';
@@ -439,27 +438,23 @@ describe('Computed field permissions (e2e)', () => {
       roleId: customRoleId,
       objectMetadataId: projectObjectMetadataId,
     });
-    await upsertRowLevelPermissionPredicates({
+    await upsertRowLevelPermissionRules({
       expectToFail: false,
       input: {
         roleId: customRoleId,
         objectMetadataId: projectObjectMetadataId,
-        canReadRecords: true,
-        predicateGroups: [
+        rules: [
           {
             id: ruleId,
-            objectMetadataId: projectObjectMetadataId,
-            logicalOperator:
-              RowLevelPermissionPredicateGroupLogicalOperator.AND,
-          },
-        ],
-        predicates: [
-          {
-            id: v4(),
-            fieldMetadataId: nameFieldMetadataId,
-            operand: RowLevelPermissionPredicateOperand.CONTAINS,
-            value: 'Alpha',
-            rowLevelPermissionPredicateGroupId: ruleId,
+            canReadRecords: true,
+            predicates: [
+              {
+                id: v4(),
+                fieldMetadataId: nameFieldMetadataId,
+                operand: RowLevelPermissionPredicateOperand.CONTAINS,
+                value: 'Alpha',
+              },
+            ],
           },
         ],
       },

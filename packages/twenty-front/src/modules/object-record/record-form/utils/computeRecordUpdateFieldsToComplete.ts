@@ -36,6 +36,7 @@ export const computeRecordUpdateFieldsToComplete = ({
     | 'isSystem'
     | 'isUIEditable'
     | 'settings'
+    | 'computation'
     | 'defaultValue'
   >[];
   canUpdateField: (fieldMetadataId: string) => boolean;

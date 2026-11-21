@@ -37,8 +37,12 @@ export const SETTINGS_ADMIN_FEATURE_FLAG_METADATA: Record<
     description: msg`Import occurrences of recurring Google Calendar meetings up to 90 days ahead only, and import later occurrences as they come within 90 days.`,
   },
   [FeatureFlagKey.IS_COMPUTED_FIELDS_ENABLED]: {
-    label: msg`Computed fields`,
-    description: msg`Create formula and rollup fields, whose value is calculated when read, through the API and app manifests.`,
+    label: msg`Computed Fields`,
+    description: msg`Create formula and rollup fields whose values are calculated when read.`,
+  },
+  [FeatureFlagKey.IS_CUSTOMIZABLE_SIDEBAR_ENABLED]: {
+    label: msg`Customizable sidebar`,
+    description: msg`Show sidebar tabs and sections.`,
   },
   [FeatureFlagKey.IS_AI_CHAT_COMPONENT_BUILDER_ENABLED]: {
     label: msg`AI chat component builder`,
@@ -80,10 +84,6 @@ export const SETTINGS_ADMIN_FEATURE_FLAG_METADATA: Record<
     label: msg`Private records`,
     description: msg`Apply private records on objects that aren't private by default. Always on for workspaces that have set record sharing. Turning this off makes records set as private on those objects visible again.`,
   },
-  [FeatureFlagKey.IS_PERMISSION_TABLES_ENABLED]: {
-    label: msg`Permission tables`,
-    description: msg`Create record share and access group storage as tables owned by the permission engine instead of objects. Only applies when a workspace is created.`,
-  },
   [FeatureFlagKey.IS_ACCESS_GROUPS_ENABLED]: {
     label: msg`Access groups`,
     description: msg`Compute the access groups that record listings will use for row-level permissions. Enable after the workspace upgrade completes.`,
@@ -95,6 +95,10 @@ export const SETTINGS_ADMIN_FEATURE_FLAG_METADATA: Record<
   [FeatureFlagKey.IS_RECORD_GROUP_TABS_ENABLED]: {
     label: msg`Group tabs`,
     description: msg`Let grouped table and list views show their groups as tabs, one group at a time. Enable after the instance upgrade completes.`,
+  },
+  [FeatureFlagKey.IS_APPLICATION_PRICE_BILLING_ENABLED]: {
+    label: msg`Application price billing`,
+    description: msg`Bill the prices declared by installed apps on the workspace subscription. The price is not shown before install yet.`,
   },
   [FeatureFlagKey.IS_LOOKUP_COLUMNS_ENABLED]: {
     label: msg`Lookup columns`,

@@ -4,6 +4,7 @@ import {
   personTableShape,
 } from 'src/engine/twenty-orm/query-builder/__tests__/workspace-select-query-builder-test-shapes.util';
 import { type WorkspaceTableShape } from 'src/engine/twenty-orm/table-shape/types/workspace-table-shape.type';
+import { Brackets } from 'typeorm';
 
 const tableShape: WorkspaceTableShape = {
   ...personTableShape,
@@ -23,6 +24,18 @@ const getUnresolvedColumnNames = (
     .map(({ columnName }) => columnName);
 
 describe('WorkspaceSelectQueryBuilder computed columns', () => {
+  it('resolves a calculated column used inside a grouped filter', () => {
+    const { queryBuilder } = buildQueryBuilder({ tableShape });
+    queryBuilder.where(
+      new Brackets((where) => {
+        where
+          .where('person.score > :minimum', { minimum: 1 })
+          .orWhere('person.id = :id', { id: '1' });
+      }),
+    );
+
+    expect(getUnresolvedColumnNames(queryBuilder)).toEqual(['score']);
+  });
   it('needs no computed column for a statement that reads stored columns only', () => {
     const { queryBuilder } = buildQueryBuilder({ tableShape });
 

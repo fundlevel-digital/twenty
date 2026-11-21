@@ -8,6 +8,7 @@ export const formatFieldMetadataItemInput = (
       | 'label'
       | 'icon'
       | 'description'
+      | 'computation'
       | 'defaultValue'
       | 'type'
       | 'options'
@@ -18,7 +19,8 @@ export const formatFieldMetadataItemInput = (
   >,
 ) => {
   return {
-    defaultValue: input.defaultValue,
+    computation: input.computation,
+    defaultValue: input.computation ? null : input.defaultValue,
     description: input.description?.trim() ?? null,
     icon: input.icon,
     label: input.label?.trim(),
@@ -26,6 +28,7 @@ export const formatFieldMetadataItemInput = (
     options: input.options,
     settings: input.settings,
     isLabelSyncedWithName: input.isLabelSyncedWithName,
-    isUnique: input.isUnique,
+    isUnique: input.computation ? false : input.isUnique,
+    ...(input.computation ? { isSearchable: false } : {}),
   };
 };

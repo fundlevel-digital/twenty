@@ -1,3 +1,4 @@
+import { type FieldMetadataComputation } from 'twenty-shared/types';
 import { styled } from '@linaria/react';
 import { type DraggableListDropResult } from '@/ui/layout/draggable-list/types/DraggableListDropResult';
 import { Controller, useFormContext } from 'react-hook-form';
@@ -63,7 +64,7 @@ export const settingsDataModelFieldMultiSelectFormSchema = z.object({
 export type SettingsDataModelFieldSelectFormValues = z.infer<
   | typeof settingsDataModelFieldSelectFormSchema
   | typeof settingsDataModelFieldMultiSelectFormSchema
->;
+> & { computation?: FieldMetadataComputation | null };
 
 type SettingsDataModelFieldSelectFormProps = {
   fieldType: FieldMetadataType.SELECT | FieldMetadataType.MULTI_SELECT;
@@ -216,6 +217,8 @@ export const SettingsDataModelFieldSelectForm = ({
 
     onChange(nextOptions);
   };
+
+  const isComputed = isDefined(watchFormValue('computation'));
 
   const isOptionDefaultValue = (
     optionValue: FieldMetadataItemOption['value'],
@@ -547,18 +550,30 @@ export const SettingsDataModelFieldSelectForm = ({
                                   }
                                   isDefault={isOptionDefaultValue(option.value)}
                                   fieldIsNullable={isNullable ?? false}
-                                  onSetAsDefault={() => {
-                                    if (disabled) {
-                                      return;
-                                    }
-                                    handleSetOptionAsDefault(option.value);
-                                  }}
-                                  onRemoveAsDefault={() => {
-                                    if (disabled) {
-                                      return;
-                                    }
-                                    handleRemoveOptionAsDefault(option.value);
-                                  }}
+                                  onSetAsDefault={
+                                    isComputed
+                                      ? undefined
+                                      : () => {
+                                          if (disabled) {
+                                            return;
+                                          }
+                                          handleSetOptionAsDefault(
+                                            option.value,
+                                          );
+                                        }
+                                  }
+                                  onRemoveAsDefault={
+                                    isComputed
+                                      ? undefined
+                                      : () => {
+                                          if (disabled) {
+                                            return;
+                                          }
+                                          handleRemoveOptionAsDefault(
+                                            option.value,
+                                          );
+                                        }
+                                  }
                                   onInputEnter={() => {
                                     if (disabled) {
                                       return;
