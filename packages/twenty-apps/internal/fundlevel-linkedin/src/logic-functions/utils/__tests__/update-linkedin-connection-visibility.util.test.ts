@@ -20,13 +20,14 @@ vi.mock('twenty-client-sdk/rest', () => ({
 vi.mock('src/logic-functions/utils/ensure-linkedin-account.util', () => ({
   ensureLinkedinAccount: mocks.ensure,
 }));
-const { updateLinkedinConnectionVisibility } = await import(
-  'src/logic-functions/utils/update-linkedin-connection-visibility.util'
-);
+const { updateLinkedinConnectionVisibility } =
+  await import('src/logic-functions/utils/update-linkedin-connection-visibility.util');
 const connection = { id: 'connection', workspaceMemberId: 'me' };
 
 beforeEach(() => {
-  mocks.get.mockResolvedValue('connection-object');
+  mocks.get.mockImplementation(async (key) =>
+    key === 'linkedin-private-records-ready' ? true : 'connection-object',
+  );
   mocks.findAll.mockResolvedValue([{ id: 'owned-record' }]);
   mocks.post.mockResolvedValue({});
 });
@@ -36,15 +37,15 @@ afterEach(() => {
 });
 
 describe('native connection privacy', () => {
-  it('refuses owner-only sharing before native privacy has been verified', async () => {
-    vi.stubEnv('CONNECTION_PRIVACY_READY', 'false');
+  it('ignores the legacy settings toggle until internal privacy readiness is verified', async () => {
+    vi.stubEnv('CONNECTION_PRIVACY_READY', 'true');
+    mocks.get.mockResolvedValue(false);
     await expect(
       updateLinkedinConnectionVisibility(connection as never, 'OWNER'),
     ).rejects.toThrow('configure LinkedIn record permissions');
     expect(mocks.graphql).not.toHaveBeenCalled();
   });
   it('restricts only the authenticated account before recording owner-only visibility', async () => {
-    vi.stubEnv('CONNECTION_PRIVACY_READY', 'true');
     await updateLinkedinConnectionVisibility(connection as never, 'OWNER');
     expect(mocks.findAll).toHaveBeenCalledWith(
       'linkedinConnections',
@@ -68,7 +69,6 @@ describe('native connection privacy', () => {
     });
   });
   it('does not report private visibility when the native privacy change fails', async () => {
-    vi.stubEnv('CONNECTION_PRIVACY_READY', 'true');
     mocks.post.mockResolvedValueOnce({
       errors: [{ message: 'not authorized' }],
     });

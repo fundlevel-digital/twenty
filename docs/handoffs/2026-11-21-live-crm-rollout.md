@@ -128,3 +128,22 @@ Mac without changing its other remotes. Temporary SSH access and copied deployme
 credentials were removed at handoff.
 
 Private operational logs, configuration and rollback inputs remain outside Git.
+
+## Owner-Reported Connection Follow-Up
+
+Slack’s custom callback incorrectly required `state` after Twenty’s controller
+had validated and removed it. The app now retains the exact redirect URI by
+provider, forwards core state during authorization, and accepts the core’s
+callback payload without duplicating state validation. A regression covers the
+real payload and overlapping login flows. All 79 Slack app tests, typecheck, lint
+and app build passed; the fix was applied live (two logic functions updated).
+A fresh Connect Slack attempt is needed; no successful user OAuth round trip is
+claimed by the deployment checks.
+
+[LinkedIn decision 0010](../decisions/linkedin/0010-automatic-webhook-and-internal-configuration.md)
+records the archive-field cleanup, internal readiness guard and automated
+webhook setup. The new configuration was applied using the migration-stage app:
+four functions changed and five metadata entities were removed (three variables,
+one obsolete tab and its widget). All 821 legacy messages and 1,475 PlusVibe
+messages remained intact. The Unipile endpoint and encrypted secrets were
+configured automatically; signed/unsigned probes returned 200/401.

@@ -1,19 +1,19 @@
-import { createHash } from 'node:crypto';
 import { defineLogicFunction } from 'twenty-sdk/define';
 import { kv, type AuthorizeConnectionPayload } from 'twenty-sdk/logic-function';
 import { AUTHORIZE_UNIVERSAL_IDENTIFIER } from 'src/constants/identifiers';
 import { variable } from 'src/utils/slack';
 
-export const stateKey = (state: string): string =>
-  `oauth:${createHash('sha256').update(state).digest('hex')}`;
+export const redirectUriKey = (connectionProviderId: string): string =>
+  `oauth:redirect-uri:${connectionProviderId}`;
 export const authorize = async ({
   callbackUrl,
+  connectionProviderId,
 }: AuthorizeConnectionPayload) => {
   const callback = new URL(callbackUrl);
   const state = callback.searchParams.get('state');
   if (!state) throw new Error('Missing connection state');
   callback.search = '';
-  await kv.set(stateKey(state), {
+  await kv.set(redirectUriKey(connectionProviderId), {
     redirectUri: callback.toString(),
     createdAt: Date.now(),
   });

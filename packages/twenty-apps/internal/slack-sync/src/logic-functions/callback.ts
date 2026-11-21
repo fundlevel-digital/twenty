@@ -5,17 +5,18 @@ import {
   type ConnectionCallbackResult,
 } from 'twenty-sdk/logic-function';
 import { CALLBACK_UNIVERSAL_IDENTIFIER } from 'src/constants/identifiers';
-import { stateKey } from 'src/logic-functions/authorize';
+import { redirectUriKey } from 'src/logic-functions/authorize';
 import { variable } from 'src/utils/slack';
 
 export const callback = async ({
   queryStringParameters,
+  connectionProviderId,
 }: ConnectionCallbackPayload): Promise<ConnectionCallbackResult> => {
-  const { code, state, error } = queryStringParameters;
-  if (error || !code || !state)
-    throw new Error('Slack authorization was not completed');
+  // Twenty validates and consumes state before forwarding the callback.
+  const { code, error } = queryStringParameters;
+  if (error || !code) throw new Error('Slack authorization was not completed');
   const pending = await kv.get<{ redirectUri: string; createdAt: number }>(
-    stateKey(state),
+    redirectUriKey(connectionProviderId),
   );
   if (!pending || Date.now() - pending.createdAt > 15 * 60 * 1000)
     throw new Error('Slack authorization expired');
@@ -43,7 +44,6 @@ export const callback = async ({
     data.authed_user.token_type !== 'user'
   )
     throw new Error('Slack did not grant a user token');
-  await kv.delete(stateKey(state));
   return {
     externalAccountId: `${data.team.id}:${data.authed_user.id}`,
     handle: `${data.team.id}:${data.authed_user.id}`,

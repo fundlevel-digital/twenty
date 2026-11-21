@@ -7,6 +7,7 @@ import { isDefined } from 'twenty-sdk/utils';
 import { getLinkedinSettings } from 'src/logic-functions/utils/get-linkedin-settings.util';
 import { refreshLinkedinHistoryImportState } from 'src/logic-functions/utils/refresh-linkedin-history-import-state.util';
 import { type LinkedinSettingsView } from 'src/types/linkedin-settings-view.type';
+import { isLinkedinConnectionPrivacyReady } from 'src/logic-functions/utils/is-linkedin-connection-privacy-ready.util';
 
 export const buildLinkedinSettingsView = async (
   connection: AppConnection | undefined,
@@ -23,7 +24,7 @@ export const buildLinkedinSettingsView = async (
 
   return {
     isConnected: true,
-    isConnectionPrivacyReady: process.env.CONNECTION_PRIVACY_READY === 'true',
+    isConnectionPrivacyReady: await isLinkedinConnectionPrivacyReady(),
     connection: {
       name: connection.name,
       handle: connection.handle,

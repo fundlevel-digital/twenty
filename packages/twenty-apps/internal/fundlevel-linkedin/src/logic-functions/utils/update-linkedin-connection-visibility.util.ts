@@ -3,12 +3,13 @@ import { type AppConnection, kv } from 'twenty-sdk/logic-function';
 import { isDefined } from 'twenty-sdk/utils';
 import { findAll, graphql } from 'src/lib/twenty';
 import { ensureLinkedinAccount } from 'src/logic-functions/utils/ensure-linkedin-account.util';
+import { isLinkedinConnectionPrivacyReady } from 'src/logic-functions/utils/is-linkedin-connection-privacy-ready.util';
 
 export const updateLinkedinConnectionVisibility = async (
   connection: AppConnection,
   visibility: 'WORKSPACE' | 'OWNER',
 ) => {
-  if (visibility === 'OWNER' && process.env.CONNECTION_PRIVACY_READY !== 'true')
+  if (visibility === 'OWNER' && !(await isLinkedinConnectionPrivacyReady()))
     throw new Error(
       'A workspace administrator must configure LinkedIn record permissions before enabling owner-only connections.',
     );

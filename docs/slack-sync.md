@@ -160,3 +160,13 @@ The preview frontend, backend and worker are supervised. Their local scripts, cr
 ### Pull request readiness
 
 Draft [PR #10](https://github.com/fundlevel-digital/twenty/pull/10) now integrates main at `4e434b3e29ea0df562b10f088308635b5d66ee6e` (Twenty 2.61). Conflicts were resolved while retaining main's Ruler, documentation and messaging changes. Slack upgrade commands are registered under 2.61 with real timestamps after main's existing commands; historical 2.60 commands match main. Focused tests pass, but the merged runtime and live OAuth/event delivery still need verification before rollout. The PR remains a draft, and no live CRM deployment has been performed.
+
+## Production OAuth Callback Follow-Up
+
+A live connection attempt exposed a protocol mismatch: Twenty verifies and
+consumes the signed OAuth state before forwarding provider query parameters.
+Slack Sync now forwards that state during authorization and uses a provider-scoped
+redirect-URI cache for the token exchange, rather than requiring state again in
+the app callback. Concurrent connections retain the same exact callback URI.
+The fix was deployed on 2026-11-21; all 79 app tests, typecheck, lint and build
+passed. A fresh Connect Slack attempt is required after an earlier failure.
