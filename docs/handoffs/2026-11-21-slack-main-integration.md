@@ -30,3 +30,7 @@ Shared barrels, Vite bundles and TypeScript declarations were rebuilt directly u
 The existing frontend/backend/worker use an isolated detached worktree at `eb3aaf6691`, the last verified 2.60 preview source. Matching pre-merge build artifacts, local configuration and existing storage were preserved under gitignored `.context`. The merged source and its rebuilt shared artifacts are separate from that preview. Do not treat existing preview behavior as verification of the merged 2.61 runtime.
 
 The live CRM is unchanged. Native Slack OAuth, live events, membership changes, the target-instance upgrade and production deployment remain outstanding. Keep the PR draft pending review and runtime verification. No Slack messages or reactions were sent as part of integration.
+
+## Documentation Follow-Up
+
+While the first integration commit was being pushed, main advanced to `4e434b3e29ea0df562b10f088308635b5d66ee6e`. A second merge retains its new repository decision 0004 and production-deployment deferral handoff alongside the Slack index entry. This follow-up changes documentation only; the validated application code and upgrade commands are unchanged.
