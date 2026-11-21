@@ -62,3 +62,11 @@ still showed zero live connections and zero bookings. The owner was asked to
 confirm the Add Connection result and registered callback. Installation is
 complete; live consent and import remain unverified. This observation does not
 supersede the deployment decision.
+
+
+At 23:43 UTC Kareem confirmed: "It returned successfully and shows connected".
+Fresh verification found one healthy shared connection, active webhook
+registration and a successful sync. The live CRM contained 100 bookings, 97 linked
+to People. The owner saved three watched links and enabled missing-Person
+creation. This supersedes the earlier pending-connection observation; details and
+remaining verification limits are in the release handoff.
