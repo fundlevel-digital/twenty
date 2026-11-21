@@ -55,6 +55,25 @@ describe('defineMessagingProvider', () => {
     expect(result.errors).toHaveLength(3);
   });
 
+  it('accepts explicitly shared message identities', () => {
+    expect(
+      defineMessagingProvider({
+        ...baseValidConfig,
+        deduplicateAcrossConnections: true,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a non-boolean deduplication setting', () => {
+    expect(
+      defineMessagingProvider({
+        ...baseValidConfig,
+        // @ts-expect-error JavaScript manifests are validated at runtime.
+        deduplicateAcrossConnections: 'yes',
+      }).success,
+    ).toBe(false);
+  });
+
   it('accepts a chat conversation style', () => {
     expect(
       defineMessagingProvider({ ...baseValidConfig, conversationStyle: 'chat' })
@@ -70,5 +89,21 @@ describe('defineMessagingProvider', () => {
     });
 
     expect(result.success).toBe(false);
+  });
+  it('accepts a channel object reference and rejects malformed identifiers', () => {
+    expect(
+      defineMessagingProvider({
+        ...baseValidConfig,
+        channelObject: {
+          universalIdentifier: '20e5eb99-a3cb-47a6-8155-0eb8837a67bc',
+        },
+      }).success,
+    ).toBe(true);
+    expect(
+      defineMessagingProvider({
+        ...baseValidConfig,
+        channelObject: { universalIdentifier: 'slackChannel' },
+      }).success,
+    ).toBe(false);
   });
 });

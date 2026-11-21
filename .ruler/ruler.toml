@@ -1,0 +1,16 @@
+# AGENTS.md already aliases CLAUDE.md, so one generated file serves all clients.
+default_agents = ["claude"]
+nested = false
+
+[gitignore]
+enabled = false
+
+[backup]
+enabled = false
+
+[mcp]
+enabled = false
+
+# Like mono, canonical skills and their aliases are maintained separately.
+[skills]
+enabled = false

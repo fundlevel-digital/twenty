@@ -1,13 +1,16 @@
+import { type ProviderMessageMetadata } from 'twenty-shared/types';
 import { type MessageParticipantRole } from '@/sdk/define/common/types/loose-shared-types.type';
 
 export type IngestMessageParticipant = {
+  // Optional contact identity, independent of the provider handle; channel preferences control creation.
+  contactEmail?: string;
   // Exactly one participant must be 'FROM'; when its handle equals the channel's, the message is outgoing
   role: MessageParticipantRole;
   // Same namespace as the channel's own handle
   handle: string;
   // Omitting it on a later delivery keeps the stored name
   displayName?: string;
-  // Handles cannot match People by email, so without this the thread lands on no record; re-ingesting links a late match
+  // An explicit record match takes precedence over contactEmail.
   personId?: string;
   // Attribution only: record-page placement is built from `personId` alone
   workspaceMemberId?: string;
@@ -19,7 +22,11 @@ export type IngestMessageAttachment = {
 };
 
 export type IngestMessage = {
-  // Ingesting it twice is a no-op, so redelivered webhooks are safe to replay
+  applicationFields?: {
+    message?: Record<string, string | null>;
+    thread?: Record<string, string | null>;
+  };
+  providerMetadata?: ProviderMessageMetadata;
   externalId: string;
   // Messages sharing one land in the same Message Thread
   threadExternalId: string;

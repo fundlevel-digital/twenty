@@ -5,7 +5,6 @@ import { EmailThreadNotShared } from '@/activities/emails/components/EmailThread
 import { MessageChannelLogo } from '@/activities/emails/components/MessageChannelLogo';
 import { getEmailParticipantAvatarColorSeed } from '@/activities/emails/utils/getEmailParticipantAvatarColorSeed';
 import { getTimelineThreadLabel } from '@/activities/emails/utils/getTimelineThreadLabel';
-import { isChatTimelineThreadChannel } from '@/activities/emails/utils/isChatTimelineThreadChannel';
 import { useOpenRecordInSidePanel } from '@/side-panel/hooks/useOpenRecordInSidePanel';
 import { StandardObjectNameSingular } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -102,7 +101,6 @@ export const EmailThreadPreview = ({
   const { openRecordInSidePanel } = useOpenRecordInSidePanel();
 
   const visibility = thread.visibility;
-  const isChatThread = isChatTimelineThreadChannel(thread.channel);
 
   const senderNames =
     thread.firstParticipant.displayName +
@@ -203,11 +201,7 @@ export const EmailThreadPreview = ({
         </StyledParticipantsContainer>
 
         <StyledSenderNames>{senderNames}</StyledSenderNames>
-        {!isChatThread && (
-          <StyledThreadCount>
-            {thread.numberOfMessagesInThread}
-          </StyledThreadCount>
-        )}
+        <StyledThreadCount>{thread.numberOfMessagesInThread}</StyledThreadCount>
       </StyledHeading>
 
       <StyledSubjectAndBody>
@@ -220,14 +214,14 @@ export const EmailThreadPreview = ({
         {visibility === MessageChannelVisibility.SUBJECT && (
           <>
             {draftTag}
-            {!isChatThread && <StyledSubject>{thread.subject}</StyledSubject>}
+            <StyledSubject>{thread.subject}</StyledSubject>
             <EmailThreadNotShared visibility={visibility} />
           </>
         )}
         {visibility === MessageChannelVisibility.SHARE_EVERYTHING && (
           <>
             {draftTag}
-            {!isChatThread && <StyledSubject>{thread.subject}</StyledSubject>}
+            <StyledSubject>{thread.subject}</StyledSubject>
             <StyledBody>{thread.lastMessageBody}</StyledBody>
           </>
         )}

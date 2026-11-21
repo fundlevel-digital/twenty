@@ -56,6 +56,24 @@ describe('buildAppMessageHeaderMessageId', () => {
     );
   });
 
+  it('shares provider message identities only when explicitly enabled', () => {
+    const buildSharedId = (messageChannelId: string) =>
+      buildAppMessageHeaderMessageId({
+        applicationId: APPLICATION_ID,
+        messageChannelId,
+        externalId: 'T1:C1:123.456',
+        deduplicateAcrossConnections: true,
+      });
+    expect(buildSharedId(ALICE_CHANNEL_ID)).toBe(buildSharedId(BOB_CHANNEL_ID));
+    expect(buildSharedId(ALICE_CHANNEL_ID)).not.toBe(
+      buildAppMessageHeaderMessageId({
+        applicationId: APPLICATION_ID,
+        messageChannelId: ALICE_CHANNEL_ID,
+        externalId: 'T1:C1:123.456',
+      }),
+    );
+  });
+
   it('cannot collide with an RFC822 header message id', () => {
     expect(
       buildAppMessageHeaderMessageId({

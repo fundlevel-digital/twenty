@@ -1,3 +1,4 @@
+import { type FlatMessagingProviderMaps } from 'src/engine/metadata-modules/flat-messaging-provider/types/flat-messaging-provider-maps.type';
 import { type RecordAccessGroupWriteService } from 'src/engine/permissions/record-access-group-write.service';
 import { type RecordFieldPermissionsReadService } from 'src/engine/permissions/record-field-permissions-read.service';
 import { type RecordPermissionsReadService } from 'src/engine/permissions/record-permissions-read.service';
@@ -20,6 +21,7 @@ export interface WorkspaceInternalContext {
   flatObjectMetadataMaps: FlatEntityMaps<FlatObjectMetadata>;
   flatFieldMetadataMaps: FlatEntityMaps<OrmFlatFieldMetadata>;
   flatIndexMaps: FlatEntityMaps<FlatIndexMetadata>;
+  flatMessagingProviderMaps: FlatMessagingProviderMaps;
   flatValidationRuleMaps?: FlatValidationRuleMaps;
   objectIdByNameSingular: Record<string, string>;
   featureFlagsMap: Record<FeatureFlagKey, boolean>;

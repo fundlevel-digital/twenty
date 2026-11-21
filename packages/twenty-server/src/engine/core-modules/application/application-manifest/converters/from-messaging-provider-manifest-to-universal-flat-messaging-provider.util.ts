@@ -23,6 +23,10 @@ export const fromMessagingProviderManifestToUniversalFlatMessagingProvider = ({
   markThreadAsReadLogicFunctionUniversalIdentifier:
     messagingProviderManifest.markThreadAsReadLogicFunction
       ?.universalIdentifier ?? null,
+  deduplicateAcrossConnections:
+    messagingProviderManifest.deduplicateAcrossConnections ?? false,
+  channelObjectUniversalIdentifier:
+    messagingProviderManifest.channelObject?.universalIdentifier ?? null,
   conversationStyle: messagingProviderManifest.conversationStyle ?? null,
   createdAt: now,
   updatedAt: now,

@@ -13,7 +13,10 @@ import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat
 import { AuthApplication } from 'src/engine/decorators/auth/auth-application.decorator';
 import { AuthUserWorkspaceId } from 'src/engine/decorators/auth/auth-user-workspace-id.decorator';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
-import { IngestAppMessagesInput } from 'src/engine/metadata-modules/message-channel/dtos/ingest-app-messages.input';
+import {
+  IngestAppMessagesInput,
+  UpdateAppMessagesInput,
+} from 'src/engine/metadata-modules/message-channel/dtos/ingest-app-messages.input';
 import { IngestAppMessagesOutput } from 'src/engine/metadata-modules/message-channel/dtos/ingest-app-messages.output';
 import { MessageChannelGraphqlApiExceptionInterceptor } from 'src/engine/metadata-modules/message-channel/interceptors/message-channel-graphql-api-exception.interceptor';
 import { ApplicationMessageIngestionService } from 'src/engine/metadata-modules/message-channel/services/application-message-ingestion.service';
@@ -49,6 +52,23 @@ export class ApplicationMessageIngestionResolver {
     @Args('input') input: IngestAppMessagesInput,
   ): Promise<IngestAppMessagesOutput> {
     return this.applicationMessageIngestionService.ingest({
+      applicationId: application.id,
+      workspaceId: workspace.id,
+      requestUserWorkspaceId: userWorkspaceId ?? null,
+      messageChannelId: input.messageChannelId,
+      messages: input.messages,
+    });
+  }
+
+  @Mutation(() => Boolean)
+  async updateAppMessages(
+    @AuthApplication() application: FlatApplication,
+    @AuthWorkspace() workspace: FlatWorkspace,
+    @AuthUserWorkspaceId({ allowUndefined: true })
+    userWorkspaceId: string | undefined,
+    @Args('input') input: UpdateAppMessagesInput,
+  ): Promise<boolean> {
+    return this.applicationMessageIngestionService.update({
       applicationId: application.id,
       workspaceId: workspace.id,
       requestUserWorkspaceId: userWorkspaceId ?? null,

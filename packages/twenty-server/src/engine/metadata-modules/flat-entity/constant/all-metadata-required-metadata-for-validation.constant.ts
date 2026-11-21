@@ -139,6 +139,7 @@ export const ALL_METADATA_REQUIRED_METADATA_FOR_VALIDATION = {
   applicationVariable: {},
   connectionProvider: {},
   messagingProvider: {
+    objectMetadata: true,
     connectionProvider: true,
     logicFunction: true,
   },

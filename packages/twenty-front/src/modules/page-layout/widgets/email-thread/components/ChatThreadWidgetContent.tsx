@@ -97,6 +97,7 @@ export const ChatThreadWidgetContent = ({
 
   const canChannelSend =
     isDefined(messageChannel) &&
+    messageChannel.canSendMessages === true &&
     isNonEmptyString(messageChannel.messagingProviderUniversalIdentifier) &&
     messageChannel.isSyncEnabled;
 

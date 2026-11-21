@@ -12,6 +12,10 @@ const UPDATE_APP_MESSAGE_CHANNEL_MUTATION = `
 `;
 
 export type UpdateMessageChannelInput = {
+  isContactAutoCreationEnabled?: boolean;
+  contactAutoCreationPolicy?: 'NONE' | 'SENT' | 'SENT_AND_RECEIVED';
+  excludeGroupEmails?: boolean;
+  excludeNonProfessionalEmails?: boolean;
   id: string;
   // Omitted leaves the current label untouched; null clears it.
   displayName?: string | null;

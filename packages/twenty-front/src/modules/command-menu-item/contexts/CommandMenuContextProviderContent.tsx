@@ -1,3 +1,4 @@
+import { useCanReplyToEmailThread } from '@/activities/emails/hooks/useCanReplyToEmailThread';
 import { useGlobalRecordCreationCommandMenuItems } from '@/command-menu-item/hooks/useGlobalRecordCreationCommandMenuItems';
 import { CommandMenuItemContainerType } from '@/command-menu-item/types/CommandMenuItemContainerType';
 import {
@@ -64,6 +65,16 @@ export const CommandMenuContextProviderContent = ({
   commandMenuContextApi,
   isInPreviewMode,
 }: CommandMenuContextProviderContentProps) => {
+  const selectedMessageThreadId =
+    commandMenuContextApi.objectMetadataItem.nameSingular ===
+      StandardObjectNameSingular.MessageThread &&
+    commandMenuContextApi.numberOfSelectedRecords === 1
+      ? (commandMenuContextApi.selectedRecords[0]?.id ?? null)
+      : null;
+  const canReplyToEmailThread = useCanReplyToEmailThread(
+    selectedMessageThreadId,
+  );
+
   const isCoreWorkflow = commandMenuContextApi.coreObjectName === 'workflow';
   const isCoreWorkflowIndex =
     isCoreWorkflow &&
@@ -111,6 +122,11 @@ export const CommandMenuContextProviderContent = ({
       (commandMenuContextApi.featureFlags.IS_AI_CHAT_INBOX_ENABLED ?? false);
 
     const contextCommandMenuItems = commandMenuItemsToDisplay
+      .filter(
+        (item) =>
+          item.engineComponentKey !==
+            EngineComponentKey.REPLY_TO_EMAIL_THREAD || canReplyToEmailThread,
+      )
       .filter(
         (item) =>
           !isCoreWorkflowIndex ||
@@ -174,6 +190,7 @@ export const CommandMenuContextProviderContent = ({
       shouldDisplayGlobalRecordCreationCommands,
     });
   }, [
+    canReplyToEmailThread,
     containerType,
     commandMenuContextApi,
     commandMenuContextApiForAvailability,

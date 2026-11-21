@@ -5,7 +5,10 @@ import { validate } from 'class-validator';
 import { MAX_APP_MESSAGE_ATTACHMENTS_PER_MESSAGE } from 'twenty-shared/application';
 import { MessageParticipantRole } from 'twenty-shared/types';
 
-import { IngestAppMessagesInput } from 'src/engine/metadata-modules/message-channel/dtos/ingest-app-messages.input';
+import {
+  IngestAppMessagesInput,
+  UpdateAppMessagesInput,
+} from 'src/engine/metadata-modules/message-channel/dtos/ingest-app-messages.input';
 
 const MESSAGE_CHANNEL_ID = '55555555-5555-4555-8555-555555555555';
 
@@ -89,6 +92,56 @@ describe('IngestAppMessagesInput attachments', () => {
             label: 'photo.png',
           }),
         ),
+      ),
+    ).not.toHaveLength(0);
+  });
+});
+
+describe('UpdateAppMessagesInput', () => {
+  const updateInput = (providerMetadata: unknown) =>
+    plainToInstance(UpdateAppMessagesInput, {
+      messageChannelId: MESSAGE_CHANNEL_ID,
+      messages: [{ externalId: 'T:C:1', providerMetadata }],
+    });
+
+  it('accepts metadata-only updates without inventing a sender or text', async () => {
+    expect(
+      await validate(
+        updateInput({
+          updatedAt: '2026-11-21T00:00:00.000Z',
+          deletedAt: '2026-11-21T00:00:00.000Z',
+        }),
+      ),
+    ).toHaveLength(0);
+  });
+
+  it('requires a valid revision timestamp', async () => {
+    expect(
+      await validate(updateInput({ updatedAt: 'invalid' })),
+    ).not.toHaveLength(0);
+    expect(await validate(updateInput({}))).not.toHaveLength(0);
+  });
+
+  it('rejects executable and insecure permalink schemes', async () => {
+    for (const permalink of [
+      'javascript:alert(1)',
+      'http://slack.com/archives/C1/p1',
+    ]) {
+      expect(
+        await validate(
+          updateInput({ updatedAt: '2026-11-21T00:00:00.000Z', permalink }),
+        ),
+      ).not.toHaveLength(0);
+    }
+  });
+
+  it('rejects negative reaction counts', async () => {
+    expect(
+      await validate(
+        updateInput({
+          updatedAt: '2026-11-21T00:00:00.000Z',
+          reactions: [{ name: 'thumbsup', count: -1, users: [] }],
+        }),
       ),
     ).not.toHaveLength(0);
   });

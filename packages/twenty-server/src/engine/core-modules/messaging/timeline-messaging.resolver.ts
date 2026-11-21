@@ -11,7 +11,14 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PermissionFlagType } from 'twenty-shared/constants';
-import { StandardObjectNameSingular } from 'twenty-shared/types';
+import {
+  ConnectedAccountProvider,
+  MessageChannelType,
+  StandardObjectNameSingular,
+} from 'twenty-shared/types';
+import { isDefined } from 'twenty-shared/utils';
+import { getWorkspaceAuthContext } from 'src/engine/core-modules/auth/storage/workspace-auth-context.storage';
+import { isUserAuthContext } from 'src/engine/core-modules/auth/guards/is-user-auth-context.guard';
 
 import { CoreResolver } from 'src/engine/api/graphql/graphql-config/decorators/core-resolver.decorator';
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
@@ -51,6 +58,14 @@ const TIMELINE_MESSAGING_READ_ACCESS_POLICY: AccessPolicy = {
     application: false,
   },
   requiredPermissionFlags: [],
+};
+
+const TIMELINE_MESSAGING_APP_READ_ACCESS_POLICY: AccessPolicy = {
+  ...TIMELINE_MESSAGING_READ_ACCESS_POLICY,
+  authPrincipals: {
+    ...TIMELINE_MESSAGING_READ_ACCESS_POLICY.authPrincipals,
+    application: { withUser: true, withoutUser: false },
+  },
 };
 
 @ArgsType()
@@ -171,7 +186,7 @@ export class TimelineMessagingResolver {
 
   @Query(() => TimelineThreadsWithTotalDTO)
   @UseGuards(
-    AccessPolicyGuard(TIMELINE_MESSAGING_READ_ACCESS_POLICY),
+    AccessPolicyGuard(TIMELINE_MESSAGING_APP_READ_ACCESS_POLICY),
     CustomPermissionGuard,
   )
   async getTimelineThreadsFromObjectRecord(
@@ -187,6 +202,11 @@ export class TimelineMessagingResolver {
       sourceFieldMetadataIdPaths,
     }: GetTimelineThreadsFromObjectRecordArgs,
   ) {
+    const authContext = getWorkspaceAuthContext();
+    const applicationId = isUserAuthContext(authContext)
+      ? authContext.application?.id
+      : undefined;
+
     return this.getMessagesFromPersonIdsService.getMessagesFromObjectRecord({
       userWorkspaceId,
       objectNameSingular,
@@ -194,7 +214,13 @@ export class TimelineMessagingResolver {
       workspaceId: workspace.id,
       page,
       pageSize,
-      channel,
+      channel: isDefined(applicationId)
+        ? {
+            type: MessageChannelType.APP,
+            provider: ConnectedAccountProvider.APP,
+            applicationId,
+          }
+        : channel,
       sourceFieldMetadataIdPaths,
     });
   }

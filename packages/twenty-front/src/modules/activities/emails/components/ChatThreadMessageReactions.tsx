@@ -2,6 +2,7 @@ import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared/utils';
 import { ReactionButton } from 'twenty-ui/components/input';
+import { Tag } from 'twenty-ui/primitives/data-display';
 import { Tooltip } from 'twenty-ui/primitives/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme';
 
@@ -37,14 +38,23 @@ export const ChatThreadMessageReactions = ({
         return (
           <Tooltip key={emoji} content={reactors}>
             <StyledReaction>
-              <ReactionButton
-                emoji={emoji}
-                count={count}
-                pressed={isOwn}
-                aria-label={t`${emoji} by ${reactors}`}
-                disabled={!isDefined(onReactionToggle)}
-                onPressedChange={() => onReactionToggle?.(emoji)}
-              />
+              {isDefined(onReactionToggle) ? (
+                <ReactionButton
+                  emoji={emoji}
+                  count={count}
+                  pressed={isOwn}
+                  aria-label={t`${emoji} by ${reactors}`}
+                  onPressedChange={() => onReactionToggle?.(emoji)}
+                />
+              ) : (
+                <Tag
+                  color="gray"
+                  startIcon={emoji}
+                  aria-label={t`${emoji} by ${reactors}`}
+                >
+                  {count}
+                </Tag>
+              )}
             </StyledReaction>
           </Tooltip>
         );

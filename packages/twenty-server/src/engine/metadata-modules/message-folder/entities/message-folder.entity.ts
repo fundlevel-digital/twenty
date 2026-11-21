@@ -14,6 +14,8 @@ import {
 
 import { MessageFolderPendingSyncAction } from 'twenty-shared/types';
 
+import { ADD_APP_CONVERSATION_BINDINGS_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-60/add-app-conversation-bindings-upgrade-command-name.constant';
+import { WasIntroducedInUpgrade } from 'src/engine/core-modules/upgrade/decorators/was-introduced-in-upgrade.decorator';
 import { MessageChannelEntity } from 'src/engine/metadata-modules/message-channel/entities/message-channel.entity';
 import { WorkspaceRelatedEntity } from 'src/engine/workspace-manager/types/workspace-related-entity.type';
 
@@ -45,6 +47,12 @@ export class MessageFolderEntity extends WorkspaceRelatedEntity {
 
   @Column({ type: 'varchar', nullable: true })
   externalId: string | null;
+
+  @WasIntroducedInUpgrade({
+    upgradeCommandName: ADD_APP_CONVERSATION_BINDINGS_UPGRADE_COMMAND_NAME,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  applicationRecordId: string | null;
 
   @Column({
     type: 'enum',

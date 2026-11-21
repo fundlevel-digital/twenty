@@ -1,4 +1,7 @@
-import { type ActorMetadata } from 'twenty-shared/types';
+import {
+  type ProviderMessageMetadata,
+  type ActorMetadata,
+} from 'twenty-shared/types';
 
 import { type MessageDirection } from 'src/modules/messaging/common/enums/message-direction.enum';
 import { type MessageParticipantWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-participant.workspace-entity';
@@ -19,8 +22,11 @@ export type Message = Omit<
   | 'messageCampaignId'
   | 'attachments'
   | 'createdBy'
+  | 'providerMetadata'
 > & {
   createdBy?: ActorMetadata;
+  providerMetadata?: ProviderMessageMetadata;
+  sharedThreadApplicationId?: string;
   attachments: MessageAttachmentMetadata[];
   externalId: string;
   messageThreadExternalId: string;

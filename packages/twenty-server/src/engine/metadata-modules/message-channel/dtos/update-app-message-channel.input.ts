@@ -9,12 +9,34 @@ import {
   IsUUID,
   MaxLength,
 } from 'class-validator';
-import { MessageChannelVisibility } from 'twenty-shared/types';
+import {
+  MessageChannelVisibility,
+  MessageChannelContactAutoCreationPolicy,
+} from 'twenty-shared/types';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
 
 @InputType('UpdateAppMessageChannelInput')
 export class UpdateAppMessageChannelInput {
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  isContactAutoCreationEnabled?: boolean;
+
+  @Field(() => MessageChannelContactAutoCreationPolicy, { nullable: true })
+  @IsOptional()
+  @IsEnum(MessageChannelContactAutoCreationPolicy)
+  contactAutoCreationPolicy?: MessageChannelContactAutoCreationPolicy;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  excludeGroupEmails?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  excludeNonProfessionalEmails?: boolean;
   @Field(() => UUIDScalarType)
   @IsUUID()
   @IsNotEmpty()

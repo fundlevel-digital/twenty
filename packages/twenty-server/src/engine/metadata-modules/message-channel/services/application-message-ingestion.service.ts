@@ -1,3 +1,6 @@
+import { ApplicationMessageContactCreationService } from 'src/engine/metadata-modules/message-channel/services/application-message-contact-creation.service';
+import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
+import { resolveAppMessageFieldWrites } from 'src/engine/metadata-modules/message-channel/utils/resolve-app-message-field-writes.util';
 import { Injectable } from '@nestjs/common';
 
 import { FeatureFlagKey, MessageParticipantRole } from 'twenty-shared/types';
@@ -8,13 +11,17 @@ import { CacheLockService } from 'src/engine/core-modules/cache-lock/cache-lock.
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { APP_INGESTION_LOCK_OPTIONS } from 'src/engine/metadata-modules/message-channel/constants/app-ingestion-lock-options.constant';
 import { type MessageChannelEntity } from 'src/engine/metadata-modules/message-channel/entities/message-channel.entity';
-import { type AppMessageInput } from 'src/engine/metadata-modules/message-channel/dtos/ingest-app-messages.input';
+import {
+  type AppMessageInput,
+  type UpdateAppMessageInput,
+} from 'src/engine/metadata-modules/message-channel/dtos/ingest-app-messages.input';
 import { type IngestAppMessagesOutput } from 'src/engine/metadata-modules/message-channel/dtos/ingest-app-messages.output';
 import {
   MessageChannelException,
   MessageChannelExceptionCode,
 } from 'src/engine/metadata-modules/message-channel/message-channel.exception';
 import { ApplicationMessageChannelsService } from 'src/engine/metadata-modules/message-channel/services/application-message-channels.service';
+import { mergeAppMessageUpdate } from 'src/engine/metadata-modules/message-channel/utils/merge-app-message-update.util';
 import { buildAppIngestionLockKey } from 'src/engine/metadata-modules/message-channel/utils/build-app-ingestion-lock-key.util';
 import { buildAppMessageHeaderMessageId } from 'src/engine/metadata-modules/message-channel/utils/build-app-message-header-message-id.util';
 import { resolveAppMessageDirection } from 'src/engine/metadata-modules/message-channel/utils/resolve-app-message-direction.util';
@@ -24,6 +31,8 @@ import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
+import { type MessageWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message.workspace-entity';
+import { type MessageChannelMessageAssociationWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-channel-message-association.workspace-entity';
 import { type AttachmentWorkspaceEntity } from 'src/modules/attachment/standard-objects/attachment.workspace-entity';
 import { PersonHandleFieldService } from 'src/modules/match-participant/person-handle-field/person-handle-field.service';
 import { type PersonHandleField } from 'src/modules/match-participant/person-handle-field/types/person-handle-field.type';
@@ -50,6 +59,8 @@ export class ApplicationMessageIngestionService {
     @InjectWorkspaceScopedRepository(MessageFolderEntity)
     private readonly messageFolderRepository: WorkspaceScopedRepository<MessageFolderEntity>,
     private readonly featureFlagService: FeatureFlagService,
+    private readonly workspaceCacheService: WorkspaceCacheService,
+    private readonly applicationMessageContactCreationService: ApplicationMessageContactCreationService,
   ) {}
 
   async ingest({
@@ -84,37 +95,111 @@ export class ApplicationMessageIngestionService {
         messageChannel.participantHandleFieldUniversalIdentifier,
     });
 
-    const messagesToSave = messages.map((message) =>
-      this.toMessageWithParticipants({
-        message: isDefined(personHandleField)
-          ? withCanonicalParticipantHandlesOrThrow({
-              message,
-              personHandleField,
-            })
-          : message,
-        applicationId,
-        messageChannel,
-      }),
-    );
-
-    // save reads before writing and headerMessageId has no unique index, so concurrent redeliveries would duplicate
-    // locked per channel, the narrowest scope since dedup never spans channels
-    const savedMessages = await this.cacheLockService.withLock(
-      async () =>
-        this.saveMessagesService.saveMessagesAndEnqueueContactCreation({
-          messagesToSave: await this.withMessageFolderIdsOrThrow({
-            workspaceId,
-            messageChannelId,
-            messages: messagesToSave,
-          }),
-          // the save path only reads inert settings and the id off the channel
+    const deduplicateAcrossConnections =
+      await this.applicationMessageChannelsService.deduplicatesAcrossConnections(
+        {
+          applicationId,
+          workspaceId,
           messageChannel,
           connectedAccount,
+        },
+      );
+
+    const applicationFieldWrites = await this.validateApplicationFields({
+      applicationId,
+      workspaceId,
+      messages,
+    });
+
+    // save reads before writing and headerMessageId has no unique index, so concurrent redeliveries would duplicate
+    const savedMessages = await this.cacheLockService.withLock(
+      async () => {
+        const resolvedMessages =
+          await this.applicationMessageContactCreationService.resolve({
+            messages,
+            messageChannel,
+            connectedAccount,
+            workspaceId,
+          });
+        const messagesToSave = resolvedMessages.map((message) =>
+          this.toMessageWithParticipants({
+            message: isDefined(personHandleField)
+              ? withCanonicalParticipantHandlesOrThrow({
+                  message,
+                  personHandleField,
+                })
+              : message,
+            applicationId,
+            messageChannel,
+            deduplicateAcrossConnections,
+          }),
+        );
+        const result =
+          await this.saveMessagesService.saveMessagesAndEnqueueContactCreation({
+            messagesToSave: await this.withMessageFolderIdsOrThrow({
+              workspaceId,
+              messageChannelId,
+              messages: messagesToSave,
+            }),
+            messageChannel,
+            connectedAccount,
+            workspaceId,
+            folderLinkUpdate: 'add',
+            personHandleField: personHandleField ?? undefined,
+          });
+        if (!isDefined(result)) {
+          throw new MessageChannelException(
+            `Ingestion into message channel ${messageChannelId} did not persist`,
+            MessageChannelExceptionCode.INVALID_MESSAGE_CHANNEL_INPUT,
+          );
+        }
+        if (applicationFieldWrites.length > 0) {
+          await this.workspaceOrmManager.executeInWorkspaceContext(
+            async () => {
+              for (const write of applicationFieldWrites) {
+                const id =
+                  write.objectName === 'message'
+                    ? result.messageExternalIdsAndIdsMap.get(write.externalId)
+                    : result.messageExternalIdToMessageThreadIdMap.get(
+                        write.externalId,
+                      );
+                if (!isDefined(id)) {
+                  throw new Error('Application field target was not persisted');
+                }
+                await this.workspaceOrmManager
+                  .getRepositoryWithoutPermissionChecks(write.objectName)
+                  .update(id, write.patch);
+              }
+            },
+            buildSystemAuthContext(workspaceId),
+            { lite: true },
+          );
+        }
+        await this.applyUpdates({
           workspaceId,
-          folderLinkUpdate: 'add',
-          personHandleField: personHandleField ?? undefined,
-        }),
-      buildAppIngestionLockKey({ workspaceId, messageChannelId }),
+          applicationId,
+          messageChannelId,
+          deduplicateAcrossConnections,
+          messages: messages.flatMap((message) =>
+            isDefined(message.providerMetadata)
+              ? [
+                  {
+                    externalId: message.externalId,
+                    text: message.text,
+                    providerMetadata: message.providerMetadata,
+                  },
+                ]
+              : [],
+          ),
+        });
+        return result;
+      },
+      buildAppIngestionLockKey({
+        workspaceId,
+        messageChannelId,
+        applicationId,
+        deduplicateAcrossConnections,
+      }),
       APP_INGESTION_LOCK_OPTIONS,
     );
 
@@ -137,7 +222,7 @@ export class ApplicationMessageIngestionService {
 
     // never drop a row: the app would see success with nothing to retry
     return {
-      messages: messagesToSave.map((message) => {
+      messages: messages.map((message) => {
         const messageId = messageExternalIdsAndIdsMap.get(message.externalId);
         const messageThreadId = messageExternalIdToMessageThreadIdMap.get(
           message.externalId,
@@ -158,6 +243,231 @@ export class ApplicationMessageIngestionService {
         };
       }),
     };
+  }
+
+  private async validateApplicationFields({
+    applicationId,
+    workspaceId,
+    messages,
+  }: {
+    applicationId: string;
+    workspaceId: string;
+    messages: Pick<AppMessageInput, 'externalId' | 'applicationFields'>[];
+  }): Promise<
+    {
+      externalId: string;
+      objectName: 'message' | 'messageThread';
+      patch: Record<string, string | null>;
+    }[]
+  > {
+    if (!messages.some((message) => isDefined(message.applicationFields))) {
+      return [];
+    }
+    const { flatFieldMetadataMaps, flatObjectMetadataMaps } =
+      await this.workspaceCacheService.getOrRecompute(workspaceId, [
+        'flatFieldMetadataMaps',
+        'flatObjectMetadataMaps',
+      ]);
+    const writes: {
+      externalId: string;
+      objectName: 'message' | 'messageThread';
+      patch: Record<string, string | null>;
+    }[] = [];
+    await this.workspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        for (const message of messages) {
+          for (const [key, objectName] of [
+            ['message', 'message'],
+            ['thread', 'messageThread'],
+          ] as const) {
+            const values = message.applicationFields?.[key];
+            if (!isDefined(values)) {
+              continue;
+            }
+            const { patch, references } = resolveAppMessageFieldWrites({
+              applicationId,
+              objectName,
+              values,
+              fields: Object.values(
+                flatFieldMetadataMaps.byUniversalIdentifier,
+              ),
+              objects: Object.values(
+                flatObjectMetadataMaps.byUniversalIdentifier,
+              ),
+            });
+            for (const reference of references) {
+              const record = await this.workspaceOrmManager
+                .getRepositoryWithoutPermissionChecks(reference.objectName)
+                .findOne({ where: { id: reference.id } });
+              if (
+                !isDefined(record) ||
+                (reference.objectName === 'message' &&
+                  (typeof record.headerMessageId !== 'string' ||
+                    !record.headerMessageId.startsWith(
+                      `app:${applicationId}:`,
+                    )))
+              ) {
+                throw new MessageChannelException(
+                  'Application field relation target is not owned by this application',
+                  MessageChannelExceptionCode.INVALID_MESSAGE_CHANNEL_INPUT,
+                );
+              }
+            }
+            if (Object.keys(patch).length > 0) {
+              writes.push({
+                externalId: message.externalId,
+                objectName,
+                patch,
+              });
+            }
+          }
+        }
+      },
+      buildSystemAuthContext(workspaceId),
+      { lite: true },
+    );
+    return writes;
+  }
+
+  async update(
+    args: Omit<IngestArgs, 'messages'> & {
+      messages: UpdateAppMessageInput[];
+    },
+  ): Promise<boolean> {
+    const { applicationId, workspaceId, messageChannelId } = args;
+    const { messageChannel, connectedAccount } =
+      await this.applicationMessageChannelsService.findOwnedOrThrow({
+        ...args,
+        id: messageChannelId,
+      });
+    if (!messageChannel.isSyncEnabled) {
+      throw new MessageChannelException(
+        `Message channel ${messageChannelId} has sync disabled`,
+        MessageChannelExceptionCode.INVALID_MESSAGE_CHANNEL_INPUT,
+      );
+    }
+    const deduplicateAcrossConnections =
+      await this.applicationMessageChannelsService.deduplicatesAcrossConnections(
+        {
+          applicationId,
+          workspaceId,
+          messageChannel,
+          connectedAccount,
+        },
+      );
+    const updated = await this.cacheLockService.withLock(
+      async () => {
+        await this.applyUpdates({ ...args, deduplicateAcrossConnections });
+        return true;
+      },
+      buildAppIngestionLockKey({
+        workspaceId,
+        applicationId,
+        messageChannelId,
+        deduplicateAcrossConnections,
+      }),
+      APP_INGESTION_LOCK_OPTIONS,
+    );
+    if (!isDefined(updated)) {
+      throw new MessageChannelException(
+        'Message update lock could not be acquired',
+        MessageChannelExceptionCode.INVALID_MESSAGE_CHANNEL_INPUT,
+      );
+    }
+    return true;
+  }
+
+  private async applyUpdates({
+    applicationId,
+    workspaceId,
+    messageChannelId,
+    deduplicateAcrossConnections,
+    messages,
+  }: {
+    applicationId: string;
+    workspaceId: string;
+    messageChannelId: string;
+    deduplicateAcrossConnections: boolean;
+    messages: UpdateAppMessageInput[];
+  }): Promise<void> {
+    if (messages.length === 0) {
+      return;
+    }
+    const fieldWrites = await this.validateApplicationFields({
+      applicationId,
+      workspaceId,
+      messages,
+    });
+    await this.workspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const associationRepository =
+          this.workspaceOrmManager.getRepositoryWithoutPermissionChecks<MessageChannelMessageAssociationWorkspaceEntity>(
+            'messageChannelMessageAssociation',
+          );
+        const messageRepository =
+          this.workspaceOrmManager.getRepositoryWithoutPermissionChecks<MessageWorkspaceEntity>(
+            'message',
+          );
+        const associations = await associationRepository.find({
+          where: {
+            messageChannelId,
+            messageExternalId: In(messages.map(({ externalId }) => externalId)),
+          },
+        });
+        if (associations.length === 0) {
+          return;
+        }
+        const storedMessages = await messageRepository.find({
+          where: { id: In(associations.map(({ messageId }) => messageId)) },
+        });
+        for (const update of messages) {
+          const association = associations.find(
+            ({ messageExternalId }) => messageExternalId === update.externalId,
+          );
+          const storedMessage = storedMessages.find(
+            ({ id }) => id === association?.messageId,
+          );
+          const expectedHeader = buildAppMessageHeaderMessageId({
+            applicationId,
+            messageChannelId,
+            externalId: update.externalId,
+            deduplicateAcrossConnections,
+          });
+          if (
+            !isDefined(storedMessage) ||
+            storedMessage.headerMessageId !== expectedHeader
+          ) {
+            continue;
+          }
+          for (const write of fieldWrites.filter(
+            (write) => write.externalId === update.externalId,
+          )) {
+            const id =
+              write.objectName === 'message'
+                ? storedMessage.id
+                : storedMessage.messageThreadId;
+            if (!isDefined(id)) {
+              continue;
+            }
+            await this.workspaceOrmManager
+              .getRepositoryWithoutPermissionChecks(write.objectName)
+              .update(id, write.patch);
+          }
+          const patch = mergeAppMessageUpdate({
+            previousMetadata: storedMessage.providerMetadata,
+            providerMetadata: update.providerMetadata,
+            text: update.text,
+          });
+          if (!isDefined(patch)) {
+            continue;
+          }
+          await messageRepository.update(storedMessage.id, patch);
+          Object.assign(storedMessage, patch);
+        }
+      },
+      buildSystemAuthContext(workspaceId),
+      { lite: true },
+    );
   }
 
   private async findMessageIdsWithAttachments({
@@ -207,17 +517,26 @@ export class ApplicationMessageIngestionService {
     message,
     applicationId,
     messageChannel,
+    deduplicateAcrossConnections,
   }: {
     message: AppMessageInput;
     applicationId: string;
     messageChannel: MessageChannelEntity;
+    deduplicateAcrossConnections: boolean;
   }): MessageWithParticipants {
     return {
       headerMessageId: buildAppMessageHeaderMessageId({
         applicationId,
         messageChannelId: messageChannel.id,
         externalId: message.externalId,
+        deduplicateAcrossConnections,
       }),
+      ...(isDefined(message.providerMetadata)
+        ? { providerMetadata: message.providerMetadata }
+        : {}),
+      ...(deduplicateAcrossConnections
+        ? { sharedThreadApplicationId: applicationId }
+        : {}),
       subject: message.subject ?? null,
       text: message.text,
       receivedAt: message.receivedAt,

@@ -1,6 +1,8 @@
+import { buildAppConversationRecordVisibilityFilter } from 'src/engine/core-modules/messaging/utils/build-app-conversation-record-visibility-filter.util';
 import { msg } from '@lingui/core/macro';
 import { isNonEmptyString } from '@sniptt/guards';
 import { QUERY_MAX_RECORDS } from 'twenty-shared/constants';
+import { STANDARD_OBJECTS } from 'twenty-shared/metadata';
 import {
   type ObjectRecord,
   type ObjectRecordsOperationType,
@@ -19,6 +21,7 @@ import {
 } from 'typeorm';
 
 import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
+import { buildMessagingReadCondition } from 'src/engine/twenty-orm/repository/utils/build-messaging-read-condition.util';
 import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { isRecordStockTrackedObject } from 'src/engine/core-modules/usage-limit/utils/is-record-stock-tracked-object.util';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
@@ -2119,6 +2122,51 @@ export class WorkspaceRepository<TEntity extends ObjectLiteral = ObjectRecord> {
       flatObjectMetadata,
       operationType,
     });
+
+    if (
+      operationType === 'read' &&
+      isDefined(
+        this.options.internalContext.flatFieldMetadataMaps
+          .byUniversalIdentifier[
+          STANDARD_OBJECTS.message.fields.providerMetadata.universalIdentifier
+        ],
+      )
+    ) {
+      const messagingCondition = buildMessagingReadCondition({
+        objectNameSingular: flatObjectMetadata.nameSingular,
+        alias,
+        workspaceId: this.options.internalContext.workspaceId,
+        authContext: this.options.authContext,
+      });
+
+      if (isDefined(messagingCondition)) {
+        this.addConditionForAlias({
+          queryBuilder,
+          alias,
+          ...messagingCondition,
+        });
+      }
+    }
+
+    if (operationType === 'read') {
+      const conversationCondition = buildAppConversationRecordVisibilityFilter({
+        workspaceId: this.options.internalContext.workspaceId,
+        recordAlias: alias,
+        objectMetadata: flatObjectMetadata,
+        flatMessagingProviderMaps:
+          this.options.internalContext.flatMessagingProviderMaps,
+        authContext: this.options.authContext,
+      });
+
+      if (isDefined(conversationCondition)) {
+        this.addConditionForAlias({
+          queryBuilder,
+          alias,
+          sql: conversationCondition.condition,
+          parameters: conversationCondition.parameters,
+        });
+      }
+    }
 
     if (condition === true) {
       return;

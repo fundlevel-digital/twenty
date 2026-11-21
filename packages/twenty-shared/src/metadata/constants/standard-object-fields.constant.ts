@@ -1098,6 +1098,9 @@ export const STANDARD_OBJECT_FIELDS = {
     ...buildStandardObjectSystemFields(
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message,
     ),
+    providerMetadata: {
+      universalIdentifier: 'f94538af-6588-4c28-9244-b99a7433d7c0',
+    },
     headerMessageId: {
       universalIdentifier: '20202020-72b5-416d-aed8-b55609067d01',
     },

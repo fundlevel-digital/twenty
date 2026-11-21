@@ -5,6 +5,13 @@ import { useEmailThread } from '@/activities/emails/hooks/useEmailThread';
 
 const mockUseFindManyRecords = jest.fn();
 const mockUseAtomFamilyStateValue = jest.fn();
+const mockMessageMetadataFields = [{ name: 'providerMetadata' }];
+
+jest.mock('@/object-metadata/hooks/useObjectMetadataItem', () => ({
+  useObjectMetadataItem: () => ({
+    objectMetadataItem: { fields: mockMessageMetadataFields },
+  }),
+}));
 
 jest.mock('@/object-record/hooks/useFindManyRecords', () => ({
   useFindManyRecords: (args: { objectNameSingular: string }) =>
@@ -42,7 +49,11 @@ jest.mock('@/ui/utilities/state/jotai/hooks/useAtomFamilyStateValue', () => ({
 
 const THREAD = { id: 'thread-id' };
 
-const buildMessage = (id: string) => ({ id, messageParticipants: [] });
+const buildMessage = (id: string, hidden = false) => ({
+  id,
+  messageParticipants: [],
+  providerMetadata: hidden ? { hidden: true } : null,
+});
 
 const stubQueries = ({
   messages,
@@ -82,6 +93,33 @@ describe('useEmailThread', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseAtomFamilyStateValue.mockReturnValue(false);
+  });
+
+  it('omits messages hidden by the server', () => {
+    stubQueries({
+      messages: [buildMessage('message-1'), buildMessage('message-2', true)],
+      associations: [],
+    });
+
+    const { result } = renderHook(() => useEmailThread('thread-id'));
+
+    expect(result.current.messages.map(({ id }) => id)).toEqual(['message-1']);
+  });
+
+  it('removes a previously loaded message after its hidden marker arrives', () => {
+    stubQueries({ messages: [buildMessage('message-1')], associations: [] });
+
+    const { result, rerender } = renderHook(() => useEmailThread('thread-id'));
+
+    expect(result.current.messages).toHaveLength(1);
+
+    stubQueries({
+      messages: [buildMessage('message-1', true)],
+      associations: [],
+    });
+    rerender();
+
+    expect(result.current.messages).toEqual([]);
   });
 
   it('keeps the reply channel while the association of a new last message loads', () => {

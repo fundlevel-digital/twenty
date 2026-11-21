@@ -16,6 +16,7 @@ import { buildAppIngestionLockKey } from 'src/engine/metadata-modules/message-ch
 import { computeAppMessageFolderSyncPlan } from 'src/engine/metadata-modules/message-channel/utils/compute-app-message-folder-sync-plan.util';
 import { type MessageFolderDTO } from 'src/engine/metadata-modules/message-folder/dtos/message-folder.dto';
 import { MessageFolderEntity } from 'src/engine/metadata-modules/message-folder/entities/message-folder.entity';
+import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
@@ -40,6 +41,7 @@ export class ApplicationMessageFoldersService {
     private readonly messageFolderRepository: WorkspaceScopedRepository<MessageFolderEntity>,
     private readonly workspaceOrmManager: WorkspaceOrmManager,
     private readonly cacheLockService: CacheLockService,
+    private readonly workspaceCacheService: WorkspaceCacheService,
   ) {}
 
   async list({
@@ -71,18 +73,33 @@ export class ApplicationMessageFoldersService {
 
   async sync({
     folders,
+    isPartial = false,
     ...scope
   }: ChannelScope & {
     folders: AppMessageFolderInput[];
+    isPartial?: boolean;
   }): Promise<MessageFolderDTO[]> {
-    await this.findOwnedChannelOrThrow(scope);
+    const { messageChannel } =
+      await this.applicationMessageChannelsService.findOwnedOrThrow({
+        applicationId: scope.applicationId,
+        workspaceId: scope.workspaceId,
+        requestUserWorkspaceId: scope.requestUserWorkspaceId,
+        id: scope.messageChannelId,
+      });
 
     this.assertExternalIdsAreUnique(folders);
+    await this.validateApplicationRecordBindings({
+      ...scope,
+      folders,
+      messagingProviderUniversalIdentifier:
+        messageChannel.messagingProviderUniversalIdentifier,
+    });
 
     const { workspaceId, messageChannelId } = scope;
 
     await this.cacheLockService.withLock(
-      () => this.applySync({ workspaceId, messageChannelId, folders }),
+      () =>
+        this.applySync({ workspaceId, messageChannelId, folders, isPartial }),
       buildAppIngestionLockKey({ workspaceId, messageChannelId }),
       APP_INGESTION_LOCK_OPTIONS,
     );
@@ -97,10 +114,12 @@ export class ApplicationMessageFoldersService {
     workspaceId,
     messageChannelId,
     folders,
+    isPartial,
   }: {
     workspaceId: string;
     messageChannelId: string;
     folders: AppMessageFolderInput[];
+    isPartial: boolean;
   }): Promise<void> {
     const existingFolders = await this.messageFolderRepository.find(
       workspaceId,
@@ -111,6 +130,7 @@ export class ApplicationMessageFoldersService {
       computeAppMessageFolderSyncPlan({
         existingFolders,
         requestedFolders: folders,
+        isPartial,
       });
 
     if (foldersToCreate.length > 0) {
@@ -119,6 +139,7 @@ export class ApplicationMessageFoldersService {
         foldersToCreate.map((folder) => ({
           messageChannelId,
           externalId: folder.externalId,
+          applicationRecordId: folder.applicationRecordId ?? null,
           name: folder.name,
           isSynced: folder.isSynced,
           isSentFolder: false,
@@ -142,6 +163,68 @@ export class ApplicationMessageFoldersService {
         id: In(folderIdsToDelete),
       });
     }
+  }
+
+  private async validateApplicationRecordBindings({
+    workspaceId,
+    applicationId,
+    messagingProviderUniversalIdentifier,
+    folders,
+  }: ApplicationScope & {
+    messagingProviderUniversalIdentifier: string | null;
+    folders: AppMessageFolderInput[];
+  }): Promise<void> {
+    const recordIds = [
+      ...new Set(
+        folders.map((folder) => folder.applicationRecordId).filter(isDefined),
+      ),
+    ];
+
+    if (recordIds.length === 0) {
+      return;
+    }
+
+    const { flatMessagingProviderMaps, flatObjectMetadataMaps } =
+      await this.workspaceCacheService.getOrRecompute(workspaceId, [
+        'flatMessagingProviderMaps',
+        'flatObjectMetadataMaps',
+      ]);
+    const provider = isDefined(messagingProviderUniversalIdentifier)
+      ? flatMessagingProviderMaps.byUniversalIdentifier[
+          messagingProviderUniversalIdentifier
+        ]
+      : undefined;
+    const objectMetadata = isDefined(provider?.channelObjectUniversalIdentifier)
+      ? flatObjectMetadataMaps.byUniversalIdentifier[
+          provider.channelObjectUniversalIdentifier
+        ]
+      : undefined;
+    const invalidBinding = () =>
+      new MessageChannelException(
+        'Folder records must belong to the application conversation object',
+        MessageChannelExceptionCode.INVALID_MESSAGE_CHANNEL_INPUT,
+      );
+
+    if (
+      provider?.applicationId !== applicationId ||
+      objectMetadata?.applicationId !== applicationId
+    ) {
+      throw invalidBinding();
+    }
+
+    await this.workspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const records = await this.workspaceOrmManager
+          .getRepositoryWithoutPermissionChecks(objectMetadata.nameSingular)
+          .find({ where: { id: In(recordIds) }, select: { id: true } });
+
+        if (records.length !== recordIds.length) {
+          throw invalidBinding();
+        }
+      },
+      buildSystemAuthContext(workspaceId),
+      { lite: true },
+    );
   }
 
   private async deleteFolderMessageLinks({

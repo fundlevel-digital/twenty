@@ -110,6 +110,7 @@ const SCHEMA = getWorkspaceSchemaName(WORKSPACE_ID);
         flatObjectMetadataMaps: metadata.flatObjectMetadataMaps,
         flatFieldMetadataMaps: metadata.flatFieldMetadataMaps,
         flatIndexMaps: metadata.flatIndexMaps,
+        flatMessagingProviderMaps: createEmptyFlatEntityMaps(),
         objectIdByNameSingular: buildObjectIdByNameMaps(
           metadata.flatObjectMetadataMaps,
         ).idByNameSingular,

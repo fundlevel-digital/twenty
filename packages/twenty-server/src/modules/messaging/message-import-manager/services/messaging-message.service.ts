@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import chunk from 'lodash.chunk';
 import { QUERY_MAX_RECORDS } from 'twenty-shared/constants';
 import { isDefined } from 'twenty-shared/utils';
-import { In } from 'typeorm';
+import { In, Like } from 'typeorm';
 import { v4 } from 'uuid';
 
 import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
@@ -33,7 +33,7 @@ type MessageAccumulator = {
     | 'messageThreadId'
     | 'isDraft'
   > &
-    Partial<Pick<MessageWorkspaceEntity, 'createdBy'>>;
+    Partial<Pick<MessageWorkspaceEntity, 'createdBy' | 'providerMetadata'>>;
   sentDraftToRefresh?: MessageToRefresh;
   threadToCreate?: Pick<MessageThreadWorkspaceEntity, 'id' | 'subject'>;
   messageChannelMessageAssociationToCreate?: Pick<
@@ -109,6 +109,33 @@ export class MessagingMessageService {
             relations: { message: true },
           });
 
+        const sharedThreadScopes = [
+          ...new Set(
+            messages
+              .map((message) => message.sharedThreadApplicationId)
+              .filter(isDefined),
+          ),
+        ];
+        const sharedThreadAssociations =
+          sharedThreadScopes.length > 0
+            ? await messageChannelMessageAssociationRepository.find({
+                where: sharedThreadScopes.map((applicationId) => ({
+                  messageThreadExternalId: In(
+                    messages
+                      .filter(
+                        (message) =>
+                          message.sharedThreadApplicationId === applicationId,
+                      )
+                      .map((message) => message.messageThreadExternalId),
+                  ),
+                  message: {
+                    headerMessageId: Like(`app:${applicationId}:shared:%`),
+                  },
+                })),
+                relations: { message: true },
+              })
+            : [];
+
         const existingMessageChannelMessageAssociations =
           await messageChannelMessageAssociationRepository.find({
             where: {
@@ -127,7 +154,10 @@ export class MessagingMessageService {
         await this.enrichMessageAccumulatorWithExistingMessageThreadIds(
           messages,
           messageAccumulatorMap,
-          messageChannelMessageAssociationsReferencingMessageThread,
+          [
+            ...messageChannelMessageAssociationsReferencingMessageThread,
+            ...sharedThreadAssociations,
+          ],
           workspaceId,
         );
 
@@ -186,6 +216,9 @@ export class MessagingMessageService {
               text: message.text,
               messageThreadId,
               isDraft: message.isDraft,
+              ...(isDefined(message.providerMetadata)
+                ? { providerMetadata: message.providerMetadata }
+                : {}),
               ...(isDefined(message.createdBy)
                 ? { createdBy: message.createdBy }
                 : {}),

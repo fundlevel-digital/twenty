@@ -2,10 +2,12 @@ import { type EmailThreadMessageParticipant } from '@/activities/emails/types/Em
 import { type Attachment } from '@/activities/files/types/Attachment';
 import { type MessageChannelMessageAssociation } from '@/activities/emails/types/MessageChannelMessageAssociation';
 import { type MessageThread } from '@/activities/emails/types/MessageThread';
+import { type MessageProviderMetadata } from '@/activities/emails/types/MessageProviderMetadata';
 
 export type EmailThreadMessage = {
   id: string;
   text: string;
+  providerMetadata?: MessageProviderMetadata | null;
   receivedAt: string | null;
   subject: string;
   headerMessageId: string;

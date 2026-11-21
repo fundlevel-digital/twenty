@@ -11,11 +11,14 @@ const SYNC_APP_MESSAGE_FOLDERS_MUTATION = `
 `;
 
 export type SyncMessageFoldersInput = {
+  // Discovery pages preserve missing folders and existing sync choices.
+  isPartial?: boolean;
   messageChannelId: string;
   folders: {
     externalId: string;
     name: string;
     isSynced?: boolean;
+    applicationRecordId?: string;
   }[];
 };
 
