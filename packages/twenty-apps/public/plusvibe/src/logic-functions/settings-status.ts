@@ -1,13 +1,15 @@
-import { defineLogicFunction } from 'twenty-sdk/define';
+import { getPreferences } from 'src/logic-functions/utils/preferences';
+import { defineLogicFunction, type RoutePayload } from 'twenty-sdk/define';
 import {
   getJobs,
   kv,
   listConnections,
+  type LogicFunctionExecutionContext,
   Response,
 } from 'twenty-sdk/logic-function';
 
 import {
-  ACCOUNT_PROVIDER_NAME,
+  ACCOUNT_PROVIDER_NAMES,
   getRegistrationKey,
   type PlusvibeRegistration,
   type PlusvibeAccountStatus,
@@ -23,26 +25,23 @@ import { listWorkspaces } from 'src/logic-functions/utils/plusvibe-api';
 import { canManageApplication } from 'src/logic-functions/utils/require-application-manager';
 import { findMailConnection } from 'src/logic-functions/utils/native-email';
 
-export const settingsStatusHandler = async () => {
-  if (!(await canManageApplication())) {
+export const settingsStatusHandler = async (
+  _event?: RoutePayload<unknown>,
+  context?: Pick<LogicFunctionExecutionContext, 'userWorkspaceId'>,
+) => {
+  if (!context?.userWorkspaceId && !(await canManageApplication())) {
     return new Response(
       { error: 'Application management permission is required' },
       { status: 403 },
     );
   }
-  const selectedWorkspaceIds = (await kv.get<string[]>(SELECTION_KEY)) ?? [];
-  const imports = Object.fromEntries(
-    await Promise.all(
-      selectedWorkspaceIds.map(async (workspaceId) => [
-        workspaceId,
-        await kv.get<PlusvibeImportState>(getImportKey(workspaceId)),
-      ]),
-    ),
+  let selectedWorkspaceIds = (await kv.get<string[]>(SELECTION_KEY)) ?? [];
+  const connections = (await listConnections({})).filter(
+    (connection) =>
+      ACCOUNT_PROVIDER_NAMES.includes(connection.providerName) &&
+      (!context?.userWorkspaceId ||
+        connection.userWorkspaceId === context.userWorkspaceId),
   );
-  const connections = await listConnections({
-    providerName: ACCOUNT_PROVIDER_NAME,
-    scope: 'WORKSPACE',
-  });
   const registrations = await Promise.all(
     selectedWorkspaceIds.map(async (workspaceId) => ({
       workspaceId,
@@ -50,6 +49,24 @@ export const settingsStatusHandler = async () => {
         getRegistrationKey(workspaceId),
       ),
     })),
+  );
+  if (context?.userWorkspaceId)
+    selectedWorkspaceIds = registrations
+      .filter(({ registration }) =>
+        connections.some((connection) =>
+          registration?.accountConnectionId
+            ? registration.accountConnectionId === connection.id
+            : registration?.apiKeyFingerprint === connection.externalAccountId,
+        ),
+      )
+      .map(({ workspaceId }) => workspaceId);
+  const imports = Object.fromEntries(
+    await Promise.all(
+      selectedWorkspaceIds.map(async (workspaceId) => [
+        workspaceId,
+        await kv.get<PlusvibeImportState>(getImportKey(workspaceId)),
+      ]),
+    ),
   );
   const accounts: PlusvibeAccountStatus[] = await Promise.all(
     connections.map(async (connection) => {
@@ -68,21 +85,26 @@ export const settingsStatusHandler = async () => {
       }
       return {
         id: connection.id,
+        preferences: await getPreferences(connection.id),
         name: connection.name || connection.handle || 'PlusVibe',
         hasAccountError,
         isMailConnected,
         workspaces,
         selectedWorkspaceIds: registrations
-          .filter(
-            ({ registration }) =>
-              registration?.apiKeyFingerprint === connection.externalAccountId,
+          .filter(({ registration }) =>
+            registration?.accountConnectionId
+              ? registration.accountConnectionId === connection.id
+              : registration?.apiKeyFingerprint ===
+                connection.externalAccountId,
           )
           .map(({ workspaceId }) => workspaceId),
       };
     }),
   );
   const isApiKeySet =
-    connections.length > 0 || Boolean(process.env.PLUSVIBE_API_KEY?.trim());
+    connections.length > 0 ||
+    (!context?.userWorkspaceId &&
+      Boolean(process.env.PLUSVIBE_API_KEY?.trim()));
   let workspaces: PlusvibeWorkspace[] = accounts.flatMap(
     (account) => account.workspaces,
   );
@@ -126,6 +148,7 @@ export const settingsStatusHandler = async () => {
   const jobs = jobIds.length > 0 ? await getJobs(jobIds) : [];
   const status: PlusvibeSettingsStatus = {
     isApiKeySet,
+    preferences: accounts[0]?.preferences ?? (await getPreferences()),
     accounts,
     accountConnectionId:
       connections.length === 1 ? connections[0].id : undefined,

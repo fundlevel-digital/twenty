@@ -7,11 +7,10 @@ import {
 import {
   MESSAGE_ALL_VIEW_UNIVERSAL_IDENTIFIER,
   MESSAGE_CAMPAIGN_RELATION_UNIVERSAL_IDENTIFIER,
-  MESSAGE_SENDER_UNIVERSAL_IDENTIFIER,
-  MESSAGE_SOURCE_UNIVERSAL_IDENTIFIER,
+  MESSAGE_SENDER_RELATION_UNIVERSAL_IDENTIFIER,
   MESSAGE_SOURCE_THREAD_RELATION_UNIVERSAL_IDENTIFIER,
+  MESSAGE_SOURCE_UNIVERSAL_IDENTIFIER,
   MESSAGE_WORKSPACE_RELATION_UNIVERSAL_IDENTIFIER,
-  MESSAGE_THREAD_ID_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineView({
@@ -31,8 +30,9 @@ export default defineView({
       size: 300,
     },
     {
-      universalIdentifier: '442959cb-aaa3-49d6-9e9f-c456b371a8dc',
-      fieldMetadataUniversalIdentifier: MESSAGE_SENDER_UNIVERSAL_IDENTIFIER,
+      universalIdentifier: '650cc7da-b1d4-5061-b447-6a88b1de94be',
+      fieldMetadataUniversalIdentifier:
+        MESSAGE_SENDER_RELATION_UNIVERSAL_IDENTIFIER,
       position: 1,
       isVisible: true,
       size: 180,
@@ -59,13 +59,6 @@ export default defineView({
         MESSAGE_SOURCE_THREAD_RELATION_UNIVERSAL_IDENTIFIER,
       position: 4,
       isVisible: true,
-      size: 180,
-    },
-    {
-      universalIdentifier: '2370b87b-0557-4ecc-8195-d79e52e7c642',
-      fieldMetadataUniversalIdentifier: MESSAGE_THREAD_ID_UNIVERSAL_IDENTIFIER,
-      position: 4,
-      isVisible: false,
       size: 180,
     },
   ],

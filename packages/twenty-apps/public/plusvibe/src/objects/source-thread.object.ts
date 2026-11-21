@@ -2,7 +2,6 @@ import { defineObject, FieldType } from 'twenty-sdk/define';
 import {
   SOURCE_THREAD_UNIVERSAL_IDENTIFIER,
   SOURCE_THREAD_EXTERNAL_ID_UNIVERSAL_IDENTIFIER,
-  SOURCE_THREAD_WORKSPACE_ID_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineObject({
@@ -19,13 +18,6 @@ export default defineObject({
       universalIdentifier: SOURCE_THREAD_EXTERNAL_ID_UNIVERSAL_IDENTIFIER,
       name: 'externalId',
       label: 'Thread ID',
-      type: FieldType.TEXT,
-      icon: 'IconKey',
-    },
-    {
-      universalIdentifier: SOURCE_THREAD_WORKSPACE_ID_UNIVERSAL_IDENTIFIER,
-      name: 'workspaceId',
-      label: 'Workspace ID',
       type: FieldType.TEXT,
       icon: 'IconKey',
     },

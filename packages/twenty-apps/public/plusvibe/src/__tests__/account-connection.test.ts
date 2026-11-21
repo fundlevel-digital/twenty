@@ -228,3 +228,28 @@ describe('PlusVibe account connections', () => {
     expect((await findMailConnection())?.id).toBe('legacy-mail');
   });
 });
+
+it('keeps native mail on the selected member’s connection when two members use the same key', async () => {
+  const other = {
+    ...ACCOUNT,
+    id: 'other-member',
+    userWorkspaceId: 'member-2',
+    providerName: 'plusvibe-user',
+  };
+  const own = {
+    ...ACCOUNT,
+    id: 'own-account',
+    userWorkspaceId: 'member-1',
+    providerName: 'plusvibe-user',
+  };
+  listConnections.mockResolvedValue([other, own]);
+  values.set(getRegistrationKey('workspace-1'), {
+    apiKeyFingerprint: own.externalAccountId,
+    accountConnectionId: own.id,
+  });
+  expect(await findMailConnection('workspace-1')).toEqual(own);
+  listConnections.mockResolvedValue([other]);
+  await expect(findMailConnection('workspace-1')).rejects.toThrow(
+    'assigned to this workspace',
+  );
+});

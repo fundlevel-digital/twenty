@@ -23,7 +23,7 @@ import { mapEmail } from 'src/logic-functions/utils/map-email';
 import { syncNativeEmail } from 'src/logic-functions/utils/native-email';
 import { PAGE_SCHEMA } from 'src/logic-functions/utils/page-schema';
 import { plusvibeRequest } from 'src/logic-functions/utils/plusvibe-api';
-import { syncPerson } from 'src/logic-functions/utils/sync-records';
+import { recordId } from 'src/logic-functions/utils/sync-records';
 
 const INPUT_SCHEMA = z.object({
   workspaceId: z.string(),
@@ -38,31 +38,46 @@ export const findCampaignSender = async (
   campaignId: string,
   leadEmail: string,
 ) => {
-  const personId = await syncPerson({ email: leadEmail }, workspaceId);
   const response = await new RestApiClient({ runAs: 'application' }).post<{
     data?: {
-      messageThreads: {
+      messages: {
         totalCount: number;
-        edges: { node: { plusvibeSender: string } }[];
+        edges: {
+          node: {
+            plusvibeSenderRecord: { emails: { primaryEmail: string } } | null;
+            messageParticipants: { handle: string }[];
+          };
+        }[];
       };
     };
     errors?: unknown[];
   }>('/graphql', {
     query:
-      'query($workspace:String!,$campaign:String!,$person:UUID!){messageThreads(filter:{source:{eq:PLUSVIBE},plusvibeWorkspaceId:{eq:$workspace},plusvibeCampaignId:{eq:$campaign},plusvibePersonId:{eq:$person}},first:1000){totalCount edges{node{plusvibeSender}}}}',
+      'query($workspace:UUID!,$campaign:UUID!,$lead:String!){messages(filter:{source:{eq:PLUSVIBE},plusvibeWorkspaceRecordId:{eq:$workspace},plusvibeCampaignRecordId:{eq:$campaign},messageParticipants:{handle:{ilike:$lead}}},first:1000){totalCount edges{node{plusvibeSenderRecord{emails{primaryEmail}} messageParticipants{handle}}}}}',
     variables: {
-      workspace: workspaceId,
-      campaign: campaignId,
-      person: personId,
+      workspace: recordId('workspace', workspaceId),
+      campaign: recordId('campaign', workspaceId, campaignId),
+      lead: leadEmail,
     },
   });
   if (response.errors?.length)
     throw new Error('Could not resolve the PlusVibe campaign sender');
-  const threads = response.data?.messageThreads;
-  if (!threads || threads.totalCount > threads.edges.length) return undefined;
+  const messages = response.data?.messages;
+  if (!messages || messages.totalCount > messages.edges.length)
+    return undefined;
   const senders = new Set(
-    threads.edges
-      .map(({ node }) => node.plusvibeSender.trim().toLowerCase())
+    messages.edges
+      .filter(({ node }) =>
+        node.messageParticipants.some(
+          ({ handle }) =>
+            handle.trim().toLowerCase() === leadEmail.toLowerCase(),
+        ),
+      )
+      .flatMap(({ node }) =>
+        node.plusvibeSenderRecord
+          ? [node.plusvibeSenderRecord.emails.primaryEmail.trim().toLowerCase()]
+          : [],
+      )
       .filter((sender) => z.email().safeParse(sender).success),
   );
   return senders.size === 1 ? [...senders][0] : undefined;

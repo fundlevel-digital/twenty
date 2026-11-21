@@ -4,6 +4,7 @@ const {
   values,
   ingestMessages,
   createMessageChannel,
+  updateMessageChannel,
   listMessageChannels,
   listConnections,
   get,
@@ -16,6 +17,7 @@ const {
   values: new Map<string, unknown>(),
   ingestMessages: vi.fn(),
   createMessageChannel: vi.fn(),
+  updateMessageChannel: vi.fn(),
   listMessageChannels: vi.fn(),
   listConnections: vi.fn(),
   get: vi.fn(),
@@ -28,6 +30,7 @@ const {
 vi.mock('twenty-sdk/logic-function', () => ({
   ingestMessages,
   createMessageChannel,
+  updateMessageChannel,
   listMessageChannels,
   listConnections,
   kv: {
@@ -49,11 +52,17 @@ vi.mock('src/logic-functions/utils/sync-records', () => ({
   syncCampaign,
   recordId: (...parts: string[]) => parts.join(':'),
 }));
+vi.mock('src/logic-functions/utils/sync-relations', () => ({
+  syncSender: vi.fn(async () => 'sender-record'),
+  findSourceLeadIds: vi.fn(async () => ['lead-record']),
+  syncEmailRelations: vi.fn(),
+}));
 vi.mock('src/logic-functions/utils/sync-workspace', () => ({ syncWorkspace }));
 vi.mock('src/logic-functions/utils/sync-source-thread', () => ({
   syncSourceThread: async () => 'source-thread-record',
 }));
 vi.mock('src/logic-functions/utils/plusvibe-api', () => ({
+  getAccountConnection: async () => undefined,
   getApiKeyFingerprint: () => 'fingerprint',
 }));
 
@@ -96,10 +105,13 @@ beforeEach(() => {
     },
   ]);
   listMessageChannels.mockReset().mockResolvedValue([]);
-  createMessageChannel.mockReset().mockResolvedValue({
-    id: 'channel-1',
-    handle: 'sender@example.com',
-  });
+  createMessageChannel
+    .mockReset()
+    .mockImplementation(async (input) => ({ ...input, id: 'channel-1' }));
+  updateMessageChannel.mockReset().mockImplementation(async (input) => ({
+    ...input,
+    handle: 'plusvibe:unibox:sender@example.com',
+  }));
   ingestMessages.mockReset().mockResolvedValue([
     {
       externalId: EMAIL.externalId,
@@ -129,7 +141,6 @@ describe('Native PlusVibe emails', () => {
     expect(patch).toHaveBeenLastCalledWith(
       '/rest/messages/native-message-1',
       expect.objectContaining({
-        plusvibeThreadId: EMAIL.threadId,
         plusvibeThreadRecordId: 'source-thread-record',
       }),
     );
@@ -176,7 +187,7 @@ describe('Native PlusVibe emails', () => {
           participants: [
             expect.objectContaining({
               role: 'FROM',
-              handle: 'sender@example.com',
+              handle: 'plusvibe:outreach:sender@example.com',
             }),
             expect.objectContaining({ role: 'TO', personId: 'person-1' }),
           ],
@@ -187,11 +198,8 @@ describe('Native PlusVibe emails', () => {
       '/rest/messages/native-message-1',
       expect.objectContaining({
         source: 'PLUSVIBE',
-        plusvibeWorkspaceId: 'workspace-1',
         plusvibeWorkspaceRecordId: 'workspace-record-1',
-        plusvibeCampaignId: 'campaign-1',
         plusvibeCampaignRecordId: 'campaign-record-1',
-        plusvibeThreadId: 'provider-thread-1',
         plusvibeThreadRecordId: 'source-thread-record',
       }),
     );
@@ -240,7 +248,8 @@ describe('Native PlusVibe emails', () => {
     listMessageChannels.mockResolvedValueOnce([
       {
         id: 'existing-channel',
-        handle: 'sender@example.com',
+        handle: 'plusvibe:outreach:sender@example.com',
+        visibility: 'SHARE_EVERYTHING',
       },
     ]);
     await syncNativeEmail(EMAIL);
@@ -248,6 +257,38 @@ describe('Native PlusVibe emails', () => {
     listConnections.mockResolvedValueOnce([]);
     await expect(syncNativeEmail(EMAIL)).rejects.toThrow('Connect PlusVibe');
     expect(ingestMessages).toHaveBeenCalledOnce();
+  });
+
+  it('keeps outreach fully shared while Unibox uses the configured native privacy level', async () => {
+    values.set('plusvibe:registration:workspace-1', {
+      accountConnectionId: 'account-1',
+    });
+    values.set('plusvibe:preferences:account-1', {
+      autoCreatePeople: false,
+      uniboxVisibility: 'SUBJECT',
+    });
+    await syncNativeEmail(EMAIL);
+    expect(createMessageChannel).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        handle: 'plusvibe:outreach:sender@example.com',
+        visibility: 'SHARE_EVERYTHING',
+      }),
+    );
+    await syncNativeEmail({ ...EMAIL, direction: 'IN' });
+    expect(createMessageChannel).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        handle: 'plusvibe:unibox:sender@example.com',
+        visibility: 'SUBJECT',
+      }),
+    );
+  });
+
+  it('ingests an unmatched lead without implicitly creating or linking a Person', async () => {
+    syncPerson.mockResolvedValueOnce(undefined);
+    await syncNativeEmail(EMAIL);
+    expect(
+      ingestMessages.mock.calls[0][0].messages[0].participants[1],
+    ).not.toHaveProperty('personId');
   });
 
   it('adopts a later PlusVibe thread ID without splitting the initial conversation', async () => {

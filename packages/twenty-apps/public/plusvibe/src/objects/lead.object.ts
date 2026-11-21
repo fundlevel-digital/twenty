@@ -1,12 +1,11 @@
 import { defineObject, FieldType } from 'twenty-sdk/define';
 import {
+  LEAD_LABEL_SELECT_UNIVERSAL_IDENTIFIER,
   LEAD_UNIVERSAL_IDENTIFIER,
   LEAD_NAME_UNIVERSAL_IDENTIFIER,
   LEAD_EXTERNAL_ID_UNIVERSAL_IDENTIFIER,
   LEAD_EMAIL_UNIVERSAL_IDENTIFIER,
-  LEAD_WORKSPACE_ID_UNIVERSAL_IDENTIFIER,
   LEAD_STATUS_RAW_UNIVERSAL_IDENTIFIER,
-  LEAD_LABEL_UNIVERSAL_IDENTIFIER,
   LEAD_STATUS_UNIVERSAL_IDENTIFIER,
   LEAD_MATCH_STATUS_UNIVERSAL_IDENTIFIER,
   LEAD_LAST_SYNCED_AT_UNIVERSAL_IDENTIFIER,
@@ -22,6 +21,53 @@ export default defineObject({
   labelIdentifierFieldMetadataUniversalIdentifier:
     LEAD_NAME_UNIVERSAL_IDENTIFIER,
   fields: [
+    {
+      universalIdentifier: LEAD_LABEL_SELECT_UNIVERSAL_IDENTIFIER,
+      name: 'leadLabel',
+      label: 'Lead Label',
+      type: FieldType.SELECT,
+      icon: 'IconTag',
+      isNullable: true,
+      defaultValue: null,
+      isUIEditable: false,
+      options: [
+        {
+          id: 'be756827-a5b5-5dfa-8303-8e588d9a976b',
+          value: 'INTERESTED',
+          label: 'Interested',
+          color: 'green',
+          position: 0,
+        },
+        {
+          id: 'a96ae78e-8d1d-54a8-94fd-eb3f7b41ed75',
+          value: 'NOT_INTERESTED',
+          label: 'Not Interested',
+          color: 'red',
+          position: 1,
+        },
+        {
+          id: '08dc1b2c-1d4b-5f26-9352-5b638f34157f',
+          value: 'OUT_OF_OFFICE',
+          label: 'Out of Office',
+          color: 'orange',
+          position: 2,
+        },
+        {
+          id: '5c9f5c1e-e499-50aa-914f-050c3c466421',
+          value: 'UNSUBSCRIBED',
+          label: 'Unsubscribed',
+          color: 'gray',
+          position: 3,
+        },
+        {
+          id: '8fbc841e-125a-5cd8-b43c-8b8b0d241c7d',
+          value: 'OTHER',
+          label: 'Other',
+          color: 'gray',
+          position: 4,
+        },
+      ],
+    },
     {
       universalIdentifier: LEAD_NAME_UNIVERSAL_IDENTIFIER,
       name: 'name',
@@ -47,27 +93,11 @@ export default defineObject({
       isUIEditable: false,
     },
     {
-      universalIdentifier: LEAD_WORKSPACE_ID_UNIVERSAL_IDENTIFIER,
-      name: 'workspaceId',
-      label: 'Workspace ID',
-      type: FieldType.TEXT,
-      icon: 'IconKey',
-      isUIEditable: false,
-    },
-    {
       universalIdentifier: LEAD_STATUS_RAW_UNIVERSAL_IDENTIFIER,
       name: 'statusRaw',
       label: 'Status (Raw)',
       type: FieldType.TEXT,
       icon: 'IconProgress',
-      isUIEditable: false,
-    },
-    {
-      universalIdentifier: LEAD_LABEL_UNIVERSAL_IDENTIFIER,
-      name: 'label',
-      label: 'Lead Label',
-      type: FieldType.TEXT,
-      icon: 'IconTag',
       isUIEditable: false,
     },
     {
@@ -161,6 +191,13 @@ export default defineObject({
           label: 'Matched',
           color: 'green',
           position: 0,
+        },
+        {
+          id: '110fc793-b003-5d8d-b9c4-4704fe469fec',
+          value: 'UNMATCHED',
+          label: 'Not Linked',
+          color: 'gray',
+          position: 2,
         },
         {
           id: 'f847c7de-ba73-467c-afc3-7e031067fbe1',

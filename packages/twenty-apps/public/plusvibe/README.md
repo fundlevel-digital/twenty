@@ -14,7 +14,7 @@ yarn twenty auth login --url https://your-twenty.example.com --name your-workspa
 yarn twenty app apply --create --no-prune --remote your-workspace
 ```
 
-Open the app's Settings tab and follow the three steps:
+Open **Apps preferences → PlusVibe → Sync** and follow the three steps:
 
 1. **Connect PlusVibe.** Twenty's native connection form accepts the PlusVibe API
    key and stores it encrypted. It validates the key, creates the messaging
@@ -23,13 +23,14 @@ Open the app's Settings tab and follow the three steps:
 2. **Choose workspaces.** Choose a connection to manage its workspace selection.
    No workspace is selected automatically. Use **Add connection** for another key.
 3. **Enable sync.** This saves the selection, registers webhooks, and queues the
-   initial import. Imported emails are shared with the Twenty workspace through
-   channels with `SHARE_EVERYTHING` visibility.
+   initial import. Campaign outreach is fully shared. Unibox messages and replies
+   use the connection owner’s sharing preference.
 
 Change the selection with **Save changes**, refresh history with **Import again**,
 or use **Stop syncing** to keep existing records while stopping future imports.
-Each API key has its own native connection row, encrypted credential, and
-workspace selection. Adding a connection leaves other connections syncing.
+Each member manages their own API keys. Every connection has an encrypted
+credential, workspace selection, and import/sharing preferences. Other members
+cannot change those preferences, selections, or imports. Adding a connection leaves other connections syncing.
 **Manage connection** opens Twenty's native detail page for replacement/removal.
 Stop that connection's sync before replacing its key. Reconnecting an existing
 native account updates that connection instead of adding a duplicate.
@@ -41,15 +42,35 @@ removed key never sends that workspace's requests through an unrelated key.
 Existing workspace, campaign, lead, and message identities remain stable.
 A daily refresh also runs at 03:00 UTC.
 
-Existing installs reuse their approved messaging connection and saved key;
-users are not required to reconnect for this update. Native connection provider
-type and messaging provider linkage are immutable in Twenty, so the API-key
-provider has a new identity. Deploy upgrades with `--no-prune` to preserve the
-old provider, existing email channels, and legacy secret variable. New installs
-only declare the native API-key provider and have no secret application variable.
-The runtime prefers a native API-key credential, with saved-variable fallback
-only for existing installs. Moving the same key to the native provider keeps
-legacy messaging channels to avoid duplicating already imported messages.
+New connections use a user-scoped provider. The earlier workspace-scoped API-key
+provider remains declared because Twenty cannot change an existing provider’s
+scope. Its existing connections still resolve by their assigned source workspace.
+The runtime retains saved-variable fallback for legacy jobs; a global key is not
+presented as a member’s personal connection.
+
+## Import and sharing preferences
+
+- **Automatically create People from leads:** on by default for compatibility.
+  When off, existing People still match by primary/additional email, and unmatched
+  source Leads remain available with Person Match = Unmatched.
+- **Unibox sharing:** Participants and dates only (`METADATA`, the default), Share
+  subject (`SUBJECT`), or Share everything (`SHARE_EVERYTHING`). The connection
+  owner keeps full access. Saving updates that owner’s existing Unibox channels.
+- Campaign-sent history and campaign send webhooks use fully shared outreach
+  channels. Unibox history, manual sends, and replies use separate native channels
+  governed by the preference, including replies associated with a campaign.
+
+## Upgrade boundary
+
+This schema change is verified in an isolated VM preview, not production.
+Replacing old text labels/IDs and single-thread relations requires `--prune`;
+copy label values and populate the replacement relations before removing old
+fields on an existing installation. Existing mixed legacy mail channels are
+conservatively restricted to the Unibox preference. Before a production history
+reimport, migrate their message associations into the new outreach/Unibox channels
+while preserving message identities; otherwise channel-scoped ingestion can
+create copies of old messages. Keep the original snapshot until that migration
+is verified. The preview was reseeded from its approved snapshot.
 
 ## Records and filters
 
@@ -60,7 +81,7 @@ legacy messaging channels to avoid duplicating already imported messages.
   selected Lead Person takes precedence over the previous source lead mapping;
   existing mappings keep alternate-address replies linked to the same Person.
 - **PlusVibe Leads:** workspace-scoped source lead ID, name, email, Status select,
-  raw status, Lead Label, Person Match, and Last Synced At. Each lead has a
+  raw status, Lead Label select, Person Match, and Last Synced At. Each lead has a
   many-to-one Person relation; People expose the inverse PlusVibe Leads list.
   Leads also relate to their Workspace and Campaign. Partial email events do not
   overwrite a fully imported lead profile.
@@ -68,17 +89,21 @@ legacy messaging channels to avoid duplicating already imported messages.
 - **PlusVibe campaigns:** source campaign ID, name, Status select, and Workspace
   relation. Status choices are Draft, Active, Paused, Completed, Archived, and
   Other. The original provider value remains in Status (Raw).
-- **PlusVibe threads:** source thread identities scoped to each workspace. The
-  PlusVibe Thread ID relation on native Messages and Message Threads supports
-  Twenty's Group by menu; the original text ID remains available as
-  PlusVibe Thread ID (Raw).
-- **Messages:** actual native email records, with participants and thread links.
-  Custom fields include Source = PlusVibe, PlusVibe Workspace ID, PlusVibe Sender,
-  PlusVibe Campaign ID, PlusVibe Thread ID when supplied, the message identity,
-  and relations to the workspace and campaign records.
-- **Message Threads:** native conversations linked to their person, workspace,
-  and campaign. Additional fields hold sender, source IDs, Has lead replies,
-  Latest reply label, Reply labels, and Latest email at.
+- **PlusVibe Senders:** source sending addresses with Workspace relations and
+  many-to-many links to Leads, source Threads, and native conversations.
+- **PlusVibe Threads:** source thread identities scoped to each Workspace.
+  Many-to-many links connect Leads, Senders, and native Message Threads.
+- **Messages:** native email records with participants, workspace/campaign/sender
+  relations, and a PlusVibe Thread relation usable in Twenty’s Group by menu.
+  Redundant raw workspace, campaign, and thread ID fields are removed. Canonical
+  source IDs remain on their own source objects for sync identity.
+- **Message Threads:** native conversations with workspace/campaign relations,
+  reply classifications, and many-to-many Lead/Sender/source Thread links.
+
+Twenty supports one-to-many and many-to-one fields. Dedicated link objects model
+many-to-many associations; lookup columns traverse them to display related names.
+All source and link objects stay in the PlusVibe sidebar folder.
+
 - **PlusVibe events:** the earlier activity object now holds bounce and label
   events. Email bodies are stored as native Messages, not activity copies.
 
@@ -97,14 +122,14 @@ Campaigns, Unibox messages, archived messages, and leads import in checkpointed
 pages, in that order. Conversations appear before the full lead directory has
 been scanned. Each lead queues an import of its campaign-sent email history.
 History jobs are spaced out, and background requests back off on provider rate
-limits. Bodies are converted to plain text for Twenty's native email
-renderer. Imported bodies are capped at Twenty's 262,144-character ingestion
+limits. Bodies are converted to plain text and quoted reply history is removed for
+Twenty’s native email renderer. Signatures and quote-only forwards are preserved. Imported bodies are capped at Twenty's 262,144-character ingestion
 limit so a very large email does not stop the history import. The full original
 remains in PlusVibe. Attachments are not imported yet.
 
 When PlusVibe leaves sender or lead fields blank, Unibox participants are
 recovered from the email headers. Campaign history without a sender uses an
-existing conversation only when the same workspace, campaign, and person have
+existing conversation only when the same workspace, campaign, and lead email have
 one unambiguous sender. Missing or ambiguous sender history is reported as a
 failed email job rather than assigned an invented address.
 
@@ -112,7 +137,7 @@ New sends and replies arrive through signed webhooks. HMAC-SHA256 is checked
 against the exact raw body before any message writes. Selected workspace and
 registration identity are also checked. The native ingestion API handles message
 deduplication, participants, thread targets on People, and message visibility.
-Each sending email address gets a native channel, while message and thread
+Each sending address has separate outreach and Unibox channels, while message and thread
 identities are scoped to their PlusVibe workspace. Where PlusVibe
 omits a thread ID on campaign sends, the connector groups by workspace, sender,
 lead, and campaign; a later source thread ID can bind to that conversation.
@@ -126,8 +151,8 @@ the source webhook subscription.
 
 Transient failures use Twenty's `RetryableLogicFunctionError` protocol; a plain
 Error alone does not make its queue retry. Permanent discovery failures are
-marked Failed. Campaign-email job failures are exposed in settings. Discovery
-can finish while individual email-history jobs are still running, so settings
+marked Failed. Campaign-email job failures are exposed in Apps preferences. Discovery
+can finish while individual email-history jobs are still running, so Apps preferences
 say so. Execution logs provide per-job details. Both current paginated API
 responses and legacy array pages are supported. Legacy lists continue using the
 last record ID until an empty page, with repeated cursors rejected.
@@ -158,5 +183,8 @@ Protocol references: [workspaces](https://developer.plusvibe.ai/get-workspaces-3
 
 An application manager can execute `plusvibe-sync-health` with a selected
 `workspaceId` to check source pagination, email mapping, and native message/thread
-counts without returning contact records or email content. Settings status also
+counts without returning contact records or email content. Preferences status also
 includes failed discovery and email-history queue jobs for troubleshooting.
+
+Reply parsing pins the CommonJS 2.2.1 parser: newer ESM releases initialize
+`createRequire(import.meta.url)` while Twenty extracts manifests as CommonJS.

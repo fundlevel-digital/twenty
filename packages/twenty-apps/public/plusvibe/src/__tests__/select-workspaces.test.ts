@@ -12,6 +12,7 @@ const {
   registerWorkspace,
   startImport,
   findMailConnection,
+  listConnections,
 } = vi.hoisted(() => ({
   values: new Map<string, unknown>(),
   canManageApplication: vi.fn(),
@@ -20,9 +21,11 @@ const {
   registerWorkspace: vi.fn(),
   startImport: vi.fn(),
   findMailConnection: vi.fn(),
+  listConnections: vi.fn(),
 }));
 vi.mock('twenty-sdk/logic-function', async (importOriginal) => ({
   ...(await importOriginal<typeof import('twenty-sdk/logic-function')>()),
+  listConnections,
   kv: {
     get: vi.fn(async (key: string) => values.get(key) ?? null),
     set: vi.fn(async (key: string, value: unknown) => {
@@ -191,4 +194,56 @@ describe('PlusVibe workspace selection', () => {
     expect(values.get(SELECTION_KEY)).toEqual([]);
     expect(startImport).not.toHaveBeenCalled();
   });
+});
+
+it('allows a member to select their own connection without app management permission', async () => {
+  canManageApplication.mockResolvedValue(false);
+  const connectionId = '6e2decb2-91c9-42a6-851a-2c257a139c02';
+  listConnections.mockResolvedValue([
+    {
+      id: connectionId,
+      providerName: 'plusvibe-user',
+      userWorkspaceId: 'member-1',
+    },
+  ]);
+  const result = await selectWorkspacesHandler(
+    {
+      ...event([WORKSPACE_ID]),
+      body: { accountConnectionId: connectionId, workspaceIds: [WORKSPACE_ID] },
+    },
+    { userWorkspaceId: 'member-1' },
+  );
+  expect(result).toEqual({ success: true });
+  expect(startImport).toHaveBeenCalledExactlyOnceWith(WORKSPACE_ID);
+});
+it('rejects selecting or importing another member’s connection even for an app manager', async () => {
+  const connectionId = '6e2decb2-91c9-42a6-851a-2c257a139c02';
+  listConnections.mockResolvedValue([
+    {
+      id: connectionId,
+      providerName: 'plusvibe-user',
+      userWorkspaceId: 'member-2',
+    },
+  ]);
+  values.set(SELECTION_KEY, [WORKSPACE_ID]);
+  values.set(getRegistrationKey(WORKSPACE_ID), {
+    accountConnectionId: connectionId,
+  });
+  expect(
+    await selectWorkspacesHandler(
+      {
+        ...event([]),
+        body: { accountConnectionId: connectionId, workspaceIds: [] },
+      },
+      { userWorkspaceId: 'member-1' },
+    ),
+  ).toMatchObject({ status: 403 });
+  expect(
+    await requestBackfillHandler(event([WORKSPACE_ID]), {
+      userWorkspaceId: 'member-1',
+    }),
+  ).toMatchObject({ status: 403 });
+  expect(values.get(SELECTION_KEY)).toEqual([WORKSPACE_ID]);
+  expect(registerWorkspace).not.toHaveBeenCalled();
+  expect(startImport).not.toHaveBeenCalled();
 });

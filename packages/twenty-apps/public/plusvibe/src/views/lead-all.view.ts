@@ -1,15 +1,22 @@
-import { defineView, ViewType } from 'twenty-sdk/define';
+import { defineRelatedView as defineView } from 'src/views/utils/define-related-view';
+import { SENDER_NAME_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import { SOURCE_THREAD_EXTERNAL_ID_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import { ViewType } from 'twenty-sdk/define';
 import {
+  LEAD_CAMPAIGN_RELATION_UNIVERSAL_IDENTIFIER,
+  LEAD_EMAIL_UNIVERSAL_IDENTIFIER,
+  LEAD_LABEL_SELECT_UNIVERSAL_IDENTIFIER,
+  LEAD_LEAD_SENDER_LINKS_UNIVERSAL_IDENTIFIER,
+  LEAD_MATCH_STATUS_UNIVERSAL_IDENTIFIER,
+  LEAD_NAME_UNIVERSAL_IDENTIFIER,
+  LEAD_PERSON_RELATION_UNIVERSAL_IDENTIFIER,
+  LEAD_SENDER_LINK_SENDER_UNIVERSAL_IDENTIFIER,
+  LEAD_STATUS_UNIVERSAL_IDENTIFIER,
+  LEAD_THREAD_LEAD_LINKS_UNIVERSAL_IDENTIFIER,
   LEAD_UNIVERSAL_IDENTIFIER,
   LEAD_VIEW_UNIVERSAL_IDENTIFIER,
-  LEAD_NAME_UNIVERSAL_IDENTIFIER,
-  LEAD_EMAIL_UNIVERSAL_IDENTIFIER,
-  LEAD_STATUS_UNIVERSAL_IDENTIFIER,
-  LEAD_LABEL_UNIVERSAL_IDENTIFIER,
-  LEAD_PERSON_RELATION_UNIVERSAL_IDENTIFIER,
-  LEAD_CAMPAIGN_RELATION_UNIVERSAL_IDENTIFIER,
   LEAD_WORKSPACE_RELATION_UNIVERSAL_IDENTIFIER,
-  LEAD_MATCH_STATUS_UNIVERSAL_IDENTIFIER,
+  THREAD_LEAD_LINK_THREAD_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 export default defineView({
   universalIdentifier: LEAD_VIEW_UNIVERSAL_IDENTIFIER,
@@ -19,6 +26,34 @@ export default defineView({
   icon: 'IconUser',
   position: 0,
   fields: [
+    {
+      universalIdentifier: '564d2fd5-6bc3-5a84-a24c-c970fa7c51d2',
+      fieldMetadataUniversalIdentifier:
+        LEAD_LEAD_SENDER_LINKS_UNIVERSAL_IDENTIFIER,
+      isCanonical: false,
+      relationPathFieldMetadataUniversalIdentifiers: [
+        LEAD_SENDER_LINK_SENDER_UNIVERSAL_IDENTIFIER,
+      ],
+      relationTargetFieldMetadataUniversalIdentifier:
+        SENDER_NAME_UNIVERSAL_IDENTIFIER,
+      position: 11,
+      isVisible: true,
+      size: 220,
+    },
+    {
+      universalIdentifier: 'd08656c8-1c90-5088-9706-b285ac6e54fe',
+      fieldMetadataUniversalIdentifier:
+        LEAD_THREAD_LEAD_LINKS_UNIVERSAL_IDENTIFIER,
+      isCanonical: false,
+      relationPathFieldMetadataUniversalIdentifiers: [
+        THREAD_LEAD_LINK_THREAD_UNIVERSAL_IDENTIFIER,
+      ],
+      relationTargetFieldMetadataUniversalIdentifier:
+        SOURCE_THREAD_EXTERNAL_ID_UNIVERSAL_IDENTIFIER,
+      position: 10,
+      isVisible: true,
+      size: 220,
+    },
     {
       universalIdentifier: '45e22818-1e20-49cd-985c-7f4f7c824fe0',
       fieldMetadataUniversalIdentifier: LEAD_NAME_UNIVERSAL_IDENTIFIER,
@@ -41,8 +76,8 @@ export default defineView({
       size: 180,
     },
     {
-      universalIdentifier: '30a405a0-9a0e-4e1a-bff5-c57a7313a932',
-      fieldMetadataUniversalIdentifier: LEAD_LABEL_UNIVERSAL_IDENTIFIER,
+      universalIdentifier: '54acf9ad-b849-5c1b-9960-72ac6b122276',
+      fieldMetadataUniversalIdentifier: LEAD_LABEL_SELECT_UNIVERSAL_IDENTIFIER,
       position: 3,
       isVisible: true,
       size: 180,

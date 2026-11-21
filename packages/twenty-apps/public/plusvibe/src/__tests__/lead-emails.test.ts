@@ -28,7 +28,10 @@ vi.mock('twenty-sdk/logic-function', async (importOriginal) => ({
 }));
 vi.mock('src/logic-functions/utils/plusvibe-api', () => ({ plusvibeRequest }));
 vi.mock('src/logic-functions/utils/native-email', () => ({ syncNativeEmail }));
-vi.mock('src/logic-functions/utils/sync-records', () => ({ syncPerson }));
+vi.mock('src/logic-functions/utils/sync-records', () => ({
+  syncPerson,
+  recordId: (...parts: string[]) => parts.join(':'),
+}));
 vi.mock('twenty-client-sdk/rest', () => ({
   RestApiClient: class {
     post = post;
@@ -98,11 +101,25 @@ describe('Campaign sent-email history', () => {
     });
     post.mockResolvedValueOnce({
       data: {
-        messageThreads: {
+        messages: {
           totalCount: 2,
           edges: [
-            { node: { plusvibeSender: 'sender@example.com' } },
-            { node: { plusvibeSender: 'SENDER@example.com' } },
+            {
+              node: {
+                plusvibeSenderRecord: {
+                  emails: { primaryEmail: 'sender@example.com' },
+                },
+                messageParticipants: [{ handle: INPUT.leadEmail }],
+              },
+            },
+            {
+              node: {
+                plusvibeSenderRecord: {
+                  emails: { primaryEmail: 'SENDER@example.com' },
+                },
+                messageParticipants: [{ handle: INPUT.leadEmail }],
+              },
+            },
           ],
         },
       },
@@ -117,9 +134,9 @@ describe('Campaign sent-email history', () => {
       '/graphql',
       expect.objectContaining({
         variables: {
-          workspace: INPUT.workspaceId,
-          campaign: 'campaign-1',
-          person: 'person-1',
+          workspace: 'workspace:' + INPUT.workspaceId,
+          campaign: 'campaign:workspace-1:campaign-1',
+          lead: INPUT.leadEmail,
         },
       }),
     );
@@ -128,11 +145,25 @@ describe('Campaign sent-email history', () => {
   it('leaves the sender unresolved when conversations disagree or results are incomplete', async () => {
     post.mockResolvedValueOnce({
       data: {
-        messageThreads: {
+        messages: {
           totalCount: 2,
           edges: [
-            { node: { plusvibeSender: 'first@example.com' } },
-            { node: { plusvibeSender: 'second@example.com' } },
+            {
+              node: {
+                plusvibeSenderRecord: {
+                  emails: { primaryEmail: 'first@example.com' },
+                },
+                messageParticipants: [{ handle: INPUT.leadEmail }],
+              },
+            },
+            {
+              node: {
+                plusvibeSenderRecord: {
+                  emails: { primaryEmail: 'second@example.com' },
+                },
+                messageParticipants: [{ handle: INPUT.leadEmail }],
+              },
+            },
           ],
         },
       },
@@ -146,9 +177,18 @@ describe('Campaign sent-email history', () => {
     ).toBeUndefined();
     post.mockResolvedValueOnce({
       data: {
-        messageThreads: {
+        messages: {
           totalCount: 2,
-          edges: [{ node: { plusvibeSender: 'first@example.com' } }],
+          edges: [
+            {
+              node: {
+                plusvibeSenderRecord: {
+                  emails: { primaryEmail: 'first@example.com' },
+                },
+                messageParticipants: [{ handle: INPUT.leadEmail }],
+              },
+            },
+          ],
         },
       },
     });

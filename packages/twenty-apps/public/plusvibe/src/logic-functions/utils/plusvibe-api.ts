@@ -6,7 +6,7 @@ import { kv, listConnections } from 'twenty-sdk/logic-function';
 
 import {
   ACCOUNT_CONNECTION_KEY,
-  ACCOUNT_PROVIDER_NAME,
+  ACCOUNT_PROVIDER_NAMES,
   PLUSVIBE_API_URL,
   getRegistrationKey,
   type PlusvibeRegistration,
@@ -19,10 +19,9 @@ export const getAccountConnection = async (
   workspaceId?: string,
   connectionId?: string,
 ) => {
-  const connections = await listConnections({
-    providerName: ACCOUNT_PROVIDER_NAME,
-    scope: 'WORKSPACE',
-  });
+  const connections = (await listConnections({})).filter((connection) =>
+    ACCOUNT_PROVIDER_NAMES.includes(connection.providerName),
+  );
   const registration = workspaceId
     ? await kv.get<PlusvibeRegistration>(getRegistrationKey(workspaceId))
     : null;
@@ -30,7 +29,10 @@ export const getAccountConnection = async (
     throw new Error('Select this PlusVibe workspace before syncing');
   if (registration) {
     const connection = connections.find(
-      (value) => value.externalAccountId === registration.apiKeyFingerprint,
+      (value) =>
+        value.externalAccountId === registration.apiKeyFingerprint &&
+        (!registration.accountConnectionId ||
+          value.id === registration.accountConnectionId),
     );
     if (connection) return connection;
     const legacyApiKey = process.env.PLUSVIBE_API_KEY?.trim();

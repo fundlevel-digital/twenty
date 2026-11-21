@@ -1,6 +1,12 @@
+import { type PlusvibePreferences } from 'src/constants/preferences';
 export const PLUSVIBE_API_URL = 'https://api.plusvibe.ai/api/v1';
 export const ACCOUNT_CONNECTION_KEY = 'plusvibe:account-connection';
 export const ACCOUNT_PROVIDER_NAME = 'plusvibe';
+export const USER_ACCOUNT_PROVIDER_NAME = 'plusvibe-user';
+export const ACCOUNT_PROVIDER_NAMES = [
+  ACCOUNT_PROVIDER_NAME,
+  USER_ACCOUNT_PROVIDER_NAME,
+];
 export const SELECTION_KEY = 'plusvibe:selected-workspaces';
 export const getRegistrationKey = (workspaceId: string) =>
   `plusvibe:registration:${workspaceId}`;
@@ -47,6 +53,7 @@ export type PlusvibeImportState = {
   updatedAt: string;
 };
 export type PlusvibeAccountStatus = {
+  preferences?: PlusvibePreferences;
   id: string;
   name: string;
   hasAccountError: boolean;
@@ -55,6 +62,7 @@ export type PlusvibeAccountStatus = {
   selectedWorkspaceIds: string[];
 };
 export type PlusvibeSettingsStatus = {
+  preferences?: PlusvibePreferences;
   accounts?: PlusvibeAccountStatus[];
   jobs?: {
     jobId: string;

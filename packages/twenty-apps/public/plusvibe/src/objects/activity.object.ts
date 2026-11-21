@@ -1,16 +1,14 @@
 import { defineObject, FieldType } from 'twenty-sdk/define';
 import {
+  ACTIVITY_LABEL_SELECT_UNIVERSAL_IDENTIFIER,
   ACTIVITY_UNIVERSAL_IDENTIFIER,
   ACTIVITY_NAME_UNIVERSAL_IDENTIFIER,
   ACTIVITY_EXTERNAL_ID_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_WORKSPACE_ID_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_WORKSPACE_NAME_UNIVERSAL_IDENTIFIER,
   ACTIVITY_EVENT_TYPE_UNIVERSAL_IDENTIFIER,
   ACTIVITY_EMAIL_UNIVERSAL_IDENTIFIER,
   ACTIVITY_SUBJECT_UNIVERSAL_IDENTIFIER,
   ACTIVITY_CONTENT_UNIVERSAL_IDENTIFIER,
   ACTIVITY_OCCURRED_AT_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_LABEL_UNIVERSAL_IDENTIFIER,
   ACTIVITY_THREAD_LINK_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
@@ -25,6 +23,53 @@ export default defineObject({
     ACTIVITY_NAME_UNIVERSAL_IDENTIFIER,
   fields: [
     {
+      universalIdentifier: ACTIVITY_LABEL_SELECT_UNIVERSAL_IDENTIFIER,
+      name: 'leadLabel',
+      label: 'Lead Label',
+      type: FieldType.SELECT,
+      icon: 'IconTag',
+      isNullable: true,
+      defaultValue: null,
+      isUIEditable: false,
+      options: [
+        {
+          id: '24fa8e2d-33dc-5c0a-adf2-06ad4af10f03',
+          value: 'INTERESTED',
+          label: 'Interested',
+          color: 'green',
+          position: 0,
+        },
+        {
+          id: '245d8434-1d71-5692-a02b-591b873c2004',
+          value: 'NOT_INTERESTED',
+          label: 'Not Interested',
+          color: 'red',
+          position: 1,
+        },
+        {
+          id: '1667513a-7eeb-507f-8098-2ceb023a2739',
+          value: 'OUT_OF_OFFICE',
+          label: 'Out of Office',
+          color: 'orange',
+          position: 2,
+        },
+        {
+          id: '19d992f3-f251-5929-b354-d161d11ee530',
+          value: 'UNSUBSCRIBED',
+          label: 'Unsubscribed',
+          color: 'gray',
+          position: 3,
+        },
+        {
+          id: '1ac17788-09c8-5247-8d8f-464e837bac4b',
+          value: 'OTHER',
+          label: 'Other',
+          color: 'gray',
+          position: 4,
+        },
+      ],
+    },
+    {
       universalIdentifier: ACTIVITY_NAME_UNIVERSAL_IDENTIFIER,
       name: 'name',
       label: 'Name',
@@ -37,20 +82,6 @@ export default defineObject({
       label: 'PlusVibe Event ID',
       type: FieldType.TEXT,
       icon: 'IconKey',
-    },
-    {
-      universalIdentifier: ACTIVITY_WORKSPACE_ID_UNIVERSAL_IDENTIFIER,
-      name: 'workspaceId',
-      label: 'Workspace ID',
-      type: FieldType.TEXT,
-      icon: 'IconKey',
-    },
-    {
-      universalIdentifier: ACTIVITY_WORKSPACE_NAME_UNIVERSAL_IDENTIFIER,
-      name: 'workspaceName',
-      label: 'Workspace',
-      type: FieldType.TEXT,
-      icon: 'IconSettings',
     },
     {
       universalIdentifier: ACTIVITY_EVENT_TYPE_UNIVERSAL_IDENTIFIER,
@@ -88,13 +119,6 @@ export default defineObject({
       icon: 'IconCalendar',
       isNullable: true,
       defaultValue: null,
-    },
-    {
-      universalIdentifier: ACTIVITY_LABEL_UNIVERSAL_IDENTIFIER,
-      name: 'label',
-      label: 'Lead Label',
-      type: FieldType.TEXT,
-      icon: 'IconTag',
     },
     {
       universalIdentifier: ACTIVITY_THREAD_LINK_UNIVERSAL_IDENTIFIER,

@@ -9,9 +9,13 @@ import { Button } from 'twenty-ui/primitives/input';
 import { themeCssVariables } from 'twenty-ui/theme';
 
 import {
-  ACCOUNT_PROVIDER_NAME,
+  USER_ACCOUNT_PROVIDER_NAME,
   type PlusvibeSettingsStatus,
 } from 'src/constants/plusvibe';
+import {
+  DEFAULT_PREFERENCES,
+  type PlusvibePreferences,
+} from 'src/constants/preferences';
 import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 
 const StyledStack = styled.div`
@@ -44,6 +48,8 @@ const StyledHint = styled.span`
 
 export const PlusvibeSettings = () => {
   const [status, setStatus] = useState<PlusvibeSettingsStatus>();
+  const [preferences, setPreferences] =
+    useState<PlusvibePreferences>(DEFAULT_PREFERENCES);
   const [activeAccountId, setActiveAccountId] = useState<string>();
   const [workspaceIds, setWorkspaceIds] = useState<string[]>([]);
   const location = useLocation();
@@ -56,6 +62,14 @@ export const PlusvibeSettings = () => {
       '/s/plusvibe/status',
     );
     setStatus(result);
+    setPreferences(
+      (
+        result.accounts?.find((value) => value.id === activeAccountId) ??
+        result.accounts?.[0]
+      )?.preferences ??
+        result.preferences ??
+        DEFAULT_PREFERENCES,
+    );
     setWorkspaceIds(
       (
         result.accounts?.find((value) => value.id === activeAccountId) ??
@@ -71,6 +85,14 @@ export const PlusvibeSettings = () => {
       .then((result) => {
         if (cancelled) return;
         setStatus(result);
+        setPreferences(
+          (
+            result.accounts?.find((value) => value.id === activeAccountId) ??
+            result.accounts?.[0]
+          )?.preferences ??
+            result.preferences ??
+            DEFAULT_PREFERENCES,
+        );
         setWorkspaceIds(
           result.accounts?.[0]?.selectedWorkspaceIds ??
             result.selectedWorkspaceIds,
@@ -92,13 +114,17 @@ export const PlusvibeSettings = () => {
     };
   }, []);
 
-  const runAction = async (action: () => Promise<void>, message?: string) => {
+  const runAction = async (
+    action: () => Promise<void>,
+    message?: string,
+    reloadStatus = true,
+  ) => {
     setIsBusy(true);
     setError(undefined);
     setFeedback(undefined);
     try {
       await action();
-      await loadStatus();
+      if (reloadStatus) await loadStatus();
       setFeedback(message);
     } catch {
       setError(
@@ -137,10 +163,12 @@ export const PlusvibeSettings = () => {
       throw new Error('PlusVibe application is not installed');
     const returnTo = location
       ? `${location.pathname}${location.search}${location.hash}`
-      : `/settings/applications/${applicationId}`;
+      : `/settings/app-preferences/${applicationId}#sync`;
     await navigate(
       AppPath.SettingsCatchAll,
-      { '*': `applications/${applicationId}/connect/${ACCOUNT_PROVIDER_NAME}` },
+      {
+        '*': `applications/${applicationId}/connect/${USER_ACCOUNT_PROVIDER_NAME}`,
+      },
       reconnectingConnectedAccountId
         ? { reconnectingConnectedAccountId }
         : undefined,
@@ -191,6 +219,70 @@ export const PlusvibeSettings = () => {
       )}
       <Section.Root>
         <Section.Header
+          title={t('Import and sharing')}
+          description={t(
+            'Choose how leads become People and what other members can read.',
+          )}
+        />
+        <StyledStack>
+          <label>
+            <input
+              type="checkbox"
+              checked={preferences.autoCreatePeople}
+              disabled={isBusy}
+              onChange={(event) =>
+                setPreferences((current) => ({
+                  ...current,
+                  autoCreatePeople: event.target.checked,
+                }))
+              }
+            />{' '}
+            {t('Automatically create People from leads')}
+          </label>
+          <StyledHint>
+            {t(
+              'Existing People still match by email when this is off. Unmatched leads stay in PlusVibe Leads.',
+            )}
+          </StyledHint>
+          <label htmlFor="unibox-visibility">{t('Unibox sharing')}</label>
+          <select
+            id="unibox-visibility"
+            value={preferences.uniboxVisibility}
+            disabled={isBusy}
+            onChange={(event) =>
+              setPreferences((current) => ({
+                ...current,
+                uniboxVisibility: event.target
+                  .value as PlusvibePreferences['uniboxVisibility'],
+              }))
+            }
+          >
+            <option value="METADATA">{t('Participants and dates only')}</option>
+            <option value="SUBJECT">{t('Share subject')}</option>
+            <option value="SHARE_EVERYTHING">{t('Share everything')}</option>
+          </select>
+          <StyledHint>
+            {t(
+              'Applies to Unibox messages and replies on this connection. You keep full access. Campaign outreach is fully shared.',
+            )}
+          </StyledHint>
+          <Button
+            disabled={isBusy || !account}
+            onClick={() =>
+              runAction(async () => {
+                await new RestApiClient().post('/s/plusvibe/preferences', {
+                  ...preferences,
+                  accountConnectionId: account?.id,
+                });
+              }, t('Import and sharing preferences saved.'))
+            }
+          >
+            {t('Save preferences')}
+          </Button>
+        </StyledStack>
+      </Section.Root>
+      <Section.Root>
+        <Section.Header
           title={t('1. Connect PlusVibe')}
           description={t(
             'Add one connection per API key, then choose the workspaces each connection will sync.',
@@ -203,7 +295,7 @@ export const PlusvibeSettings = () => {
               variant="solid"
               color="accent"
               disabled={isBusy}
-              onClick={() => runAction(() => connect())}
+              onClick={() => runAction(() => connect(), undefined, false)}
             >
               {status?.isApiKeySet
                 ? t('Add connection')
@@ -213,7 +305,11 @@ export const PlusvibeSettings = () => {
               <Button
                 disabled={isBusy || hasSelection}
                 onClick={() =>
-                  runAction(() => connect(accountStatus.accountConnectionId))
+                  runAction(
+                    () => connect(accountStatus.accountConnectionId),
+                    undefined,
+                    false,
+                  )
                 }
               >
                 {t('Reconnect PlusVibe')}
@@ -245,6 +341,7 @@ export const PlusvibeSettings = () => {
                 onClick={() => {
                   setActiveAccountId(connection.id);
                   setWorkspaceIds(connection.selectedWorkspaceIds);
+                  setPreferences(connection.preferences ?? DEFAULT_PREFERENCES);
                 }}
               >
                 {connection.name}

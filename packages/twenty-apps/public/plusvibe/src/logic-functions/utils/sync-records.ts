@@ -5,6 +5,8 @@ import { kv } from 'twenty-sdk/logic-function';
 import { v5 as uuidV5 } from 'uuid';
 import { z } from 'zod';
 
+import { normalizeLeadLabel } from 'src/logic-functions/utils/lead-label';
+import { getWorkspacePreferences } from 'src/logic-functions/utils/preferences';
 import { getLeadPersonKey } from 'src/constants/plusvibe';
 import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 import { AmbiguousPersonMatchError } from 'src/logic-functions/errors/ambiguous-person-match.error';
@@ -54,7 +56,7 @@ export const syncPerson = async (
   lead: PlusvibeLead,
   workspaceId: string,
   options: { isFullLeadRecord?: boolean } = {},
-): Promise<string> => {
+): Promise<string | undefined> => {
   const email = (lead.email ?? lead.lead_email)?.trim().toLowerCase();
   if (!isNonEmptyString(email))
     throw new Error('PlusVibe lead email is required');
@@ -156,6 +158,16 @@ export const syncPerson = async (
     throw new AmbiguousPersonMatchError();
   }
   if (matches.size === 1) return linkPerson([...matches][0]);
+  if (!(await getWorkspacePreferences(workspaceId)).autoCreatePeople) {
+    await syncLead(
+      lead,
+      workspaceId,
+      undefined,
+      options.isFullLeadRecord,
+      'UNMATCHED',
+    );
+    return undefined;
+  }
   const personId = recordId('person', email);
   await createRecordIfMissing('people', personId, {
     name: { firstName: lead.first_name ?? '', lastName: lead.last_name ?? '' },
@@ -170,6 +182,9 @@ export const syncLead = async (
   workspaceId: string,
   personId?: string,
   isFullLeadRecord = false,
+  matchStatus: 'MATCHED' | 'NEEDS_REVIEW' | 'UNMATCHED' = personId
+    ? 'MATCHED'
+    : 'NEEDS_REVIEW',
 ) => {
   const externalId = lead.lead_id ?? lead._id;
   if (!isNonEmptyString(externalId)) return;
@@ -179,7 +194,6 @@ export const syncLead = async (
   const sourceStatus = lead.status?.trim().toUpperCase();
   const sourceFields = {
     externalId,
-    workspaceId,
     name:
       [lead.first_name, lead.last_name].filter(isNonEmptyString).join(' ') ||
       email,
@@ -204,12 +218,12 @@ export const syncLead = async (
         }
       : {}),
     ...(lead.label !== undefined && lead.label !== null
-      ? { label: lead.label }
+      ? { leadLabel: normalizeLeadLabel(lead.label) }
       : {}),
   };
   const links: Record<string, unknown> = {
     ...(personId ? { personId } : {}),
-    matchStatus: personId ? 'MATCHED' : 'NEEDS_REVIEW',
+    matchStatus,
     lastSyncedAt: new Date().toISOString(),
   };
   const workspaceRecordId = recordId('workspace', workspaceId);
@@ -233,7 +247,7 @@ export const syncLead = async (
             ? { status: sourceFields.status, statusRaw: lead.status }
             : {}),
           ...(lead.label !== undefined && lead.label !== null
-            ? { label: lead.label }
+            ? { leadLabel: normalizeLeadLabel(lead.label) }
             : {}),
         }),
     ...links,
@@ -243,7 +257,6 @@ export const syncLead = async (
 
 export const syncCampaign = async ({
   workspaceId,
-  workspaceName,
   externalId,
   name,
   status,
@@ -259,8 +272,6 @@ export const syncCampaign = async ({
   link.searchParams.set('workspace_id', workspaceId);
   const fields = {
     externalId,
-    workspaceId,
-    workspaceName,
     workspaceRecordId: recordId('workspace', workspaceId),
     campaignLink: {
       primaryLinkLabel: 'PlusVibe',
@@ -303,14 +314,14 @@ export const syncActivity = async (
   await createRecordIfMissing('plusvibeActivities', id, {
     name: event.subject || event.eventType,
     externalId: event.externalId,
-    workspaceId: event.workspaceId,
-    workspaceName,
+    workspaceRecordId: recordId('workspace', event.workspaceId),
+
     eventType: event.eventType,
     email: event.email,
     subject: event.subject,
     content: event.content,
     occurredAt: event.occurredAt,
-    label: event.label,
+    leadLabel: normalizeLeadLabel(event.label),
     personId,
     ...(campaignId ? { campaignId } : {}),
     threadLink: {

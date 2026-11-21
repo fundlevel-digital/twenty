@@ -1,9 +1,15 @@
 import { defineLogicFunction, type RoutePayload } from 'twenty-sdk/define';
-import { kv, Response } from 'twenty-sdk/logic-function';
+import {
+  kv,
+  listConnections,
+  type LogicFunctionExecutionContext,
+  Response,
+} from 'twenty-sdk/logic-function';
 import { z } from 'zod';
 
 import {
   getRegistrationKey,
+  ACCOUNT_PROVIDER_NAMES,
   SELECTION_KEY,
   type PlusvibeRegistration,
 } from 'src/constants/plusvibe';
@@ -18,8 +24,11 @@ import { canManageApplication } from 'src/logic-functions/utils/require-applicat
 import { findMailConnection } from 'src/logic-functions/utils/native-email';
 import { syncWorkspace } from 'src/logic-functions/utils/sync-workspace';
 
-export const selectWorkspacesHandler = async (event: RoutePayload<unknown>) => {
-  if (!(await canManageApplication())) {
+export const selectWorkspacesHandler = async (
+  event: RoutePayload<unknown>,
+  context?: Pick<LogicFunctionExecutionContext, 'userWorkspaceId'>,
+) => {
+  if (!context?.userWorkspaceId && !(await canManageApplication())) {
     return new Response(
       { error: 'Application management permission is required' },
       { status: 403 },
@@ -38,6 +47,21 @@ export const selectWorkspacesHandler = async (event: RoutePayload<unknown>) => {
     );
   }
   const connectionId = input.data.accountConnectionId;
+  if (context?.userWorkspaceId) {
+    const connections = await listConnections({});
+    if (
+      !connections.some(
+        (connection) =>
+          ACCOUNT_PROVIDER_NAMES.includes(connection.providerName) &&
+          connection.id === connectionId &&
+          connection.userWorkspaceId === context.userWorkspaceId,
+      )
+    )
+      return new Response(
+        { error: 'Select one of your PlusVibe connections' },
+        { status: 403 },
+      );
+  }
   const previousSelection = (await kv.get<string[]>(SELECTION_KEY)) ?? [];
   const registrations = await Promise.all(
     previousSelection.map(async (workspaceId) => ({
@@ -59,10 +83,10 @@ export const selectWorkspacesHandler = async (event: RoutePayload<unknown>) => {
   const fingerprint = connection?.externalAccountId;
   const otherWorkspaceIds = connectionId
     ? registrations
-        .filter(
-          ({ registration }) =>
-            registration?.accountConnectionId !== connectionId &&
-            (!fingerprint || registration?.apiKeyFingerprint !== fingerprint),
+        .filter(({ registration }) =>
+          registration?.accountConnectionId
+            ? registration.accountConnectionId !== connectionId
+            : !fingerprint || registration?.apiKeyFingerprint !== fingerprint,
         )
         .map(({ workspaceId }) => workspaceId)
     : [];

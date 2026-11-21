@@ -10,7 +10,6 @@ export const syncSourceThread = async (
   const id = recordId('thread', workspaceId, threadId);
   await createRecordIfMissing('plusvibeThreads', id, {
     externalId: threadId,
-    workspaceId,
     workspaceRecordId: recordId('workspace', workspaceId),
   });
   return id;

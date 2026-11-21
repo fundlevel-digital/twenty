@@ -65,6 +65,7 @@ export const webhookHandler = async (event: RoutePayload<unknown>) => {
           'PlusVibe webhook is missing sender or message identity',
         );
       await syncNativeEmail({
+        kind: normalized.eventType === 'EMAIL_SENT' ? 'outreach' : 'unibox',
         externalId: normalized.messageId,
         workspaceId: normalized.workspaceId,
         workspaceName: registration.workspaceName,

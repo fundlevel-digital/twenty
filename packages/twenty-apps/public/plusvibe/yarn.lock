@@ -1115,11 +1115,13 @@ __metadata:
     "@testing-library/dom": "npm:^10.4.0"
     "@testing-library/react": "npm:^16.3.0"
     "@testing-library/user-event": "npm:^14.6.1"
+    "@types/email-reply-parser": "npm:1.4.2"
     "@types/html-to-text": "npm:^9.0.4"
     "@types/jsdom": "npm:^30"
     "@types/node": "npm:^24.7.2"
     "@types/react": "npm:^19.0.0"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260116.1"
+    email-reply-parser: "npm:2.2.1"
     html-to-text: "npm:^9.0.5"
     jsdom: "npm:^30.0.1"
     oxlint: "npm:^1.0.0"
@@ -1166,6 +1168,13 @@ __metadata:
   version: 4.0.2
   resolution: "@types/deep-eql@npm:4.0.2"
   checksum: 10c0/bf3f811843117900d7084b9d0c852da9a044d12eb40e6de73b552598a6843c21291a8a381b0532644574beecd5e3491c5ff3a0365ab86b15d59862c025384844
+  languageName: node
+  linkType: hard
+
+"@types/email-reply-parser@npm:1.4.2":
+  version: 1.4.2
+  resolution: "@types/email-reply-parser@npm:1.4.2"
+  checksum: 10c0/8ca4c3d76e168fab6c1306280930363a54f4576cf209a6045049d44fa36dc45e06e3f922128781c09d35b119ca6b77c3427d3ff3a94f6a123781aaecc37677b3
   languageName: node
   linkType: hard
 
@@ -1702,6 +1711,18 @@ __metadata:
     domelementtype: "npm:^2.3.0"
     domhandler: "npm:^5.0.3"
   checksum: 10c0/47938f473b987ea71cd59e59626eb8666d3aa8feba5266e45527f3b636c7883cca7e582d901531961f742c519d7514636b7973353b648762b2e3bedbf235fada
+  languageName: node
+  linkType: hard
+
+"email-reply-parser@npm:2.2.1":
+  version: 2.2.1
+  resolution: "email-reply-parser@npm:2.2.1"
+  peerDependencies:
+    re2: 1.22.1
+  peerDependenciesMeta:
+    re2:
+      optional: true
+  checksum: 10c0/a4f1176f4b45894bb436b36274f20f697283071f75382ade53ec25828545b6b764ad11065f0a541a0e28ff2edbc9adbbeac16c120e300a3646daabc663f1a2e8
   languageName: node
   linkType: hard
 

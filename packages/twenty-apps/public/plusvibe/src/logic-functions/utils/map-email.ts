@@ -1,6 +1,9 @@
 import { isNonEmptyString } from '@sniptt/guards';
 import { z } from 'zod';
-import { convert } from 'html-to-text';
+import {
+  emailHtmlToText,
+  extractEmailReply,
+} from 'src/logic-functions/utils/email-content';
 
 import { type NativeEmail } from 'src/logic-functions/utils/native-email';
 
@@ -129,9 +132,10 @@ export const mapEmail = (
   const body = isNonEmptyString(plainText)
     ? plainText
     : isNonEmptyString(html)
-      ? convert(html, { wordwrap: false })
+      ? emailHtmlToText(html)
       : (email.content_preview ?? '');
   return {
+    kind: campaignEmail ? 'outreach' : 'unibox',
     externalId: normalizeMessageId(identifier),
     workspaceId,
     workspaceName,
@@ -148,7 +152,7 @@ export const mapEmail = (
     campaignId: email.campaign_id ?? email.camp_id ?? undefined,
     threadId: email.thread_id ?? email.last_thread_id ?? undefined,
     subject: email.subject ?? '',
-    text: body,
+    text: extractEmailReply(body),
     receivedAt,
     direction,
     label: email.label ?? undefined,

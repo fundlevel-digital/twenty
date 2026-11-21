@@ -1,7 +1,10 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { isNonEmptyString } from '@sniptt/guards';
 import { z } from 'zod';
-import { convert } from 'html-to-text';
+import {
+  emailHtmlToText,
+  extractEmailReply,
+} from 'src/logic-functions/utils/email-content';
 import { normalizeMessageId } from 'src/logic-functions/utils/map-email';
 
 const OPTIONAL_TEXT = z.string().nullish();
@@ -156,15 +159,14 @@ export const normalizeEvent = (body: unknown, workspaceId: string) => {
     campaignName: firstText(event.campaign_name, event.camp_name),
     occurredAt: new Date(occurredAt).toISOString(),
     subject: firstText(event.subject, event.last_lead_reply_subject) ?? '',
-    content:
+    content: extractEmailReply(
       firstText(
         event.text_body,
-        isNonEmptyString(event.body)
-          ? convert(event.body, { wordwrap: false })
-          : undefined,
+        isNonEmptyString(event.body) ? emailHtmlToText(event.body) : undefined,
         event.snippet,
         event.msg,
       ) ?? '',
+    ),
     label:
       event.label ??
       (eventType.startsWith('LEAD_MARKED_AS_')

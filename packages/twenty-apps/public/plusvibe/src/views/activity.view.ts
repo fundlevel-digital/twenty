@@ -1,15 +1,15 @@
 import { defineView, ViewType } from 'twenty-sdk/define';
 import {
+  ACTIVITY_WORKSPACE_RELATION_UNIVERSAL_IDENTIFIER,
+  ACTIVITY_CAMPAIGN_UNIVERSAL_IDENTIFIER,
+  ACTIVITY_EMAIL_UNIVERSAL_IDENTIFIER,
+  ACTIVITY_EVENT_TYPE_UNIVERSAL_IDENTIFIER,
+  ACTIVITY_LABEL_SELECT_UNIVERSAL_IDENTIFIER,
+  ACTIVITY_NAME_UNIVERSAL_IDENTIFIER,
+  ACTIVITY_OCCURRED_AT_UNIVERSAL_IDENTIFIER,
+  ACTIVITY_PERSON_UNIVERSAL_IDENTIFIER,
   ACTIVITY_UNIVERSAL_IDENTIFIER,
   ACTIVITY_VIEW_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_NAME_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_EVENT_TYPE_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_EMAIL_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_OCCURRED_AT_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_WORKSPACE_NAME_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_LABEL_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_PERSON_UNIVERSAL_IDENTIFIER,
-  ACTIVITY_CAMPAIGN_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineView({
@@ -20,6 +20,14 @@ export default defineView({
   icon: 'IconMail',
   position: 0,
   fields: [
+    {
+      universalIdentifier: 'ab2191ea-b254-5b4f-985f-94db9dc60782',
+      fieldMetadataUniversalIdentifier:
+        ACTIVITY_WORKSPACE_RELATION_UNIVERSAL_IDENTIFIER,
+      position: 4,
+      isVisible: true,
+      size: 180,
+    },
     {
       universalIdentifier: '3c67d022-cd43-4de1-87fb-46e3c07fab4f',
       fieldMetadataUniversalIdentifier: ACTIVITY_NAME_UNIVERSAL_IDENTIFIER,
@@ -51,16 +59,9 @@ export default defineView({
       size: 180,
     },
     {
-      universalIdentifier: '847af8b5-1834-473d-95bb-ec391eb1055a',
+      universalIdentifier: 'f2e17ae0-57d6-57b2-942e-e27d45c72cac',
       fieldMetadataUniversalIdentifier:
-        ACTIVITY_WORKSPACE_NAME_UNIVERSAL_IDENTIFIER,
-      position: 4,
-      isVisible: true,
-      size: 180,
-    },
-    {
-      universalIdentifier: '6bbd6435-8eed-4af4-bb19-fa462ae19f46',
-      fieldMetadataUniversalIdentifier: ACTIVITY_LABEL_UNIVERSAL_IDENTIFIER,
+        ACTIVITY_LABEL_SELECT_UNIVERSAL_IDENTIFIER,
       position: 5,
       isVisible: true,
       size: 180,

@@ -1,12 +1,11 @@
 import { defineView, ViewType } from 'twenty-sdk/define';
 import {
+  CAMPAIGN_LEGACY_STATUS_UNIVERSAL_IDENTIFIER,
+  CAMPAIGN_NAME_UNIVERSAL_IDENTIFIER,
+  CAMPAIGN_STATUS_UNIVERSAL_IDENTIFIER,
   CAMPAIGN_UNIVERSAL_IDENTIFIER,
   CAMPAIGN_VIEW_UNIVERSAL_IDENTIFIER,
-  CAMPAIGN_NAME_UNIVERSAL_IDENTIFIER,
   CAMPAIGN_WORKSPACE_RELATION_UNIVERSAL_IDENTIFIER,
-  CAMPAIGN_STATUS_UNIVERSAL_IDENTIFIER,
-  CAMPAIGN_LEGACY_STATUS_UNIVERSAL_IDENTIFIER,
-  CAMPAIGN_WORKSPACE_NAME_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
 export default defineView({
@@ -30,14 +29,6 @@ export default defineView({
         CAMPAIGN_WORKSPACE_RELATION_UNIVERSAL_IDENTIFIER,
       position: 1,
       isVisible: true,
-      size: 180,
-    },
-    {
-      universalIdentifier: 'c1d41c33-c615-49d9-8206-beb50d3b16a4',
-      fieldMetadataUniversalIdentifier:
-        CAMPAIGN_WORKSPACE_NAME_UNIVERSAL_IDENTIFIER,
-      position: 1,
-      isVisible: false,
       size: 180,
     },
     {

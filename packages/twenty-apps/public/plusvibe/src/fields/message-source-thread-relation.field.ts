@@ -16,7 +16,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
   name: 'plusvibeThreadRecord',
-  label: 'PlusVibe Thread ID',
+  label: 'PlusVibe Thread',
   type: FieldType.RELATION,
   icon: 'IconMessages',
   relationTargetObjectMetadataUniversalIdentifier:

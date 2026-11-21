@@ -25,7 +25,7 @@ vi.mock('twenty-sdk/front-component', () => ({
   navigate,
   AppPath: { SettingsCatchAll: '/settings/*' },
   useLocation: () => ({
-    pathname: '/settings/applications/app-1',
+    pathname: '/settings/app-preferences/app-1',
     search: '',
     hash: '#setup',
   }),
@@ -136,14 +136,15 @@ describe('PlusVibe settings', () => {
       .click(screen.getByRole('button', { name: 'Connect PlusVibe' }));
     expect(navigate).toHaveBeenCalledWith(
       '/settings/*',
-      { '*': 'applications/app-1/connect/plusvibe' },
+      { '*': 'applications/app-1/connect/plusvibe-user' },
       undefined,
       {
-        state: { returnTo: '/settings/applications/app-1#setup' },
+        state: { returnTo: '/settings/app-preferences/app-1#setup' },
         surface: 'main',
       },
     );
     expect(post).not.toHaveBeenCalled();
+    expect(get).toHaveBeenCalledTimes(1);
     expect(screen.queryByLabelText('API key')).toBeNull();
   });
 
@@ -234,7 +235,7 @@ describe('PlusVibe settings', () => {
     await user.click(screen.getByRole('button', { name: 'Add connection' }));
     expect(navigate).toHaveBeenCalledWith(
       '/settings/*',
-      { '*': 'applications/app-1/connect/plusvibe' },
+      { '*': 'applications/app-1/connect/plusvibe-user' },
       undefined,
       expect.anything(),
     );
@@ -318,4 +319,74 @@ describe('PlusVibe settings', () => {
     );
     expect(screen.queryByText('Sync settings saved.')).toBeNull();
   });
+});
+
+it('saves import and sharing preferences for the active connection and restores each account’s values', async () => {
+  status = {
+    ...status,
+    accounts: [
+      {
+        id: 'connection-1',
+        name: 'PlusVibe #1',
+        hasAccountError: false,
+        isMailConnected: true,
+        workspaces: [],
+        selectedWorkspaceIds: [],
+        preferences: { autoCreatePeople: true, uniboxVisibility: 'METADATA' },
+      },
+      {
+        id: 'connection-2',
+        name: 'PlusVibe #2',
+        hasAccountError: false,
+        isMailConnected: true,
+        workspaces: [],
+        selectedWorkspaceIds: [],
+        preferences: { autoCreatePeople: false, uniboxVisibility: 'SUBJECT' },
+      },
+    ],
+  };
+  renderSettings();
+  const user = userEvent.setup();
+  await screen.findByRole('button', { name: 'PlusVibe #2' });
+  await user.click(screen.getByRole('button', { name: 'PlusVibe #2' }));
+  expect(
+    (
+      screen.getByRole('checkbox', {
+        name: 'Automatically create People from leads',
+      }) as HTMLInputElement
+    ).checked,
+  ).toBe(false);
+  expect(
+    (
+      screen.getByRole('combobox', {
+        name: 'Unibox sharing',
+      }) as HTMLSelectElement
+    ).value,
+  ).toBe('SUBJECT');
+  await user.selectOptions(
+    screen.getByRole('combobox', { name: 'Unibox sharing' }),
+    'SHARE_EVERYTHING',
+  );
+  await user.click(screen.getByRole('button', { name: 'Save preferences' }));
+  await screen.findByText('Import and sharing preferences saved.');
+  expect(post).toHaveBeenCalledWith('/s/plusvibe/preferences', {
+    accountConnectionId: 'connection-2',
+    autoCreatePeople: false,
+    uniboxVisibility: 'SHARE_EVERYTHING',
+  });
+  await user.click(screen.getByRole('button', { name: 'PlusVibe #1' }));
+  expect(
+    (
+      screen.getByRole('checkbox', {
+        name: 'Automatically create People from leads',
+      }) as HTMLInputElement
+    ).checked,
+  ).toBe(true);
+  expect(
+    (
+      screen.getByRole('combobox', {
+        name: 'Unibox sharing',
+      }) as HTMLSelectElement
+    ).value,
+  ).toBe('METADATA');
 });

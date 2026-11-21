@@ -313,6 +313,29 @@ describe('Twenty record synchronization', () => {
     );
   });
 
+  it('retains an unmatched Lead without creating a Person when automatic creation is disabled', async () => {
+    mappings.set('plusvibe:registration:workspace-1', {
+      accountConnectionId: 'connection-1',
+    });
+    mappings.set('plusvibe:preferences:connection-1', {
+      autoCreatePeople: false,
+      uniboxVisibility: 'METADATA',
+    });
+    expect(
+      await syncPerson(
+        { lead_id: 'lead-1', email: 'lead@example.com' },
+        'workspace-1',
+      ),
+    ).toBeUndefined();
+    expect(post.mock.calls.some(([path]) => path === '/rest/people')).toBe(
+      false,
+    );
+    expect(post).toHaveBeenCalledWith(
+      '/rest/plusvibeLeads',
+      expect.objectContaining({ matchStatus: 'UNMATCHED' }),
+    );
+  });
+
   it('creates the same person only once across PlusVibe workspaces', async () => {
     await syncPerson({ email: 'lead@example.com' }, 'workspace-1');
     await syncPerson({ email: 'lead@example.com' }, 'workspace-2');

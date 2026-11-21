@@ -34,6 +34,7 @@ it('returns separate connection health and selections without returning credenti
   listConnections.mockResolvedValue([
     {
       id: 'first',
+      providerName: 'plusvibe',
       name: 'PlusVibe #1',
       externalAccountId: 'first-fingerprint',
       accessToken: 'first-secret',
@@ -41,6 +42,7 @@ it('returns separate connection health and selections without returning credenti
     },
     {
       id: 'second',
+      providerName: 'plusvibe',
       name: 'PlusVibe #2',
       externalAccountId: 'second-fingerprint',
       accessToken: 'second-secret',
@@ -76,4 +78,53 @@ it('returns separate connection health and selections without returning credenti
     ],
   });
   expect(JSON.stringify(status)).not.toMatch(/secret|fingerprint|accessToken/);
+});
+
+it('returns only the member’s accounts and never exposes the legacy app key as their connection', async () => {
+  listConnections.mockResolvedValue([
+    {
+      id: 'own',
+      providerName: 'plusvibe-user',
+      userWorkspaceId: 'member-1',
+      externalAccountId: 'same-key',
+    },
+    {
+      id: 'other',
+      providerName: 'plusvibe-user',
+      userWorkspaceId: 'member-2',
+      externalAccountId: 'same-key',
+    },
+  ]);
+  listWorkspaces.mockResolvedValue([]);
+  values.set(SELECTION_KEY, ['own-workspace', 'other-workspace']);
+  values.set(getRegistrationKey('own-workspace'), {
+    accountConnectionId: 'own',
+    apiKeyFingerprint: 'same-key',
+  });
+  values.set(getRegistrationKey('other-workspace'), {
+    accountConnectionId: 'other',
+    apiKeyFingerprint: 'same-key',
+  });
+  const status = await settingsStatusHandler(undefined, {
+    userWorkspaceId: 'member-1',
+  });
+  expect(status).toMatchObject({
+    accounts: [{ id: 'own' }],
+    selectedWorkspaceIds: ['own-workspace'],
+    imports: { 'own-workspace': null },
+  });
+  expect(JSON.stringify(status)).not.toContain('other-workspace');
+  listConnections.mockResolvedValue([]);
+  vi.stubEnv('PLUSVIBE_API_KEY', 'app-wide-key');
+  try {
+    expect(
+      await settingsStatusHandler(undefined, { userWorkspaceId: 'member-1' }),
+    ).toMatchObject({
+      isApiKeySet: false,
+      accounts: [],
+      selectedWorkspaceIds: [],
+    });
+  } finally {
+    vi.unstubAllEnvs();
+  }
 });

@@ -6,16 +6,32 @@ import {
   kv,
   listConnections,
   listMessageChannels,
+  updateMessageChannel,
   type AppMessageChannel,
 } from 'twenty-sdk/logic-function';
 import { z } from 'zod';
 
-import { ACCOUNT_PROVIDER_NAME } from 'src/constants/plusvibe';
+import { getWorkspacePreferences } from 'src/logic-functions/utils/preferences';
+import { extractEmailReply } from 'src/logic-functions/utils/email-content';
+import {
+  findSourceLeadIds,
+  syncEmailRelations,
+  syncSender,
+} from 'src/logic-functions/utils/sync-relations';
+import {
+  ACCOUNT_PROVIDER_NAMES,
+  ACCOUNT_PROVIDER_NAME,
+  USER_ACCOUNT_PROVIDER_NAME,
+} from 'src/constants/plusvibe';
 import {
   API_KEY_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
+  USER_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
   MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
-import { getApiKeyFingerprint } from 'src/logic-functions/utils/plusvibe-api';
+import {
+  getAccountConnection,
+  getApiKeyFingerprint,
+} from 'src/logic-functions/utils/plusvibe-api';
 import {
   recordId,
   syncCampaign,
@@ -29,6 +45,7 @@ const MAX_NATIVE_EMAIL_TEXT_LENGTH = 262_144;
 const MAX_NATIVE_EMAIL_SUBJECT_LENGTH = 998;
 
 export type NativeEmail = {
+  kind?: 'outreach' | 'unibox';
   externalId: string;
   workspaceId: string;
   workspaceName: string;
@@ -50,8 +67,9 @@ export const findMailConnection = async (
   workspaceId?: string,
   connectionId?: string,
 ) => {
+  const account = await getAccountConnection(workspaceId, connectionId);
   const fingerprint = await getApiKeyFingerprint(workspaceId, connectionId);
-  return (await listConnections({ scope: 'WORKSPACE' }))
+  return (await listConnections({}))
     .sort(
       (first, second) =>
         Number(second.providerName === 'plusvibe-mail') -
@@ -59,10 +77,14 @@ export const findMailConnection = async (
     )
     .find(
       (connection) =>
-        ['plusvibe-mail', ACCOUNT_PROVIDER_NAME].includes(
+        ['plusvibe-mail', ...ACCOUNT_PROVIDER_NAMES].includes(
           connection.providerName,
         ) &&
         connection.externalAccountId === fingerprint &&
+        (!account || connection.userWorkspaceId === account.userWorkspaceId) &&
+        (!ACCOUNT_PROVIDER_NAMES.includes(connection.providerName) ||
+          !account ||
+          connection.id === account.id) &&
         connection.authFailedAt === null,
     );
 };
@@ -72,19 +94,38 @@ const ensureChannel = async (
   email: NativeEmail,
   messagingProviderUniversalIdentifier: string,
 ): Promise<AppMessageChannel> => {
-  const channelHandle = email.sender.trim().toLowerCase();
+  const preferences = await getWorkspacePreferences(email.workspaceId);
+  const kind =
+    email.kind ??
+    (email.direction === 'OUT' && email.campaignId ? 'outreach' : 'unibox');
+  const channelHandle = `plusvibe:${kind}:${email.sender.trim().toLowerCase()}`;
+  const visibility =
+    kind === 'outreach' ? 'SHARE_EVERYTHING' : preferences.uniboxVisibility;
+  const channels = await listMessageChannels({ connectedAccountId });
+  const legacy = channels.find(
+    (channel) => channel.handle === email.sender.trim().toLowerCase(),
+  );
+  if (legacy && legacy.visibility !== preferences.uniboxVisibility)
+    await updateMessageChannel({
+      id: legacy.id,
+      visibility: preferences.uniboxVisibility,
+    });
   const findExisting = async () =>
     (await listMessageChannels({ connectedAccountId })).find(
       (channel) => channel.handle === channelHandle,
     );
-  const existing = await findExisting();
-  if (existing) return existing;
+  const existing = channels.find((channel) => channel.handle === channelHandle);
+  if (existing) {
+    if (existing.visibility !== visibility)
+      return updateMessageChannel({ id: existing.id, visibility });
+    return existing;
+  }
   try {
     return await createMessageChannel({
       connectedAccountId,
       handle: channelHandle,
       displayName: email.sender,
-      visibility: 'SHARE_EVERYTHING',
+      visibility,
       messagingProvider: {
         universalIdentifier: messagingProviderUniversalIdentifier,
       },
@@ -209,18 +250,22 @@ export const updateThreadLabel = async (
   occurredAt: string,
 ) => {
   const response = await new RestApiClient({ runAs: 'application' }).post<{
-    data?: { messageThreads: { edges: { node: { id: string } }[] } };
+    data?: {
+      plusvibeThreadConversations: {
+        edges: { node: { conversationId: string } }[];
+      };
+    };
     errors?: unknown[];
   }>('/graphql', {
     query:
-      'query($workspace:String!,$thread:String!){messageThreads(filter:{plusvibeWorkspaceId:{eq:$workspace},plusvibeThreadId:{eq:$thread}}){edges{node{id}}}}',
-    variables: { workspace: workspaceId, thread: threadId },
+      'query($thread:UUID!){plusvibeThreadConversations(filter:{threadId:{eq:$thread}}){edges{node{conversationId}}}}',
+    variables: { thread: recordId('thread', workspaceId, threadId) },
   });
   if (response.errors?.length)
     throw new Error('Could not find the PlusVibe thread');
-  for (const { node } of response.data?.messageThreads.edges ?? [])
+  for (const { node } of response.data?.plusvibeThreadConversations.edges ?? [])
     await updateThreadMetadata(
-      node.id,
+      node.conversationId,
       {},
       { direction: 'OUT', label, receivedAt: occurredAt },
     );
@@ -239,9 +284,11 @@ export const syncNativeEmail = async (email: NativeEmail) => {
   const channel = await ensureChannel(
     connection.id,
     email,
-    connection.providerName === ACCOUNT_PROVIDER_NAME
-      ? API_KEY_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER
-      : MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
+    connection.providerName === USER_ACCOUNT_PROVIDER_NAME
+      ? USER_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER
+      : connection.providerName === ACCOUNT_PROVIDER_NAME
+        ? API_KEY_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER
+        : MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
   );
   const personId = await syncPerson(
     {
@@ -278,7 +325,10 @@ export const syncNativeEmail = async (email: NativeEmail) => {
         externalId: `${email.workspaceId}:${email.externalId}`,
         threadExternalId: `${email.workspaceId}:${nativeThreadExternalId}`,
         subject: email.subject.slice(0, MAX_NATIVE_EMAIL_SUBJECT_LENGTH),
-        text: email.text.slice(0, MAX_NATIVE_EMAIL_TEXT_LENGTH),
+        text: extractEmailReply(email.text).slice(
+          0,
+          MAX_NATIVE_EMAIL_TEXT_LENGTH,
+        ),
         receivedAt: new Date(email.receivedAt),
         participants: [
           {
@@ -290,7 +340,7 @@ export const syncNativeEmail = async (email: NativeEmail) => {
             role: email.direction === 'OUT' ? 'TO' : 'FROM',
             handle: email.leadEmail,
             displayName: email.leadEmail,
-            personId,
+            ...(personId ? { personId } : {}),
           },
         ],
       },
@@ -299,24 +349,26 @@ export const syncNativeEmail = async (email: NativeEmail) => {
   if (!message)
     throw new Error('Twenty did not acknowledge the imported message');
   const client = new RestApiClient({ runAs: 'application' });
+  const senderId = await syncSender(email.workspaceId, email.sender);
+  const leadIds = await findSourceLeadIds(email, personId);
   const common = {
     source: 'PLUSVIBE',
-    plusvibeWorkspaceId: email.workspaceId,
-    plusvibeSender: email.sender,
     plusvibeWorkspaceRecordId: workspaceId,
-    ...(email.campaignId ? { plusvibeCampaignId: email.campaignId } : {}),
     ...(campaignId ? { plusvibeCampaignRecordId: campaignId } : {}),
-    ...(providerThreadId ? { plusvibeThreadId: providerThreadId } : {}),
-    ...(sourceThreadId ? { plusvibeThreadRecordId: sourceThreadId } : {}),
   };
   await client.patch(`/rest/messages/${message.messageId}`, {
     ...common,
-    plusvibeExternalId: email.externalId,
+    text: extractEmailReply(email.text).slice(0, MAX_NATIVE_EMAIL_TEXT_LENGTH),
+    plusvibeSenderRecordId: senderId,
+    ...(sourceThreadId ? { plusvibeThreadRecordId: sourceThreadId } : {}),
   });
-  await updateThreadMetadata(
-    message.messageThreadId,
-    { ...common, plusvibePersonId: personId },
+  await updateThreadMetadata(message.messageThreadId, common, email);
+  await syncEmailRelations(
     email,
+    message.messageThreadId,
+    senderId,
+    leadIds,
+    sourceThreadId,
   );
   return message;
 };

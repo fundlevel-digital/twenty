@@ -1,14 +1,27 @@
 import { defineLogicFunction, type RoutePayload } from 'twenty-sdk/define';
 import { z } from 'zod';
-import { kv, Response } from 'twenty-sdk/logic-function';
+import {
+  kv,
+  listConnections,
+  type LogicFunctionExecutionContext,
+  Response,
+} from 'twenty-sdk/logic-function';
 
-import { SELECTION_KEY } from 'src/constants/plusvibe';
+import {
+  ACCOUNT_PROVIDER_NAMES,
+  getRegistrationKey,
+  type PlusvibeRegistration,
+  SELECTION_KEY,
+} from 'src/constants/plusvibe';
 import { REQUEST_BACKFILL_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 import { canManageApplication } from 'src/logic-functions/utils/require-application-manager';
 import { startImport } from 'src/logic-functions/utils/start-import';
 
-export const requestBackfillHandler = async (event?: RoutePayload<unknown>) => {
-  if (!(await canManageApplication()))
+export const requestBackfillHandler = async (
+  event?: RoutePayload<unknown>,
+  context?: Pick<LogicFunctionExecutionContext, 'userWorkspaceId'>,
+) => {
+  if (!context?.userWorkspaceId && !(await canManageApplication()))
     return new Response(
       { error: 'Application management permission is required' },
       { status: 403 },
@@ -33,6 +46,29 @@ export const requestBackfillHandler = async (event?: RoutePayload<unknown>) => {
       { error: 'Workspace is not selected' },
       { status: 400 },
     );
+  if (context?.userWorkspaceId) {
+    const connections = (await listConnections({})).filter(
+      (connection) =>
+        ACCOUNT_PROVIDER_NAMES.includes(connection.providerName) &&
+        connection.userWorkspaceId === context.userWorkspaceId,
+    );
+    for (const workspaceId of workspaceIds) {
+      const registration = await kv.get<PlusvibeRegistration>(
+        getRegistrationKey(workspaceId),
+      );
+      if (
+        !connections.some((connection) =>
+          registration?.accountConnectionId
+            ? connection.id === registration.accountConnectionId
+            : connection.externalAccountId === registration?.apiKeyFingerprint,
+        )
+      )
+        return new Response(
+          { error: 'This workspace belongs to another member’s connection' },
+          { status: 403 },
+        );
+    }
+  }
   for (const workspaceId of workspaceIds) await startImport(workspaceId);
   return { success: true };
 };
