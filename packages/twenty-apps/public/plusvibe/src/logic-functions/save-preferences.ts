@@ -17,6 +17,7 @@ import {
 import {
   PREFERENCES_KEY,
   PREFERENCES_SCHEMA,
+  getPreferences,
 } from 'src/logic-functions/utils/preferences';
 
 export const savePreferencesHandler = async (
@@ -28,9 +29,12 @@ export const savePreferencesHandler = async (
       { error: 'Sign in to update your app preferences' },
       { status: 403 },
     );
-  const input = PREFERENCES_SCHEMA.extend({
-    accountConnectionId: z.uuid(),
-  }).safeParse(event.body);
+  const input = PREFERENCES_SCHEMA.partial()
+    .extend({
+      autoCreatePeople: z.boolean().optional(),
+      accountConnectionId: z.uuid(),
+    })
+    .safeParse(event.body);
   if (!input.success)
     return new Response(
       { error: 'Invalid PlusVibe preferences' },
@@ -48,7 +52,19 @@ export const savePreferencesHandler = async (
       { error: 'This connection belongs to another member or is unavailable' },
       { status: 403 },
     );
-  const { accountConnectionId, ...preferences } = input.data;
+  const { accountConnectionId, autoCreatePeople, ...update } = input.data;
+  const current = await getPreferences(accountConnectionId);
+  const preferences = PREFERENCES_SCHEMA.parse({
+    ...current,
+    ...update,
+    contactAutoCreationPolicy:
+      update.contactAutoCreationPolicy ??
+      (autoCreatePeople === undefined
+        ? current.contactAutoCreationPolicy
+        : autoCreatePeople
+          ? 'SENT_AND_RECEIVED'
+          : 'NONE'),
+  });
   await kv.set(`${PREFERENCES_KEY}:${accountConnectionId}`, preferences);
   for (const workspaceId of (await kv.get<string[]>(SELECTION_KEY)) ?? []) {
     const registration = await kv.get<PlusvibeRegistration>(
@@ -80,10 +96,10 @@ export const savePreferencesHandler = async (
         channel.handle.startsWith('plusvibe:unibox:') ||
         z.email().safeParse(channel.handle).success
       ) {
-        if (channel.visibility !== input.data.uniboxVisibility)
+        if (channel.visibility !== preferences.uniboxVisibility)
           await updateMessageChannel({
             id: channel.id,
-            visibility: input.data.uniboxVisibility,
+            visibility: preferences.uniboxVisibility,
           });
       }
     }

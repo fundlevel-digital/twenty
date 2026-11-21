@@ -1122,9 +1122,11 @@ __metadata:
     "@types/react": "npm:^19.0.0"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260116.1"
     email-reply-parser: "npm:2.2.1"
+    free-email-domains: "npm:1.14.0"
     html-to-text: "npm:^9.0.5"
     jsdom: "npm:^30.0.1"
     oxlint: "npm:^1.0.0"
+    psl: "npm:1.15.0"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
     twenty: "npm:2.59.0"
@@ -1924,6 +1926,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"free-email-domains@npm:1.14.0":
+  version: 1.14.0
+  resolution: "free-email-domains@npm:1.14.0"
+  checksum: 10c0/b362bbf2df3b3146672a52824a52037d49edd829040eeb5631c24be981aa9cb50043c1ee371d9aa31e36ee98c39f4902948b14960b069d0fb11dd18a4d94d80a
+  languageName: node
+  linkType: hard
+
 "fsevents@npm:~2.3.2, fsevents@npm:~2.3.3":
   version: 2.3.3
   resolution: "fsevents@npm:2.3.3"
@@ -2653,6 +2662,15 @@ __metadata:
   version: 7.0.0
   resolution: "proc-log@npm:7.0.0"
   checksum: 10c0/b89c2d862604f35fec795477b0c7e376feab3ba0d4f4d291c4e959567442697cf451ac557d0623c1cc38af45a78128b983410f397a10c5d3a67f76c33de4754b
+  languageName: node
+  linkType: hard
+
+"psl@npm:1.15.0":
+  version: 1.15.0
+  resolution: "psl@npm:1.15.0"
+  dependencies:
+    punycode: "npm:^2.3.1"
+  checksum: 10c0/d8d45a99e4ca62ca12ac3c373e63d80d2368d38892daa40cfddaa1eb908be98cd549ac059783ef3a56cfd96d57ae8e2fd9ae53d1378d90d42bc661ff924e102a
   languageName: node
   linkType: hard
 

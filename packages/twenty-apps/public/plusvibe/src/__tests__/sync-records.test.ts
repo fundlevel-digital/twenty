@@ -1,3 +1,6 @@
+vi.mock('src/logic-functions/utils/internal-people', () => ({
+  isInternalPerson: vi.fn(async () => false),
+}));
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RestApiClientError } from 'twenty-client-sdk/rest';
 
@@ -325,6 +328,7 @@ describe('Twenty record synchronization', () => {
       await syncPerson(
         { lead_id: 'lead-1', email: 'lead@example.com' },
         'workspace-1',
+        { direction: 'OUT' },
       ),
     ).toBeUndefined();
     expect(post.mock.calls.some(([path]) => path === '/rest/people')).toBe(
@@ -337,8 +341,12 @@ describe('Twenty record synchronization', () => {
   });
 
   it('creates the same person only once across PlusVibe workspaces', async () => {
-    await syncPerson({ email: 'lead@example.com' }, 'workspace-1');
-    await syncPerson({ email: 'lead@example.com' }, 'workspace-2');
+    await syncPerson({ email: 'lead@example.com' }, 'workspace-1', {
+      direction: 'OUT',
+    });
+    await syncPerson({ email: 'lead@example.com' }, 'workspace-2', {
+      direction: 'OUT',
+    });
     expect(post).toHaveBeenCalledOnce();
   });
 
@@ -396,4 +404,73 @@ describe('Twenty record synchronization', () => {
       createRecordIfMissing('people', recordId('person'), {}),
     ).rejects.toThrow('Database unavailable');
   });
+});
+
+it.each([
+  ['SENT_AND_RECEIVED', 'OUT', true],
+  ['SENT_AND_RECEIVED', 'IN', true],
+  ['SENT', 'OUT', true],
+  ['SENT', 'IN', false],
+  ['NONE', 'OUT', false],
+  ['NONE', 'IN', false],
+] as const)(
+  'policy %s with direction %s permits creation: %s',
+  async (policy, direction, creates) => {
+    mappings.set('plusvibe:preferences', { contactAutoCreationPolicy: policy });
+    await syncPerson(
+      { lead_id: 'source-lead', email: 'customer@external.com' },
+      'workspace-1',
+      { direction, senderEmail: 'sender@our-company.com' },
+    );
+    expect(post.mock.calls.some(([path]) => path === '/rest/people')).toBe(
+      creates,
+    );
+    expect(post).toHaveBeenCalledWith(
+      '/rest/plusvibeLeads',
+      expect.objectContaining({
+        matchStatus: creates ? 'MATCHED' : 'UNMATCHED',
+      }),
+    );
+  },
+);
+it('retains directory Leads without creating People before qualifying email activity', async () => {
+  await syncPerson(
+    { lead_id: 'unsent', email: 'customer@external.com' },
+    'workspace-1',
+    { isFullLeadRecord: true },
+  );
+  expect(post.mock.calls.some(([path]) => path === '/rest/people')).toBe(false);
+  expect(post).toHaveBeenCalledWith(
+    '/rest/plusvibeLeads',
+    expect.objectContaining({ matchStatus: 'UNMATCHED' }),
+  );
+});
+it('does not create internal employees but still relates an existing employee Person', async () => {
+  const { isInternalPerson } =
+    await import('src/logic-functions/utils/internal-people');
+  vi.mocked(isInternalPerson).mockResolvedValueOnce(true);
+  expect(
+    await syncPerson({ email: 'employee@our-company.com' }, 'workspace-1', {
+      direction: 'OUT',
+    }),
+  ).toBeUndefined();
+  expect(post.mock.calls.some(([path]) => path === '/rest/people')).toBe(false);
+  const personId = recordId('existing-employee');
+  query.mockResolvedValueOnce({
+    people: {
+      edges: [
+        {
+          node: {
+            id: personId,
+            emails: { primaryEmail: 'employee@our-company.com' },
+          },
+        },
+      ],
+    },
+  });
+  expect(
+    await syncPerson({ email: 'employee@our-company.com' }, 'workspace-1', {
+      direction: 'OUT',
+    }),
+  ).toBe(personId);
 });

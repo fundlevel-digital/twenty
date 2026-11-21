@@ -51,9 +51,17 @@ presented as a member’s personal connection.
 
 ## Import and sharing preferences
 
-- **Automatically create People from leads:** on by default for compatibility.
-  When off, existing People still match by primary/additional email, and unmatched
-  source Leads remain available with Person Match = Unmatched.
+- **People Auto-Creation:** Sent and Received, Sent, or None, matching native
+  email creation policies. Only qualifying email activity creates People;
+  importing the lead directory or a bounce/label event alone does not. Existing
+  People still match regardless of policy. Legacy on maps to Sent and Received;
+  legacy off maps to None.
+- **Internal Employees:** exclude coworkers on your workspace members’ and source
+  senders’ business domains by default. Workspace members and sending addresses
+  themselves are always excluded from creation. Personal email provider domains
+  are never inferred as a shared employer. Additional internal domains are editable
+  per connection; domain matching includes subdomains and rejects lookalike names.
+  Existing employee People still match; no People are deleted by changing policy.
 - **Unibox sharing:** Participants and dates only (`METADATA`, the default), Share
   subject (`SUBJECT`), or Share everything (`SHARE_EVERYTHING`). The connection
   owner keeps full access. Changes save immediately and update that owner’s existing Unibox channels.
@@ -61,7 +69,9 @@ presented as a member’s personal connection.
   channels. Unibox history, manual sends, and replies use separate native channels
   governed by the preference, including replies associated with a campaign.
 
-Preferences use native Twenty account cards, switches, and sharing choices.
+Preferences use native Twenty account cards, creation/sharing choices, and
+employee exclusion controls. Domain changes use Save Domains; other preferences
+save immediately.
 Temporary route failures retry once; if loading still fails, the page offers Retry
 without showing default preferences or a false disconnected account.
 
@@ -79,7 +89,8 @@ is verified. The preview was reseeded from its approved snapshot.
 
 ## Records and filters
 
-- **People:** new contacts receive names, primary email, and job title. Existing
+- **People:** new contacts allowed by the creation policy and employee exclusions receive
+  names, primary email, and job title. Existing
   contacts match by primary or additional email, case-insensitively, and retain
   their fields. Matches are verified against the full address. Ambiguous matches
   keep the source Lead as Needs Review and do not create another Person. A
@@ -193,3 +204,6 @@ includes failed discovery and email-history queue jobs for troubleshooting.
 
 Reply parsing pins the CommonJS 2.2.1 parser: newer ESM releases initialize
 `createRequire(import.meta.url)` while Twenty extracts manifests as CommonJS.
+
+The app role reads Workspace Members only to check employee email addresses; it
+cannot create or update member records. Failed employee lookups stop creation.

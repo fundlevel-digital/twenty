@@ -2,21 +2,20 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { CoreApiClient } from 'twenty-client-sdk/core';
 import { RestApiClient, RestApiClientError } from 'twenty-client-sdk/rest';
 import { kv } from 'twenty-sdk/logic-function';
-import { v5 as uuidV5 } from 'uuid';
 import { z } from 'zod';
 
+import { isInternalPerson } from 'src/logic-functions/utils/internal-people';
 import { normalizeLeadLabel } from 'src/logic-functions/utils/lead-label';
 import { getWorkspacePreferences } from 'src/logic-functions/utils/preferences';
 import { getLeadPersonKey } from 'src/constants/plusvibe';
-import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 import { AmbiguousPersonMatchError } from 'src/logic-functions/errors/ambiguous-person-match.error';
 import {
   type PlusvibeLead,
   type normalizeEvent,
 } from 'src/logic-functions/utils/normalize-event';
 
-export const recordId = (...parts: string[]) =>
-  uuidV5(JSON.stringify(parts), APPLICATION_UNIVERSAL_IDENTIFIER);
+import { recordId } from 'src/logic-functions/utils/record-id';
+export { recordId } from 'src/logic-functions/utils/record-id';
 
 const restClient = () => new RestApiClient({ runAs: 'application' });
 
@@ -55,7 +54,11 @@ export const createRecordIfMissing = async (
 export const syncPerson = async (
   lead: PlusvibeLead,
   workspaceId: string,
-  options: { isFullLeadRecord?: boolean } = {},
+  options: {
+    isFullLeadRecord?: boolean;
+    direction?: 'IN' | 'OUT';
+    senderEmail?: string;
+  } = {},
 ): Promise<string | undefined> => {
   const email = (lead.email ?? lead.lead_email)?.trim().toLowerCase();
   if (!isNonEmptyString(email))
@@ -158,7 +161,21 @@ export const syncPerson = async (
     throw new AmbiguousPersonMatchError();
   }
   if (matches.size === 1) return linkPerson([...matches][0]);
-  if (!(await getWorkspacePreferences(workspaceId)).autoCreatePeople) {
+  const preferences = await getWorkspacePreferences(workspaceId);
+  const canCreate =
+    preferences.contactAutoCreationPolicy === 'SENT_AND_RECEIVED'
+      ? options.direction !== undefined
+      : preferences.contactAutoCreationPolicy === 'SENT' &&
+        options.direction === 'OUT';
+  if (
+    !canCreate ||
+    (await isInternalPerson(
+      email,
+      workspaceId,
+      preferences,
+      options.senderEmail,
+    ))
+  ) {
     await syncLead(
       lead,
       workspaceId,

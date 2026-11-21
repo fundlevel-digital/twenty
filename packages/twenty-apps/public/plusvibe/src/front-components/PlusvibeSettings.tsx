@@ -228,7 +228,7 @@ export const PlusvibeSettings = () => {
   const hasSelection = (accountStatus?.selectedWorkspaceIds.length ?? 0) > 0;
 
   const savePreferences = async (nextPreferences: PlusvibePreferences) => {
-    if (!account) return;
+    if (!account) return false;
     const previous = preferences;
     setPreferences(nextPreferences);
     setIsBusy(true);
@@ -250,12 +250,14 @@ export const PlusvibeSettings = () => {
           : current,
       );
       enqueueSnackbar({ message: t('Preferences saved.'), variant: 'success' });
+      return true;
     } catch {
       setPreferences(previous);
       enqueueSnackbar({
         message: t('Could not save your preferences. Try again.'),
         variant: 'error',
       });
+      return false;
     } finally {
       setIsBusy(false);
     }
@@ -439,6 +441,7 @@ export const PlusvibeSettings = () => {
             </Section.Root>
             {account && (
               <PlusvibePreferencesSection
+                key={`${account.id}:${preferences.internalDomains.join(',')}`}
                 preferences={preferences}
                 disabled={isBusy}
                 onChange={savePreferences}

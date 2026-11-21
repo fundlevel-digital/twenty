@@ -173,6 +173,7 @@ describe('Native PlusVibe emails', () => {
         lead_id: 'source-lead-1',
       }),
       EMAIL.workspaceId,
+      { direction: 'IN', senderEmail: EMAIL.sender },
     );
   });
   it('ingests real Messages with the lead participant linked to a Person', async () => {

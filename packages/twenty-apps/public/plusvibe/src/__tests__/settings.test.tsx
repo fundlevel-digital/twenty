@@ -1,3 +1,4 @@
+import { DEFAULT_PREFERENCES } from 'src/constants/preferences';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -329,7 +330,11 @@ it('saves import and sharing preferences for the active connection and restores 
         isMailConnected: true,
         workspaces: [],
         selectedWorkspaceIds: [],
-        preferences: { autoCreatePeople: true, uniboxVisibility: 'METADATA' },
+        preferences: {
+          ...DEFAULT_PREFERENCES,
+          contactAutoCreationPolicy: 'SENT_AND_RECEIVED',
+          uniboxVisibility: 'METADATA',
+        },
       },
       {
         id: 'connection-2',
@@ -338,7 +343,11 @@ it('saves import and sharing preferences for the active connection and restores 
         isMailConnected: true,
         workspaces: [],
         selectedWorkspaceIds: [],
-        preferences: { autoCreatePeople: false, uniboxVisibility: 'SUBJECT' },
+        preferences: {
+          ...DEFAULT_PREFERENCES,
+          contactAutoCreationPolicy: 'NONE',
+          uniboxVisibility: 'SUBJECT',
+        },
       },
     ],
   };
@@ -347,10 +356,8 @@ it('saves import and sharing preferences for the active connection and restores 
   await screen.findByRole('button', { name: 'PlusVibe #2' });
   await user.click(screen.getByRole('button', { name: 'PlusVibe #2' }));
   expect(
-    screen
-      .getByRole('switch', { name: 'Create People Automatically' })
-      .getAttribute('aria-checked'),
-  ).toBe('false');
+    screen.getByRole('radio', { name: 'None' }).getAttribute('aria-checked'),
+  ).toBe('true');
   expect(
     screen.getByRole('radio', { name: 'Subject' }).getAttribute('aria-checked'),
   ).toBe('true');
@@ -363,14 +370,15 @@ it('saves import and sharing preferences for the active connection and restores 
   );
   expect(post).toHaveBeenCalledWith('/s/plusvibe/preferences', {
     accountConnectionId: 'connection-2',
-    autoCreatePeople: false,
+    ...DEFAULT_PREFERENCES,
+    contactAutoCreationPolicy: 'NONE',
     uniboxVisibility: 'SHARE_EVERYTHING',
   });
   expect(get).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole('button', { name: 'PlusVibe #1' }));
   expect(
     screen
-      .getByRole('switch', { name: 'Create People Automatically' })
+      .getByRole('radio', { name: 'Sent and Received' })
       .getAttribute('aria-checked'),
   ).toBe('true');
   expect(
@@ -388,7 +396,7 @@ it('shows a retry action instead of default preferences or a false disconnected 
   );
   expect(screen.queryByRole('button', { name: 'Connect PlusVibe' })).toBeNull();
   expect(
-    screen.queryByRole('switch', { name: 'Create People Automatically' }),
+    screen.queryByRole('radiogroup', { name: 'People Auto-Creation' }),
   ).toBeNull();
   expect(
     screen.queryByRole('radiogroup', { name: 'Unibox Sharing' }),
@@ -408,14 +416,18 @@ it('restores the previous preference and reports the failure if an immediate sav
         isMailConnected: true,
         workspaces: [],
         selectedWorkspaceIds: [],
-        preferences: { autoCreatePeople: true, uniboxVisibility: 'METADATA' },
+        preferences: {
+          ...DEFAULT_PREFERENCES,
+          contactAutoCreationPolicy: 'SENT_AND_RECEIVED',
+          uniboxVisibility: 'METADATA',
+        },
       },
     ],
   };
   post.mockRejectedValueOnce(new Error('Unavailable'));
   renderSettings();
   const toggle = await screen.findByRole('switch', {
-    name: 'Create People Automatically',
+    name: 'Exclude Internal Employees',
   });
   await userEvent.setup().click(toggle);
   await waitFor(() =>
@@ -428,4 +440,66 @@ it('restores the previous preference and reports the failure if an immediate sav
   expect(enqueueSnackbar).not.toHaveBeenCalledWith(
     expect.objectContaining({ variant: 'success' }),
   );
+});
+
+it('saves the email-style creation policy and validates explicit employee domains', async () => {
+  status = {
+    ...status,
+    accounts: [
+      {
+        id: 'connection-1',
+        name: 'PlusVibe #1',
+        hasAccountError: false,
+        isMailConnected: true,
+        workspaces: [],
+        selectedWorkspaceIds: [],
+        preferences: { ...DEFAULT_PREFERENCES },
+      },
+    ],
+  };
+  renderSettings();
+  const user = userEvent.setup();
+  await screen.findByRole('radio', { name: 'Sent' });
+  await user.click(screen.getByRole('radio', { name: 'Sent' }));
+  await waitFor(() =>
+    expect(post).toHaveBeenCalledWith('/s/plusvibe/preferences', {
+      ...DEFAULT_PREFERENCES,
+      accountConnectionId: 'connection-1',
+      contactAutoCreationPolicy: 'SENT',
+    }),
+  );
+  await waitFor(() =>
+    expect(
+      screen
+        .getByRole('button', { name: 'Save Domains' })
+        .hasAttribute('disabled'),
+    ).toBe(false),
+  );
+  const input = screen.getByRole('textbox', { name: 'Internal Domains' });
+  await user.type(input, 'Mail.ACME.com; acme.com; example.ai');
+  await user.click(screen.getByRole('button', { name: 'Save Domains' }));
+  await waitFor(() =>
+    expect(post).toHaveBeenLastCalledWith('/s/plusvibe/preferences', {
+      ...DEFAULT_PREFERENCES,
+      accountConnectionId: 'connection-1',
+      contactAutoCreationPolicy: 'SENT',
+      internalDomains: ['mail.acme.com', 'acme.com', 'example.ai'],
+    }),
+  );
+  await waitFor(() =>
+    expect(
+      screen
+        .getByRole('button', { name: 'Save Domains' })
+        .hasAttribute('disabled'),
+    ).toBe(false),
+  );
+  await user.clear(screen.getByRole('textbox', { name: 'Internal Domains' }));
+  await user.type(
+    screen.getByRole('textbox', { name: 'Internal Domains' }),
+    'https://bad-domain',
+  );
+  const calls = post.mock.calls.length;
+  await user.click(screen.getByRole('button', { name: 'Save Domains' }));
+  await screen.findByText('Enter valid domains separated by commas.');
+  expect(post).toHaveBeenCalledTimes(calls);
 });

@@ -34,6 +34,7 @@ export default defineApplicationRole({
     canDestroyAllRecords: false,
     objects: [
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember.universalIdentifier,
       CAMPAIGN_UNIVERSAL_IDENTIFIER,
       ACTIVITY_UNIVERSAL_IDENTIFIER,
       WORKSPACE_UNIVERSAL_IDENTIFIER,
@@ -52,8 +53,14 @@ export default defineApplicationRole({
     ].map((objectUniversalIdentifier) => ({
       objectUniversalIdentifier,
       canReadAllRecords: true,
-      canCreateAllRecords: true,
-      canUpdateAllRecords: true,
+      canCreateAllRecords:
+        objectUniversalIdentifier !==
+        STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember
+          .universalIdentifier,
+      canUpdateAllRecords:
+        objectUniversalIdentifier !==
+        STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember
+          .universalIdentifier,
       canSoftDeleteAllRecords: false,
       canDestroyAllRecords: false,
     })),

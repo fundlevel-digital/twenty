@@ -297,6 +297,7 @@ export const syncNativeEmail = async (email: NativeEmail) => {
       lead_id: email.leadId ?? email.lead?.lead_id,
     },
     email.workspaceId,
+    { direction: email.direction, senderEmail: email.sender },
   );
   const workspaceId = await syncWorkspace(
     { _id: email.workspaceId, name: email.workspaceName },
