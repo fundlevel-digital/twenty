@@ -1,7 +1,7 @@
 import 'twenty-ui/style.css';
 import 'twenty-ui/theme-light.css';
 import 'twenty-ui/theme-dark.css';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 import { invokeGithubFunction } from 'src/front-components/utils/invoke-github-function';
 import {
@@ -9,15 +9,10 @@ import {
   useTranslate,
   enqueueSnackbar,
 } from 'twenty-sdk/front-component';
+import { GithubSettingsSelect } from 'src/front-components/components/GithubSettingsSelect';
 import { Section } from 'twenty-ui/components/layout';
 import { SegmentedControl } from 'twenty-ui/components/input';
-import {
-  Button,
-  Field,
-  Input,
-  Select,
-  Switch,
-} from 'twenty-ui/primitives/input';
+import { Button, Input, Switch } from 'twenty-ui/primitives/input';
 import { Text } from 'twenty-ui/primitives/typography';
 import { ThemeProvider, themeCssVariables } from 'twenty-ui/theme';
 import { IDENTIFIERS } from 'src/constants/identifiers';
@@ -35,66 +30,6 @@ import { type BackfillPlan } from 'src/logic-functions/utils/backfill';
 type BackfillSummary = Omit<BackfillPlan, 'records'> & {
   recordCount: number;
   profileCount: number;
-};
-type SettingsSelectProps = {
-  label: string;
-  value: string;
-  options: { value: string; label: string }[];
-  disabled?: boolean;
-  onChange: (value: string) => void;
-};
-const SettingsSelect = ({
-  label,
-  value,
-  options,
-  disabled,
-  onChange,
-}: SettingsSelectProps) => {
-  const selectId = `github-profiles-${useId()}`;
-  const portalContainer = useRef<HTMLDivElement>(null);
-  return (
-    <div ref={portalContainer} style={{ position: 'relative' }}>
-      <Field.Root>
-        <Field.Label id={`${selectId}-label`}>{label}</Field.Label>
-        <Select.Root
-          id={selectId}
-          value={
-            options.some((option) => option.value === value) ? value : null
-          }
-          items={options}
-          disabled={disabled}
-          onValueChange={(value) => {
-            if (typeof value === 'string') onChange(value);
-          }}
-        >
-          <Select.Trigger
-            id={selectId}
-            aria-label={label}
-            aria-labelledby={`${selectId}-label`}
-          >
-            <Select.Value placeholder={label} />
-            <Select.Icon />
-          </Select.Trigger>
-          <Select.Portal container={portalContainer}>
-            <Select.Positioner
-              align="start"
-              sideOffset={4}
-              alignItemWithTrigger={false}
-            >
-              <Select.Popup id={`${selectId}-listbox`} aria-label={label}>
-                {options.map((option) => (
-                  <Select.Item key={option.value} value={option.value}>
-                    <Select.ItemText>{option.label}</Select.ItemText>
-                    <Select.ItemIndicator />
-                  </Select.Item>
-                ))}
-              </Select.Popup>
-            </Select.Positioner>
-          </Select.Portal>
-        </Select.Root>
-      </Field.Root>
-    </div>
-  );
 };
 const metadataClient = () => new MetadataApiClient();
 const backfillRequest = <TData,>(body: Record<string, unknown>) =>
@@ -502,6 +437,41 @@ export const GithubSyncSettings = () => {
             </label>
           </div>
         </Section.Root>
+        <Section.Root>
+          <Section.Header
+            title={t('Commit Email Extraction')}
+            description={t(
+              'Default for command and workflow runs. Each run can override this setting.',
+            )}
+          />
+          <div style={column}>
+            <label style={row}>
+              <Switch
+                checked={settings.skipNoreplyEmails}
+                aria-label={t('Skip GitHub Noreply Emails')}
+                disabled={busy}
+                onCheckedChange={(skipNoreplyEmails) =>
+                  setSettings((current) => ({ ...current, skipNoreplyEmails }))
+                }
+              />
+              <Text>{t('Skip GitHub Noreply Emails')}</Text>
+            </label>
+            <Text size="sm" color="secondary">
+              {t(
+                'Excludes @users.noreply.github.com addresses from Commit Emails, including previously extracted addresses on the next successful scan. Profile Email and raw responses stay unchanged.',
+              )}
+            </Text>
+            <div style={row}>
+              <Button
+                variant="outline"
+                disabled={busy || !dirty}
+                onClick={() => void save()}
+              >
+                {t('Save Email Preferences')}
+              </Button>
+            </div>
+          </div>
+        </Section.Root>
         {(['person', 'company'] as const).map((source) => (
           <Section.Root key={source}>
             <Section.Header
@@ -511,7 +481,7 @@ export const GithubSyncSettings = () => {
               )}
             />
             <div style={column}>
-              <SettingsSelect
+              <GithubSettingsSelect
                 label={
                   source === 'person'
                     ? t('People GitHub Source Field')
@@ -540,7 +510,7 @@ export const GithubSyncSettings = () => {
                   {t('Automatically Sync Created or Updated Records')}
                 </Text>
               </label>
-              <SettingsSelect
+              <GithubSettingsSelect
                 label={
                   source === 'person'
                     ? t('People Sync Behavior')
@@ -613,7 +583,7 @@ export const GithubSyncSettings = () => {
                 }
               }}
             />
-            <SettingsSelect
+            <GithubSettingsSelect
               label={t('Backfill Behavior')}
               value={mode}
               options={modes}
@@ -636,7 +606,7 @@ export const GithubSyncSettings = () => {
                 'Backfill preferences are saved separately for People and Companies. Scanning previews records and does not fetch GitHub profiles until you run the backfill.',
               )}
             </Text>
-            <SettingsSelect
+            <GithubSettingsSelect
               label={t('Records to Scan')}
               value={limit === 'ALL' ? 'ALL' : 'LIMITED'}
               options={[

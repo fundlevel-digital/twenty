@@ -81,14 +81,24 @@ Select GitHub Profile records and run **Extract Commit Emails**, or add
 `githubProfileId` or the username/profile URL of an existing CRM profile. An
 optional `maxPages` accepts 1–10 (default 10), with 100 commit results per page.
 Fetch/refresh the profile first if its immutable GitHub ID is missing.
+The record command opens a native side panel to review selected profiles, choose
+the page limit and choose Use App Default, Skip Noreply Emails or Include Noreply
+Emails before running. Opening the panel does not start extraction.
 
 **Commit Emails** is a separate native Emails column. It excludes the live public
 GitHub email and all email values already stored in the profile Email/raw profile
 fields. It never overwrites those fields or the raw profile/social responses.
 Addresses are validated and deduplicated without changing plus tags. Previously
 sourced commit-only emails are retained for the same GitHub ID, unless they now
-appear in profile data. GitHub noreply addresses are retained when returned;
-these are commit metadata, not verified or necessarily deliverable contacts.
+appear in profile data. **Skip GitHub Noreply Emails** in App Preferences →
+GitHub Profiles → Sync defaults to on, including when upgrading older saved
+settings. It excludes addresses ending in `@users.noreply.github.com`, regardless
+of case, from both new results and previously extracted addresses on the next
+successful scan. Saving the default alone does not modify existing records.
+Workflow/API input `skipNoreplyEmails` overrides the app setting: omit it to
+inherit, `true` skips and `false` includes. Explicit false remains an override
+even when the app default is on. Other email domains are unaffected. These are
+commit metadata, not verified or necessarily deliverable contacts.
 
 The action searches `author:USERNAME is:public`, newest author date first, and
 accepts an address only when the returned commit's linked author ID matches the
@@ -108,6 +118,8 @@ commit-only addresses), `newEmails`, `status`, scanned/reported counts, skipped
 counts and `note`. Downstream workflows can branch on `status` before treating
 results as complete. The authenticated endpoint is
 `POST /s/github-profiles/commit-emails`; native commands use metadata execution.
+Outputs also include the effective `skipNoreplyEmails` policy and
+`skippedNoreplyEmails` count for the current scan.
 
 Search uses the existing OAuth-first credential pool. GitHub ordinarily permits
 30 authenticated search requests/minute, separate from the regular REST budget.

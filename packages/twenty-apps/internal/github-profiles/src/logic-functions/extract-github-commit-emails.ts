@@ -25,6 +25,12 @@ const INPUT_SCHEMA = {
       description:
         '1–10 pages of 100 public commit results. Defaults to 10; GitHub caps each search at 1,000 results.',
     },
+    skipNoreplyEmails: {
+      type: 'boolean' as const,
+      label: 'Skip Noreply Emails · Blank Uses App Default',
+      description:
+        'Skip @users.noreply.github.com addresses. Omit to use the app default; true skips them and false includes them.',
+    },
   },
   additionalProperties: false,
 };
@@ -66,6 +72,8 @@ export default defineLogicFunction({
           totalCommits: { type: 'number' },
           skippedUnattributed: { type: 'number' },
           skippedInvalidEmails: { type: 'number' },
+          skippedNoreplyEmails: { type: 'number' },
+          skipNoreplyEmails: { type: 'boolean' },
           note: { type: 'string' },
         },
       },

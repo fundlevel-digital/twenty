@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { extractCommitEmails } from 'src/logic-functions/utils/extract-commit-emails';
 import { GithubRateLimitError } from 'src/logic-functions/utils/github-client';
 import { type WorkspaceClient } from 'src/logic-functions/utils/workspace-client';
+import { syncSettingsSchema } from 'src/types/sync-settings';
 const PROFILE_ID = '00000000-0000-4000-8000-000000000042';
 const commit = (
   email: string,
@@ -64,10 +65,68 @@ const fixture = () => {
     client: { request } as WorkspaceClient,
     github: { request: githubRequest },
     now: () => new Date('2026-11-22T12:00:00Z'),
+    settings: { skipNoreplyEmails: true },
   };
   return { profile, pages, request, githubRequest, dependencies };
 };
 describe('public commit email extraction', () => {
+  it('defaults older saved app settings to skipping noreply addresses', () => {
+    expect(syncSettingsSchema.parse({}).skipNoreplyEmails).toBe(true);
+    expect(
+      syncSettingsSchema.parse({ skipNoreplyEmails: false }).skipNoreplyEmails,
+    ).toBe(false);
+  });
+  it.each([
+    { appDefault: true, override: undefined, skip: true },
+    { appDefault: false, override: undefined, skip: false },
+    { appDefault: true, override: false, skip: false },
+    { appDefault: false, override: true, skip: true },
+  ])(
+    'applies app default $appDefault and override $override to new and saved noreply emails',
+    async ({ appDefault, override, skip }) => {
+      const state = fixture();
+      state.dependencies.settings.skipNoreplyEmails = appDefault;
+      state.profile.commitEmailSources = {
+        githubId: 42,
+        emails: [
+          {
+            email: 'old@USERS.NOREPLY.GITHUB.COM',
+            commits: ['https://github.com/demo/project/commit/old'],
+          },
+        ],
+      };
+      state.pages.push(
+        page([
+          '42+demo@users.noreply.github.com',
+          'DEMO@USERS.NOREPLY.GITHUB.COM',
+          'noreply@example.test',
+          'demo@users.noreply.github.com.example.test',
+        ]),
+      );
+      const result = await extractCommitEmails(
+        {
+          githubProfileId: PROFILE_ID,
+          maxPages: 1,
+          skipNoreplyEmails: override,
+        },
+        state.dependencies,
+      );
+      expect(result.skipNoreplyEmails).toBe(skip);
+      expect(result.skippedNoreplyEmails).toBe(skip ? 2 : 0);
+      expect(result.emails).toContain('noreply@example.test');
+      expect(result.emails).toContain(
+        'demo@users.noreply.github.com.example.test',
+      );
+      expect(
+        result.emails.filter((email) =>
+          email.toLowerCase().endsWith('@users.noreply.github.com'),
+        ),
+      ).toHaveLength(skip ? 0 : 3);
+      expect(state.profile.commitEmailSources).toMatchObject({
+        skipNoreplyEmails: skip,
+      });
+    },
+  );
   it('paginates, deduplicates and excludes every profile email without overwriting profile fields', async () => {
     const state = fixture();
     state.pages.push(

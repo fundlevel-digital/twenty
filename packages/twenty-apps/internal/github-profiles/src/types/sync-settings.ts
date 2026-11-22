@@ -45,6 +45,7 @@ export const syncSettingsSchema = z.object({
     backfillScanLimit: '500',
   }),
   allowAnonymous: z.boolean().default(true),
+  skipNoreplyEmails: z.boolean().default(true),
 });
 export type SyncSettings = z.infer<typeof syncSettingsSchema>;
 export const DEFAULT_SYNC_SETTINGS = syncSettingsSchema.parse({});

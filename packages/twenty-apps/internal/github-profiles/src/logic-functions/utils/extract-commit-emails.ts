@@ -6,12 +6,15 @@ import {
 import { getGithubCredentials } from 'src/logic-functions/utils/github-credentials';
 import { normalizeGithubLogin } from 'src/logic-functions/utils/github-api';
 import { type WorkspaceClient } from 'src/logic-functions/utils/workspace-client';
+import { getSyncSettings } from 'src/logic-functions/utils/sync-settings';
+import { type SyncSettings } from 'src/types/sync-settings';
 
 export const commitEmailInputSchema = z
   .object({
     githubProfileId: z.string().uuid().optional(),
     username: z.string().min(1).optional(),
     maxPages: z.number().int().min(1).max(10).default(10),
+    skipNoreplyEmails: z.boolean().optional(),
   })
   .refine(
     (input) => input.githubProfileId || input.username,
@@ -63,6 +66,7 @@ export const extractCommitEmails = async (
     client: WorkspaceClient;
     github?: Pick<GithubClient, 'request'>;
     now?: () => Date;
+    settings?: Pick<SyncSettings, 'skipNoreplyEmails'>;
   },
 ) => {
   const { client } = dependencies;
@@ -94,6 +98,12 @@ export const extractCommitEmails = async (
     );
   const profile = record;
   try {
+    const skipNoreplyEmails =
+      input.skipNoreplyEmails ??
+      (dependencies.settings ?? (await getSyncSettings())).skipNoreplyEmails;
+    const shouldSkipEmail = (email: string) =>
+      skipNoreplyEmails &&
+      email.toLowerCase().endsWith('@users.noreply.github.com');
     const github =
       dependencies.github ??
       new GithubClient({ credentials: await getGithubCredentials() });
@@ -127,7 +137,11 @@ export const extractCommitEmails = async (
       for (const source of previous.data.emails) {
         const email = source.email.trim();
         const key = email.toLowerCase();
-        if (emailSchema.safeParse(email).success && !profileEmails.has(key))
+        if (
+          emailSchema.safeParse(email).success &&
+          !profileEmails.has(key) &&
+          !shouldSkipEmail(email)
+        )
           sources.set(key, { email, commits: source.commits.slice(0, 3) });
       }
     }
@@ -137,7 +151,8 @@ export const extractCommitEmails = async (
     let scannedCommits = 0,
       totalCommits = 0,
       skippedUnattributed = 0,
-      skippedInvalidEmails = 0;
+      skippedInvalidEmails = 0,
+      skippedNoreplyEmails = 0;
     for (let page = 1; page <= input.maxPages; page++) {
       const parameters = new URLSearchParams({
         q: query,
@@ -165,6 +180,10 @@ export const extractCommitEmails = async (
           continue;
         }
         const key = email.toLowerCase();
+        if (shouldSkipEmail(email)) {
+          skippedNoreplyEmails++;
+          continue;
+        }
         if (profileEmails.has(key)) continue;
         const source = sources.get(key) ?? { email, commits: [] };
         if (
@@ -223,6 +242,7 @@ export const extractCommitEmails = async (
             scannedCommits,
             totalCommits,
             status,
+            skipNoreplyEmails,
             reasons: [...reasons],
             emails: entries,
           },
@@ -239,6 +259,8 @@ export const extractCommitEmails = async (
       totalCommits,
       skippedUnattributed,
       skippedInvalidEmails,
+      skippedNoreplyEmails,
+      skipNoreplyEmails,
       note,
     };
   } catch (error) {

@@ -357,3 +357,42 @@ On 2026-11-22 Kareem requested "Create a PR" with attached instructions specifyi
 a draft against `origin/main` covering all workspace changes. This includes the
 complete GitHub Profiles app, design guidance, decision records and this handoff.
 The source is prepared for review; opening the draft does not merge or deploy it.
+
+## Follow-Up: Noreply Filtering And Command Settings
+
+[Decision 0011](../decisions/github-profiles/0011-configurable-noreply-email-filter.md)
+records the request for an app default and per-run overrides. Skip GitHub Noreply
+Emails is enabled by default, including for older saved settings. Workflow/API
+`skipNoreplyEmails` is optional: omit to inherit the saved app default, true to
+skip and false to include. Filtering matches the exact domain case insensitively,
+including previously sourced addresses on the next successful scan. Saving
+preferences alone does not edit profiles or start a cleanup batch.
+
+Extract Commit Emails now opens a native side panel before running. Its shared
+Twenty Select offers Use App Default, Skip Noreply Emails and Include Noreply
+Emails; a page-limit field retains the existing 1–10 range. Run settings do not
+change the app default. The pre-existing scoped theme, unique IDs and local
+portal integration were moved into a reusable app component shared with Sync.
+No shared Twenty styles or primitives were modified. The new preference switch
+has an explicit accessible name. Workflow metadata exposes a human-readable label
+explaining that a blank override uses the app default, and output/evidence record
+the effective policy and skipped commit count.
+
+All 65 tests, direct package typecheck and lint passed. Tests cover inherited and
+explicit settings in both directions, mixed-case domains, exact domain matching,
+and removal of previously collected noreply results. The native demo workflow
+completed with an explicit false override while the saved default was on; the
+draft was then restored to inherit the default. Browser checks verified that the
+app preference saves/reloads and that both themes use the shared dropdown in the
+command panel. Source and preview only; production remains unchanged. Remote
+Hindsight is unavailable because the private profile is absent; no remote write
+is claimed.
+
+The final browser run completed both Include and inherited Skip command runs on
+the public demo with a one-page cap, blocked an invalid page limit, and closed
+through Cancel with no page errors. Opening the panel made no extraction request.
+Final API readback confirmed no matching noreply addresses remain in Commit
+Emails, while profile Email, both raw API responses and unrelated app preferences
+are unchanged. The saved default is on. Browser verification used the existing
+local TLS/host mapping and the bundled 2.60.3 host; it does not claim authenticated
+Conductor-edge verification. No customer extraction batch ran.
