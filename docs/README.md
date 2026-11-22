@@ -1,5 +1,7 @@
 # Twenty Engineering Notes
 
+- [Better Lists Live Release](handoffs/2026-11-22-better-lists-live-release.md): pinned core deployment, SDK app installation, preserved workspace data and offsite backups.
+
 - [Better Lists Implementation and Preview](handoffs/2026-11-22-better-lists.md): native lists, membership filters, verification and preview limits.
 
 - [GitHub Profiles Preview](handoffs/2026-11-22-github-profiles-preview.md): native app, influencer and many-to-many People/Company relations, configurable workflows/backfills, pooled authentication and owner-authorized preview population.
