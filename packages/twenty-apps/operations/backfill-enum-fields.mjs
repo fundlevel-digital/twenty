@@ -71,7 +71,7 @@ export const backfillEnumFields = async ({
   do {
     const metadata = await query(
       '/metadata',
-      'query($after: ConnectionCursor) { fields(paging: {first: 200, after: $after}) { edges { node { universalIdentifier name type options } } pageInfo { hasNextPage endCursor } } }',
+      'query($after: ConnectionCursor) { fields(paging: {first: 200, after: $after}) { edges { node { universalIdentifier name type options object { nameSingular namePlural } } } pageInfo { hasNextPage endCursor } } }',
       { after: metadataAfter },
     );
     for (const { node } of metadata.fields.edges)
@@ -95,6 +95,8 @@ export const backfillEnumFields = async ({
       if (
         !target ||
         target.name !== field.target ||
+        target.object?.nameSingular !== field.object ||
+        !target.object.namePlural ||
         target.type !== 'SELECT' ||
         !Array.isArray(target.options) ||
         !field.values.every((value) =>
@@ -131,12 +133,8 @@ export const backfillEnumFields = async ({
         import.meta.url,
       )
     );
-    const plural =
-      first.object === 'message'
-        ? 'messages'
-        : first.object === 'messageThread'
-          ? 'messageThreads'
-          : `${first.object}s`;
+    const plural = metadataFields.get(first.fieldUniversalIdentifier).object
+      .namePlural;
     const selection = [
       ...new Set(fields.flatMap((field) => [field.source, field.target])),
     ].join(' ');

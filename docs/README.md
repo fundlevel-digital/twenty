@@ -20,6 +20,7 @@
 
 - [Influencer YouTube Channel Migration](handoffs/2026-11-22-influencer-youtube-channels.md): live channel links, migrated details/analytics, preserved pricing and API verification.
 
+- [NanoInfluencer Live Release](handoffs/2026-11-22-nano-influencer-live-release.md): pinned core rollout, native app installation, enum backfills and live verification.
 - [NanoInfluencer App And VM Preview](handoffs/2026-11-22-nano-influencer-preview.md): native list/creator sync, search-history imports, enrichment, grouped views and isolated VM verification.
 
 - [Cal.com OAuth App And Release](handoffs/2026-11-21-cal-com-preview.md): implementation, isolated preview, live installation and OAuth verification status.

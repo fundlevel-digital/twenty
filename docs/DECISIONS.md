@@ -17,7 +17,7 @@ supersession. Operational instructions stay with their package or skill.
 | YouTube Analytics | [Decisions](decisions/youtube-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/youtube-analytics/README.md), [handoff](../packages/twenty-apps/internal/youtube-analytics/HANDOFF.md) |
 | Twitter Analytics | [Decisions](decisions/twitter-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/twitter-analytics/README.md), [handoff](handoffs/2026-11-22-twitter-analytics.md) |
 | PlusVibe | [Decisions](decisions/packages/twenty-apps/public/plusvibe/DECISIONS.md) | [App README](../packages/twenty-apps/public/plusvibe/README.md) |
-| NanoInfluencer | [Decisions](decisions/nano-influencer/DECISIONS.md) | [App README](../packages/twenty-apps/internal/nano-influencer/README.md) |
+| NanoInfluencer | [Decisions](decisions/nano-influencer/DECISIONS.md) | [App README](../packages/twenty-apps/internal/nano-influencer/README.md), [Live release](handoffs/2026-11-22-nano-influencer-live-release.md) |
 
 This repository uses the centralized layout from
 [fundlevel-digital/mono](https://github.com/fundlevel-digital/mono/blob/main/.agents/skills/decisions/SKILL.md).

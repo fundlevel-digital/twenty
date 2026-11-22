@@ -15,3 +15,4 @@ NanoInfluencer integration, list synchronization and creator discovery in Twenty
 | [0009](0009-hide-email-availability-column.md) | 2026-11-22 | Hide the Email Availability column while retaining creator email grouping | accepted |
 | [0010](0010-search-filter-parity-and-native-inputs.md) | 2026-11-22 | Match Nano search filters across commands/workflows with native pickers, descriptions and input snapshots | accepted |
 | [0011](0011-workspace-owned-social-profile-linking.md) | 2026-11-22 | Keep cross-app social-profile linking in workspace-owned workflows or custom automation | accepted |
+| [0012](0012-deploy-merged-release-to-live-crm.md) | 2026-11-22 | Deploy the merged Nano release and included enum upgrades to the live CRM | accepted |
