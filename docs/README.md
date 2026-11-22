@@ -1,5 +1,7 @@
 # Twenty Engineering Notes
 
+- [Related Columns Live Release](handoffs/2026-11-22-related-columns-live-release.md): pinned production image, coordinated offsite backups and live verification.
+
 - [Related Value Chips](handoffs/2026-11-22-related-value-chips.md): source avatars, distinct value chips and overflow in related columns.
 
 - [Multi-step Related Column Preview](handoffs/2026-11-22-multistep-related-columns.md): relationship navigation, cutoff rules and synthetic preview cases.

@@ -9,3 +9,4 @@ Showing attributes of related records in existing table views.
 | [0003](0003-source-record-chips-for-related-values.md) | 2026-11-22 | Replace adjacent text with native chips and source-record avatars | accepted |
 | [0004](0004-open-full-chips-and-fix-picker-rows.md) | 2026-11-22 | Open records from full chips and prevent overlapping picker rows | accepted |
 | [0005](0005-open-the-reviewed-workspace-pull-request.md) | 2026-11-22 | Commit the reviewed workspace and open a pull request against main | accepted |
+| [0006](0006-deploy-the-merged-related-columns-release.md) | 2026-11-22 | Deploy the merged PR #21 release to the live Twenty stack | accepted |
