@@ -17,19 +17,33 @@ import { themeCssVariables } from 'twenty-ui/theme';
 
 import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 import { TimeframeTags } from 'src/front-components/components/TimeframeTags';
+import { ProfileRelationSelect } from 'src/front-components/components/ProfileRelationSelect';
 import { parseTwitterTimeframes } from 'src/utils/parse-twitter-timeframes.util';
+import {
+  getTwitterRefreshSchedule,
+  isTwitterRefreshFrequency,
+  type TwitterRefreshFrequency,
+} from 'src/utils/twitter-refresh-schedule.util';
 
 type AnalyticsSettings = {
   numberDays: number[];
   percentageDays: number[];
   metricFormat: 'NUMBERS' | 'PERCENTAGES' | 'BOTH';
   recentCount: string;
+  refreshFrequency: TwitterRefreshFrequency;
+  refreshHour: string;
+  refreshMinute: string;
+  refreshWeekday: string;
 };
 const INITIAL_SETTINGS: AnalyticsSettings = {
   numberDays: [30, 60, 90],
   percentageDays: [30, 60, 90],
   metricFormat: 'BOTH',
   recentCount: '12',
+  refreshFrequency: 'DAILY',
+  refreshHour: '5',
+  refreshMinute: '0',
+  refreshWeekday: '1',
 };
 
 // The embedded renderer lacks native input validity; validation stays in the app.
@@ -37,6 +51,7 @@ export const TwitterAnalyticsSettings = () => {
   const { t } = useTranslate();
   const colorScheme = useColorScheme();
   const recentInputId = useId();
+  const scheduleInputId = useId();
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [settings, setSettings] = useState(INITIAL_SETTINGS);
   const [savedSignature, setSavedSignature] = useState('');
@@ -65,7 +80,12 @@ export const TwitterAnalyticsSettings = () => {
             value,
           ]),
         );
+        const schedule = getTwitterRefreshSchedule(variables);
         const next: AnalyticsSettings = {
+          refreshFrequency: schedule.frequency,
+          refreshHour: String(schedule.hour),
+          refreshMinute: String(schedule.minute),
+          refreshWeekday: String(schedule.weekday),
           numberDays:
             parseTwitterTimeframes(variables.NUMBER_TIMEFRAME_DAYS ?? '') ?? [],
           percentageDays:
@@ -115,6 +135,15 @@ export const TwitterAnalyticsSettings = () => {
     setError(null);
     try {
       const client = new MetadataApiClient();
+      const savedSettings = JSON.parse(savedSignature) as AnalyticsSettings;
+      const scheduleChanged = (
+        [
+          'refreshFrequency',
+          'refreshHour',
+          'refreshMinute',
+          'refreshWeekday',
+        ] as const
+      ).some((key) => settings[key] !== savedSettings[key]);
       const values = {
         NUMBER_TIMEFRAME_DAYS: JSON.stringify(settings.numberDays.map(String)),
         PERCENTAGE_TIMEFRAME_DAYS: JSON.stringify(
@@ -122,7 +151,19 @@ export const TwitterAnalyticsSettings = () => {
         ),
         METRIC_FORMAT: settings.metricFormat,
         RECENT_POST_COUNT: settings.recentCount,
+        REFRESH_SCHEDULE_HOUR: settings.refreshHour,
+        REFRESH_SCHEDULE_MINUTE: settings.refreshMinute,
+        REFRESH_SCHEDULE_WEEKDAY: settings.refreshWeekday,
       };
+      await client.mutation({
+        updateOneApplicationVariable: {
+          __args: {
+            applicationId,
+            key: 'REFRESH_SCHEDULE_FREQUENCY',
+            value: 'OFF',
+          },
+        },
+      });
       for (const [key, value] of Object.entries(values)) {
         await client.mutation({
           updateOneApplicationVariable: {
@@ -130,15 +171,38 @@ export const TwitterAnalyticsSettings = () => {
           },
         });
       }
+      if (scheduleChanged)
+        await client.mutation({
+          updateOneApplicationVariable: {
+            __args: {
+              applicationId,
+              key: 'LAST_SCHEDULED_REFRESH_SLOT',
+              value: '',
+            },
+          },
+        });
+      await client.mutation({
+        updateOneApplicationVariable: {
+          __args: {
+            applicationId,
+            key: 'REFRESH_SCHEDULE_FREQUENCY',
+            value: settings.refreshFrequency,
+          },
+        },
+      });
       setSavedSignature(JSON.stringify(settings));
       await enqueueSnackbar({
         message: t(
-          'Preferences saved. Refresh profiles to apply the calculation windows.',
+          'Preferences saved. The schedule applies to enrolled profiles; refresh profiles to apply calculation windows now.',
         ),
         variant: 'success',
       });
     } catch {
-      setError(t('Could not save all preferences. Please try again.'));
+      setError(
+        t(
+          'Could not save all preferences. Scheduling may be off; save again or reload to check.',
+        ),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -255,19 +319,116 @@ export const TwitterAnalyticsSettings = () => {
               {error}
             </Text>
           )}
-          <div>
-            <Button
-              type="button"
-              color="accent"
-              disabled={!canSave}
-              loading={isSaving}
-              onClick={() => void save()}
-            >
-              {t('Save Preferences')}
-            </Button>
-          </div>
         </div>
       </Section.Root>
+      <Section.Root>
+        <Section.Header
+          title={t('Scheduled Refresh')}
+          description={t(
+            'Refreshes profile details and analytics only for profiles with Scheduled Calculations on. Manual commands and workflows also work when scheduling is off.',
+          )}
+        />
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: themeCssVariables.spacing[4],
+          }}
+        >
+          <ProfileRelationSelect
+            id={`${scheduleInputId}-frequency`}
+            label={t('Refresh Frequency')}
+            descriptionId={`${scheduleInputId}-help`}
+            value={settings.refreshFrequency}
+            disabled={isSaving || applicationId === null}
+            options={[
+              { value: 'OFF', label: t('Off') },
+              { value: 'HOURLY', label: t('Hourly') },
+              { value: 'DAILY', label: t('Daily') },
+              { value: 'WEEKLY', label: t('Weekly') },
+            ]}
+            onValueChange={(frequency) => {
+              if (isTwitterRefreshFrequency(frequency))
+                setSettings({ ...settings, refreshFrequency: frequency });
+            }}
+          />
+          {settings.refreshFrequency === 'WEEKLY' && (
+            <ProfileRelationSelect
+              id={`${scheduleInputId}-weekday`}
+              label={t('Day of the Week (UTC)')}
+              descriptionId={`${scheduleInputId}-help`}
+              value={settings.refreshWeekday}
+              disabled={isSaving || applicationId === null}
+              options={[
+                t('Sunday'),
+                t('Monday'),
+                t('Tuesday'),
+                t('Wednesday'),
+                t('Thursday'),
+                t('Friday'),
+                t('Saturday'),
+              ].map((label, index) => ({ value: String(index), label }))}
+              onValueChange={(refreshWeekday) =>
+                setSettings({ ...settings, refreshWeekday })
+              }
+            />
+          )}
+          {(settings.refreshFrequency === 'DAILY' ||
+            settings.refreshFrequency === 'WEEKLY') && (
+            <ProfileRelationSelect
+              id={`${scheduleInputId}-hour`}
+              label={t('Hour (UTC)')}
+              descriptionId={`${scheduleInputId}-help`}
+              value={settings.refreshHour}
+              disabled={isSaving || applicationId === null}
+              options={Array.from({ length: 24 }, (_, hour) => ({
+                value: String(hour),
+                label: String(hour).padStart(2, '0'),
+              }))}
+              onValueChange={(refreshHour) =>
+                setSettings({ ...settings, refreshHour })
+              }
+            />
+          )}
+          {settings.refreshFrequency !== 'OFF' && (
+            <ProfileRelationSelect
+              id={`${scheduleInputId}-minute`}
+              label={t('Minute')}
+              descriptionId={`${scheduleInputId}-help`}
+              value={settings.refreshMinute}
+              disabled={isSaving || applicationId === null}
+              options={Array.from({ length: 60 }, (_, minute) => ({
+                value: String(minute),
+                label: String(minute).padStart(2, '0'),
+              }))}
+              onValueChange={(refreshMinute) =>
+                setSettings({ ...settings, refreshMinute })
+              }
+            />
+          )}
+          <Text id={`${scheduleInputId}-help`} color="secondary">
+            {t(
+              'Times use UTC. Hourly runs at the chosen minute past each hour. Daily and weekly runs use the chosen hour and minute. New schedules take effect from the next scheduled window.',
+            )}
+          </Text>
+          <Text color="secondary">
+            {t(
+              'Use the Scheduled Calculations checkbox on Twitter Profiles to enroll or disenroll each profile. A refresh already in progress can finish after preferences change.',
+            )}
+          </Text>
+        </div>
+      </Section.Root>
+      <div>
+        <Button
+          type="button"
+          color="accent"
+          disabled={!canSave}
+          loading={isSaving}
+          onClick={() => void save()}
+        >
+          {t('Save Preferences')}
+        </Button>
+      </div>
     </div>
   );
 };

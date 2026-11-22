@@ -15,7 +15,7 @@ is TwitterAPI.io's favicon, downloaded from its website.
    discovers Twitter/X URL and Handle fields, including native Links values and
    secondary URLs. It creates related profiles without making external API calls.
    Reruns reuse matching handles. Existing relationships to another Influencer
-   are preserved. Newly imported profiles have **Calculations Enabled** off.
+   are preserved. Newly imported profiles have **Scheduled Calculations** off.
 4. Each Influencer has many Twitter Profiles; each profile belongs to at most one
    Influencer. The relation is editable and deleting an Influencer retains its
    profiles with an empty relation.
@@ -24,12 +24,42 @@ is TwitterAPI.io's favicon, downloaded from its website.
    Both, and a separate recent-post count (2–30, default 12). Day windows default
    to 30, 60 and 90. Preferences affect the workspace's shared calculations.
 6. Create a profile with a handle or an X/Twitter profile URL, or select imported
-   profiles and run **Refresh Twitter Analytics**. A user ID is saved on refresh;
+   profiles and run **Refresh Profile and Analytics**. A user ID is saved on refresh;
    initial lookup requires a handle or profile URL.
 
-The source includes a daily 05:00 UTC refresh of enabled profiles. Manual refresh
-ignores the enabled switch. Preview cron registration is disabled to avoid
-unattended API spending.
+## Refresh Schedule And Enrollment
+
+Open **App Preferences → TwitterAPI.io → Analytics → Scheduled Refresh**. Choose
+**Off**, **Hourly**, **Daily** or **Weekly**, then the minute and, where relevant,
+hour and weekday. All times use **UTC**. The default remains daily **05:00 UTC**.
+Save Preferences applies both the schedule and calculation windows.
+
+On each Twitter Profile, **Scheduled Calculations** enrolls or disenrolls that
+profile. It is visible in the default Twitter Profiles view and retains the
+existing `calculationsEnabled` field, values and defaults: manually created
+profiles default on; imported and automatically created profiles default off.
+Scheduled refreshes update profile details and analytics together. Existing names
+are retained unless empty; failed calculations preserve previous metrics and
+their successful timestamp.
+
+For an immediate refresh, select profiles and use **Refresh Profile and Analytics**.
+The app also installs the single-record native workflow **Refresh Twitter Profile
+and Analytics** and exposes the matching workflow action with a **Twitter Profile
+ID** input for other workflows. These explicit refreshes work regardless of
+scheduled enrollment or whether the workspace schedule is Off. A failed refresh
+fails the workflow step so later steps do not continue with stale results.
+
+The source checks the configured schedule every minute. A saved window marker
+prevents ordinary later ticks from restarting the same window, and new schedules
+start from their next window instead of immediately backfilling an old one. The
+marker is claimed before external API work; a failed attempt can be retried
+manually or at the next window. This is an attempt guard, not a distributed
+exactly-once guarantee. A refresh already in progress can finish after disabling
+scheduling or disenrolling a profile. Keep the managed **Last Scheduled Refresh
+Window** application variable unchanged.
+
+Preview cron registration is disabled to avoid unattended API spending. Its
+settings, manual command and native workflow are available for testing.
 
 ## Metrics
 

@@ -337,3 +337,61 @@ release directory, referenced by the local repository's ignored
 .context/twitter-live-w930-release-dir. They are not copied into these docs or
 into the cloud preview. The separate preview retains neutral demo records and
 its own native connection.
+
+
+## Configurable Refresh And Enrollment: Preview Only
+
+Kareem requested configurable timing, a command and workflow for immediate
+refreshes, and a profile attribute for scheduled enrollment. See
+[decision 0006](../decisions/twitter-analytics/0006-configurable-refresh-and-profile-enrollment.md).
+These changes extend draft [PR #26](https://github.com/fundlevel-digital/twenty/pull/26)
+on `conductor/untitled-v5`; they are installed on preview, not merged or live.
+
+- App Preferences → TwitterAPI.io → Analytics now offers Off, Hourly, Daily and
+  Weekly schedules, with native Twenty Select controls for UTC time and weekday.
+  Daily 05:00 UTC remains the default. Saving temporarily disables scheduling,
+  saves all preferences and then enables the chosen frequency; partial failures
+  report that scheduling may remain off.
+- The existing `calculationsEnabled` boolean keeps its identifier, values and
+  defaults. Its label is **Scheduled Calculations** and it is visible in the
+  app's default profile view. Imported/automatic profiles remain disenrolled;
+  manually created profiles retain their existing default enrollment.
+- **Refresh Profile and Analytics** remains the selected-record command.
+  **Refresh Twitter Profile and Analytics** is a new active single-record native
+  workflow and reusable workflow action accepting a Twitter Profile ID. Both
+  bypass scheduling and enrollment and reuse the existing refresh and key pool.
+  Unsuccessful refreshes fail the workflow step.
+- The source cron dispatches each minute, determines the latest configured UTC
+  window, and records an attempted window before API work. Initial configuration
+  avoids retroactive refreshes; a changed schedule clears its cursor. Ordinary
+  later ticks skip a claimed window. Claims are not an atomic distributed lock;
+  a failed claimed refresh waits for the next window or an explicit manual retry.
+  Already-running work can finish after scheduling/enrollment changes.
+- SDK plan: ten creates, four updates, no deletes or destructive operations.
+  Native preview apply succeeded. The preview copy deliberately omits cron,
+  preserving protected-route aliases and its avatar upload adaptation.
+- Native function execution verifies Off skips, initialization saves a window,
+  and repeated execution reads that saved marker and skips. Enrollment filtering
+  reflects on/off changes to the same field. A manual refresh selected exactly
+  one disenrolled temporary profile and used zero provider requests.
+- The native core workflow is active and was executed with the same temporary
+  profile. Its missing-identity failure is expected: it proves the selected ID
+  reaches the refresh step and propagates the refresh error, without paid calls.
+  Unit tests cover successful workflow results. Temporary data was removed and
+  original preferences and the schedule cursor were restored.
+- Browser verification exercised Off/Hourly/Weekly conditional fields, saved
+  Thursday 13:17 UTC, reloaded and confirmed saved values in both UI and native
+  metadata. The profile table and record detail both show Scheduled Calculations.
+  All controls have helper descriptions; no browser errors occurred.
+  Screenshot: `.context/twitter-refresh-schedule-verified.png`. This test used
+  the exact public origin through local TLS and a simulated access gate; it did
+  not traverse Conductor's authenticated public edge. The published host UI
+  serves the app; no host frontend source changes are claimed.
+
+Validation: 160 unit tests across 19 files, two preview proxy tests, direct
+TypeScript checking, oxlint and the SDK preview build/install. No TwitterAPI.io
+requests or production changes were made for this follow-up. Preview settings
+are available at https://fundlevel-w930.conductor.show/settings/app-preferences;
+its containers restart within the running VM, not across VM destruction.
+Hindsight remains unavailable because workspace repo/private-profile metadata
+is missing; these verified findings are retained in tracked documentation.

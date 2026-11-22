@@ -10,10 +10,49 @@ export default defineApplication({
   displayName: 'TwitterAPI.io',
   logo: 'public/twitterapi.png',
   description:
-    'Stores Twitter profiles, followers and calculated post statistics, with daily and on-demand refresh.',
+    'Stores Twitter profiles, followers and calculated post statistics, with configurable scheduled and on-demand refresh.',
   author: 'Fundlevel',
   category: 'Enrichment',
   applicationVariables: {
+    REFRESH_SCHEDULE_FREQUENCY: {
+      universalIdentifier: '7764b88c-f66f-400b-a11e-067aecd3e991',
+      label: 'Refresh Frequency',
+      type: FieldType.SELECT,
+      options: [
+        { label: 'Off', value: 'OFF' },
+        { label: 'Hourly', value: 'HOURLY' },
+        { label: 'Daily', value: 'DAILY' },
+        { label: 'Weekly', value: 'WEEKLY' },
+      ],
+      value: 'DAILY',
+      isSecret: false,
+    },
+    REFRESH_SCHEDULE_HOUR: {
+      universalIdentifier: '7acefbd8-7fd4-4375-b868-3673e0b3c513',
+      label: 'Refresh Hour (UTC)',
+      value: '5',
+      isSecret: false,
+    },
+    REFRESH_SCHEDULE_MINUTE: {
+      universalIdentifier: 'd6bd22b5-6bac-47a4-b065-f3c7b517c2b0',
+      label: 'Refresh Minute',
+      value: '0',
+      isSecret: false,
+    },
+    REFRESH_SCHEDULE_WEEKDAY: {
+      universalIdentifier: '59a48b8b-5a4e-4ed4-8ce6-5c12522960fc',
+      label: 'Refresh Weekday (Sunday Is 0)',
+      value: '1',
+      isSecret: false,
+    },
+    LAST_SCHEDULED_REFRESH_SLOT: {
+      universalIdentifier: '2a6f2379-fdcf-478f-92e1-d8807ec2470c',
+      label: 'Last Scheduled Refresh Window',
+      description:
+        'Managed by the app to avoid restarting the same scheduled window.',
+      value: '',
+      isSecret: false,
+    },
     COMPANY_AUTO_MODE: {
       universalIdentifier: '363043dd-afa9-4ba6-8a53-b73da5dc4ff6',
       label: 'Company Automatic Profile Creation',
