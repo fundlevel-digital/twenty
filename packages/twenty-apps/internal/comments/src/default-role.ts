@@ -3,7 +3,10 @@ import { IDENTIFIERS } from './constants/identifiers';
 export default defineApplicationRole({
   universalIdentifier: IDENTIFIERS.role,
   label: 'Comments Function Role',
-  permissionFlagUniversalIdentifiers: [SystemPermissionFlag.AI],
+  permissionFlagUniversalIdentifiers: [
+    SystemPermissionFlag.AI,
+    SystemPermissionFlag.WORKFLOWS,
+  ],
   canBeAssignedToUsers: false,
   canBeAssignedToAgents: false,
   canBeAssignedToApiKeys: false,

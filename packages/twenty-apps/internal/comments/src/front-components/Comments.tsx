@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
-import { RestApiClient } from 'twenty-client-sdk/rest';
 import {
   copyToClipboard,
+  openCommandConfirmationModal,
   useFrontComponentExecutionContext,
   useLocation,
   useTranslate,
 } from 'twenty-sdk/front-component';
+import { LightIconButton } from 'twenty-ui/components/input';
+import { Dropdown } from 'twenty-ui/components/navigation';
+import { Text } from 'twenty-ui/primitives/typography';
+import {
+  IconCheck,
+  IconFilter,
+  IconMessageCircle,
+  IconRefresh,
+} from 'twenty-ui/icon';
 import {
   type CommentRequest,
   type CommentResponse,
@@ -13,9 +22,20 @@ import {
   type RecordComment,
 } from '../types';
 import { filterThreads } from '../utils/filter-threads';
+import { requestComments } from '../utils/request-comments';
 import { CommentComposer } from './CommentComposer';
-import { Body, Button, Muted, Panel, Reply, Row, Thread } from './styles';
-import { CommentBody } from './CommentBody';
+import { CommentMessage } from './CommentMessage';
+import {
+  Button,
+  Content,
+  Empty,
+  Notice,
+  Panel,
+  Reply,
+  Row,
+  Thread,
+  Toolbar,
+} from './styles';
 
 export const Comments = () => {
   const { t } = useTranslate();
@@ -30,7 +50,14 @@ export const Comments = () => {
     (context) => context.selectedObjectMetadata?.nameSingular,
   );
   if (!recordId || !objectName)
-    return <Panel>{t('Select one record to view its comments.')}</Panel>;
+    return (
+      <Panel>
+        <Empty>
+          <IconMessageCircle size={24} stroke={1.6} />
+          <Text>{t('Select a record to view its comments.')}</Text>
+        </Empty>
+      </Panel>
+    );
   return (
     <RecordComments
       key={`${objectName}:${recordId}`}
@@ -48,21 +75,15 @@ const RecordComments = ({ target }: { target: CommentTarget }) => {
   const [showResolved, setShowResolved] = useState(!!linkedId);
   const [onlyMine, setOnlyMine] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(linkedId);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
-  const request = (input: Omit<CommentRequest, 'objectName' | 'recordId'>) =>
-    new RestApiClient().post<CommentResponse>('/s/comments', {
-      ...target,
-      ...input,
-    });
   useEffect(() => {
     let active = true;
-    request({ action: 'list' })
+    requestComments({ ...target, action: 'list' })
       .then((result) => {
         if (active) setData(result);
       })
       .catch(() => {
-        if (active) setError(t('Could not load comments. Try again.'));
+        if (active) setError(t('We couldn’t load the comments. Try again.'));
       });
     return () => {
       active = false;
@@ -75,7 +96,7 @@ const RecordComments = ({ target }: { target: CommentTarget }) => {
     setError('');
     setNotice('');
     try {
-      const result = await request(input);
+      const result = await requestComments({ ...target, ...input });
       setData(result);
       if (result.notificationFailed)
         setNotice(
@@ -85,7 +106,11 @@ const RecordComments = ({ target }: { target: CommentTarget }) => {
         );
       return true;
     } catch {
-      setError(t('Could not save your changes. Try again.'));
+      setError(
+        input.action === 'list'
+          ? t('We couldn’t load the comments. Try again.')
+          : t('Your changes weren’t saved. Try again.'),
+      );
       return false;
     } finally {
       setBusy(false);
@@ -105,166 +130,225 @@ const RecordComments = ({ target }: { target: CommentTarget }) => {
       setError(t('Could not copy the link. Try again.'));
     }
   };
-  const renderComment = (comment: RecordComment) => (
-    <>
-      <Row>
-        <strong>{comment.authorName}</strong>
-        <Muted>
-          <time dateTime={comment.createdAt}>
-            {new Date(comment.createdAt).toLocaleString()}
-          </time>
-        </Muted>
-      </Row>
-      {comment.deleted ? (
-        <Muted>{t('Comment deleted')}</Muted>
-      ) : (
-        <CommentBody comment={comment} />
-      )}
-      {!comment.deleted && (
-        <Row>
-          <Button
-            disabled={busy}
-            onClick={() => {
-              void copyLink(comment);
-            }}
-          >
-            {t('Copy Link')}
-          </Button>
-          {comment.authorId === data?.memberId && (
-            <Button disabled={busy} onClick={() => setDeleteId(comment.id)}>
-              {t('Delete')}
-            </Button>
-          )}
-          {deleteId === comment.id && (
-            <>
-              <span>{t('Delete this comment?')}</span>
-              <Button
-                disabled={busy}
-                onClick={async () => {
-                  if (await run({ action: 'delete', id: comment.id }))
-                    setDeleteId(null);
-                }}
-              >
-                {t('Confirm Delete')}
-              </Button>
-              <Button onClick={() => setDeleteId(null)}>{t('Cancel')}</Button>
-            </>
-          )}
-        </Row>
-      )}
-    </>
+  const threads = data
+    ? filterThreads(data.comments, data.memberId, showResolved, onlyMine)
+    : [];
+  const authorName =
+    data?.comments.find((comment) => comment.authorId === data.memberId)
+      ?.authorName ?? t('You');
+  const message = (comment: RecordComment, root = false) => (
+    <CommentMessage
+      comment={comment}
+      isOwn={comment.authorId === data?.memberId}
+      busy={busy}
+      onReply={
+        root && !comment.resolved
+          ? () => setExpanded(expanded === comment.id ? null : comment.id)
+          : undefined
+      }
+      onResolve={
+        root
+          ? () => {
+              void run({
+                action: 'resolve',
+                id: comment.id,
+                resolved: !comment.resolved,
+              });
+            }
+          : undefined
+      }
+      onCopy={() => {
+        void copyLink(comment);
+      }}
+      onDelete={() => {
+        void openCommandConfirmationModal({
+          title: t('Delete Comment'),
+          subtitle: t('This removes the comment. Replies are kept.'),
+          confirmButtonText: t('Delete Comment'),
+          confirmButtonAccent: 'danger',
+        }).then((result) => {
+          if (result === 'confirm')
+            void run({ action: 'delete', id: comment.id });
+        });
+      }}
+    />
   );
   return (
     <Panel aria-label={t('Comments')}>
-      <Row>
-        <strong>{t('Comments')}</strong>
-        <Muted>{data?.recordLabel}</Muted>
-      </Row>
-      <Row>
-        <label>
-          <input
-            type="checkbox"
-            checked={showResolved}
-            onChange={(event) => setShowResolved(event.target.checked)}
-          />
-          {t('Show Resolved Comments')}
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={onlyMine}
-            onChange={(event) => setOnlyMine(event.target.checked)}
-          />
-          {t('Only My Threads')}
-        </label>
-        <Button
-          disabled={busy}
-          onClick={() => {
-            void run({ action: 'list' });
-          }}
-        >
-          {t('Refresh')}
-        </Button>
-      </Row>
-      {error && <Body role="alert">{error}</Body>}
-      {notice && <Body role="status">{notice}</Body>}
-      {!data ? (
-        !error && <Muted role="status">{t('Loading comments…')}</Muted>
-      ) : (
-        <>
-          <CommentComposer
-            target={target}
+      <Toolbar>
+        <Text weight="medium">
+          {showResolved ? t('All Comments') : t('Open Comments')}
+        </Text>
+        <Row>
+          <LightIconButton
+            size="sm"
+            aria-label={t('Refresh Comments')}
+            tooltip={t('Refresh')}
             disabled={busy}
-            onSubmit={(body, mentions) =>
-              run({ action: 'create', body, mentions })
-            }
-          />
-          {filterThreads(data.comments, data.memberId, showResolved, onlyMine)
-            .length === 0 && (
-            <Muted>{t('No comments match these filters.')}</Muted>
-          )}
-          {filterThreads(
-            data.comments,
-            data.memberId,
-            showResolved,
-            onlyMine,
-          ).map((thread) => {
-            const replies = data.comments.filter(
-              (comment) => comment.parentId === thread.id && !comment.deleted,
-            );
-            return (
-              <Thread id={`comment-${thread.id}`} key={thread.id}>
-                {thread.resolved && <Muted>{t('Resolved')}</Muted>}
-                {renderComment(thread)}
-                <Row>
-                  <Button
-                    disabled={busy}
-                    onClick={() => {
-                      void run({
-                        action: 'resolve',
-                        id: thread.id,
-                        resolved: !thread.resolved,
-                      });
-                    }}
-                  >
-                    {thread.resolved ? t('Reopen') : t('Resolve')}
-                  </Button>
-                  <Button
-                    aria-expanded={expanded === thread.id}
-                    onClick={() =>
-                      setExpanded(expanded === thread.id ? null : thread.id)
-                    }
-                  >
-                    {t('Replies')} · {replies.length}
-                  </Button>
-                </Row>
-                {expanded === thread.id && (
-                  <>
-                    {replies.map((reply) => (
-                      <Reply key={reply.id}>{renderComment(reply)}</Reply>
-                    ))}
-                    {!thread.resolved && (
-                      <CommentComposer
-                        target={target}
-                        isReply
-                        disabled={busy}
-                        onSubmit={(body, mentions) =>
-                          run({
-                            action: 'create',
-                            parentId: thread.id,
-                            body,
-                            mentions,
-                          })
+            onClick={() => {
+              void run({ action: 'list' });
+            }}
+          >
+            <IconRefresh size={16} stroke={1.6} />
+          </LightIconButton>
+          <Dropdown.Root type="picker">
+            <Dropdown.Trigger
+              render={
+                <LightIconButton
+                  size="sm"
+                  aria-label={t('Filter Comments')}
+                  tooltip={t('Filter Comments')}
+                >
+                  <IconFilter size={16} stroke={1.6} />
+                </LightIconButton>
+              }
+            />
+            <Dropdown.Content align="end">
+              <Dropdown.Section>
+                <Dropdown.OptionItem
+                  selected={showResolved}
+                  indicator="checkbox"
+                  closeOnSelect={false}
+                  onSelect={() => setShowResolved(!showResolved)}
+                >
+                  {t('Show Resolved Comments')}
+                </Dropdown.OptionItem>
+                <Dropdown.OptionItem
+                  selected={onlyMine}
+                  indicator="checkbox"
+                  closeOnSelect={false}
+                  onSelect={() => setOnlyMine(!onlyMine)}
+                >
+                  {t('Only My Threads')}
+                </Dropdown.OptionItem>
+              </Dropdown.Section>
+            </Dropdown.Content>
+          </Dropdown.Root>
+        </Row>
+      </Toolbar>
+      <Content>
+        {error && (
+          <Notice role="alert">
+            <Text weight="medium">
+              {data ? t('Something Went Wrong') : t('Comments Couldn’t Load')}
+            </Text>
+            <Text color="secondary">{error}</Text>
+            <Row>
+              <Button
+                size="sm"
+                disabled={busy}
+                onClick={() => {
+                  void run({ action: 'list' });
+                }}
+              >
+                {t('Try Again')}
+              </Button>
+            </Row>
+          </Notice>
+        )}
+        {notice && (
+          <Notice role="status">
+            <Text color="secondary">{notice}</Text>
+          </Notice>
+        )}
+        {data ? (
+          <>
+            <Row>
+              <Text size="sm" color="tertiary">
+                {t('Comments on')}
+              </Text>
+              <Text size="sm" weight="medium" truncate>
+                {data.recordLabel}
+              </Text>
+            </Row>
+            <CommentComposer
+              target={target}
+              authorName={authorName}
+              disabled={busy}
+              onSubmit={(body, mentions) =>
+                run({ action: 'create', body, mentions })
+              }
+            />
+            {threads.length === 0 && (
+              <Empty>
+                <IconMessageCircle size={24} stroke={1.6} />
+                <Text weight="medium">
+                  {data.comments.some((comment) => !comment.deleted)
+                    ? t('No Matching Comments')
+                    : t('No Comments Yet')}
+                </Text>
+                <Text size="sm" color="tertiary">
+                  {data.comments.some((comment) => !comment.deleted)
+                    ? t('Try changing your filters.')
+                    : t('Start a conversation or mention a teammate.')}
+                </Text>
+              </Empty>
+            )}
+            {threads.map((thread) => {
+              const replies = data.comments.filter(
+                (comment) => comment.parentId === thread.id && !comment.deleted,
+              );
+              const isExpanded = expanded === thread.id;
+              return (
+                <Thread id={`comment-${thread.id}`} key={thread.id}>
+                  {thread.resolved && (
+                    <Row>
+                      <IconCheck size={14} stroke={1.6} />
+                      <Text size="sm" color="tertiary">
+                        {t('Resolved')}
+                      </Text>
+                    </Row>
+                  )}
+                  {message(thread, true)}
+                  {replies.length > 0 && (
+                    <Row>
+                      <Button
+                        size="sm"
+                        variant="link"
+                        aria-expanded={isExpanded}
+                        onClick={() =>
+                          setExpanded(isExpanded ? null : thread.id)
                         }
-                      />
-                    )}
-                  </>
-                )}
-              </Thread>
-            );
-          })}
-        </>
-      )}
+                      >
+                        {t('Replies')} · {replies.length}
+                      </Button>
+                    </Row>
+                  )}
+                  {isExpanded && (
+                    <>
+                      {replies.map((reply) => (
+                        <Reply key={reply.id}>{message(reply)}</Reply>
+                      ))}
+                      {!thread.resolved && (
+                        <CommentComposer
+                          target={target}
+                          authorName={authorName}
+                          isReply
+                          disabled={busy}
+                          onSubmit={(body, mentions) =>
+                            run({
+                              action: 'create',
+                              parentId: thread.id,
+                              body,
+                              mentions,
+                            })
+                          }
+                        />
+                      )}
+                    </>
+                  )}
+                </Thread>
+              );
+            })}
+          </>
+        ) : (
+          !error && (
+            <Empty role="status">
+              <Text color="tertiary">{t('Loading comments…')}</Text>
+            </Empty>
+          )
+        )}
+      </Content>
     </Panel>
   );
 };

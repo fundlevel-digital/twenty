@@ -1,6 +1,6 @@
 import { navigate, AppPath } from 'twenty-sdk/front-component';
 import { type Mention, type RecordComment } from '../types';
-import { Body, Button } from './styles';
+import { Body, Button, InlineMention } from './styles';
 export const CommentBody = ({ comment }: { comment: RecordComment }) => {
   const mentions = JSON.parse(comment.mentions || '[]') as Mention[];
   const fragments: (string | Mention)[] = [comment.body];
@@ -24,9 +24,11 @@ export const CommentBody = ({ comment }: { comment: RecordComment }) => {
         typeof fragment === 'string' ? (
           fragment
         ) : fragment.objectName === 'workspaceMember' ? (
-          <strong key={index}>@{fragment.label}</strong>
+          <InlineMention key={index}>@{fragment.label}</InlineMention>
         ) : (
           <Button
+            variant="link"
+            size="sm"
             key={index}
             onClick={() => {
               void navigate(AppPath.RecordShowPage, {

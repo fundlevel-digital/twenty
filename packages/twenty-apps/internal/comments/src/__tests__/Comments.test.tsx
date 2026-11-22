@@ -8,10 +8,8 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
   t: (text: string) => text,
 }));
-vi.mock('twenty-client-sdk/rest', () => ({
-  RestApiClient: class {
-    post = mocks.post;
-  },
+vi.mock('../utils/request-comments', () => ({
+  requestComments: (input: unknown) => mocks.post('/s/comments', input),
 }));
 vi.mock('twenty-sdk/front-component', () => ({
   useTranslate: () => ({ t: mocks.t }),
@@ -74,7 +72,7 @@ it('creates, replies, resolves and reopens a thread', async () => {
   );
   await user.click(screen.getByRole('button', { name: 'Comment' }));
   await screen.findByText('Review this account');
-  await user.click(screen.getByRole('button', { name: /Replies/ }));
+  await user.click(screen.getByRole('button', { name: 'Reply to Thread' }));
   await user.type(screen.getByRole('textbox', { name: 'Reply' }), 'Looks good');
   await user.click(screen.getByRole('button', { name: 'Reply' }));
   await screen.findByText('Looks good');
@@ -82,9 +80,11 @@ it('creates, replies, resolves and reopens a thread', async () => {
   await waitFor(() =>
     expect(screen.queryByText('Review this account')).toBeNull(),
   );
+  await user.click(screen.getByRole('button', { name: 'Filter Comments' }));
   await user.click(
-    screen.getByRole('checkbox', { name: 'Show Resolved Comments' }),
+    screen.getByRole('button', { name: 'Show Resolved Comments' }),
   );
+  await user.keyboard('{Escape}');
   await user.click(await screen.findByRole('button', { name: 'Reopen' }));
   await screen.findByRole('button', { name: 'Resolve' });
 });
@@ -127,4 +127,15 @@ it('preserves the draft after a save failure', async () => {
     (screen.getByRole('textbox', { name: 'Comment' }) as HTMLTextAreaElement)
       .value,
   ).toBe('Keep this draft');
+});
+
+it('offers a clear retry when the initial load fails', async () => {
+  const user = userEvent.setup();
+  mocks.post.mockRejectedValueOnce(new Error('Proxy unavailable'));
+  render(<Comments />);
+  await screen.findByText('Comments Couldn’t Load');
+  expect(screen.queryByRole('textbox', { name: 'Comment' })).toBeNull();
+  await user.click(screen.getByRole('button', { name: 'Try Again' }));
+  await screen.findByRole('textbox', { name: 'Comment' });
+  expect(screen.queryByRole('alert')).toBeNull();
 });
