@@ -106,7 +106,7 @@ it('inserts emoji and a user mention and submits the selected recipient', async 
     '/s/comments',
     expect.objectContaining({
       action: 'create',
-      body: '🎉@Taylor ',
+      body: '🎉 @Taylor ',
       mentions: [
         { id: 'taylor', label: 'Taylor', objectName: 'workspaceMember' },
       ],

@@ -112,6 +112,39 @@ it('does not notify a selected recipient whose mention was removed', async () =>
   expect(mocks.submit).toHaveBeenCalledWith('Email alex@example.test', []);
 });
 
+it('keeps a picker recipient valid after existing text', async () => {
+  const { user, input } = setup();
+  await user.type(input, 'Contact');
+  await user.click(
+    screen.getByRole('button', { name: 'Mention a User, Bot, or Record' }),
+  );
+  await user.click(
+    await screen.findByRole('button', { name: 'Taylor Smith · User' }),
+  );
+  await user.click(screen.getByRole('button', { name: 'Comment' }));
+  expect(mocks.submit).toHaveBeenCalledWith('Contact @Taylor Smith ', [
+    recipients[0],
+  ]);
+});
+
+it('drops a selected identity when its text is edited into an email address', async () => {
+  const reference = {
+    id: 'domain',
+    label: 'example.test',
+    objectName: 'company',
+  };
+  mocks.search.mockResolvedValue([reference]);
+  const { user, input } = setup();
+  await user.type(input, '@example');
+  await user.click(
+    await screen.findByRole('button', { name: 'example.test · company' }),
+  );
+  await user.clear(input);
+  await user.type(input, 'alex@example.test');
+  await user.click(screen.getByRole('button', { name: 'Comment' }));
+  expect(mocks.submit).toHaveBeenCalledWith('alex@example.test', []);
+});
+
 it('shows a search failure and recovers on the next query', async () => {
   mocks.search.mockRejectedValue(new Error('Offline'));
   const { user, input } = setup();

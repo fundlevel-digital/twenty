@@ -108,7 +108,10 @@ export const CommentComposer = ({
       ),
       mention,
     ]);
-    insert(`@${mention.label} `, typedMention ?? selection.current);
+    const range = typedMention ?? selection.current;
+    const separator =
+      range.start > 0 && !/[\s([{]/.test(body[range.start - 1]) ? ' ' : '';
+    insert(`${separator}@${mention.label} `, range);
   };
   const updateSelection = (input: HTMLTextAreaElement) => {
     selection.current = {

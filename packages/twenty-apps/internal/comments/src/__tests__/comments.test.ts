@@ -213,6 +213,36 @@ describe('comment access', () => {
       },
     });
   });
+  it('does not notify an identity whose selected label is now part of an email', async () => {
+    mocks.graphql
+      .mockResolvedValueOnce({
+        recordComments: { edges: [], pageInfo: { hasNextPage: false } },
+      })
+      .mockResolvedValueOnce({
+        createRecordComment: comment({ body: 'alex@example.test' }),
+      });
+    await call({
+      ...target,
+      action: 'create',
+      body: 'alex@example.test',
+      mentions: [
+        {
+          id: 'teammate',
+          label: 'example.test',
+          objectName: 'workspaceMember',
+        },
+      ],
+    });
+    expect(mocks.mention).not.toHaveBeenCalled();
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(mocks.graphql).toHaveBeenLastCalledWith(
+      expect.any(String),
+      {
+        data: expect.objectContaining({ mentions: '[]' }),
+      },
+      true,
+    );
+  });
   it('keeps a saved comment when notification delivery fails', async () => {
     mocks.graphql
       .mockResolvedValueOnce({
