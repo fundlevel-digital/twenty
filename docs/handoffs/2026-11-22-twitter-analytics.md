@@ -1,7 +1,8 @@
 # TwitterAPI.io App And Isolated Preview
 
-Date: 2026-11-22. Implemented in the current workspace; not merged or deployed to
-production. See the [owner decision](../decisions/twitter-analytics/0001-native-twitter-profiles-and-preview.md)
+Date: 2026-11-22. Merged in [PR #19](https://github.com/fundlevel-digital/twenty/pull/19)
+at commit c0899348c83d013de78db921d1b82e4183e1544e, installed on the live CRM,
+and backfilled with 235 related Twitter Profiles. The final production audit is below. See the [owner decision](../decisions/twitter-analytics/0001-native-twitter-profiles-and-preview.md)
 and [app README](../../packages/twenty-apps/internal/twitter-analytics/README.md).
 
 ## Delivered
@@ -20,7 +21,7 @@ and [app README](../../packages/twenty-apps/internal/twitter-analytics/README.md
   cursor pagination, key rotation, retry handling and per-key 5.1-second pacing
   for the provider's free tier. Failed refreshes retain previous metric values.
 
-## Verified
+## Initial Preview Verification
 
 - 108 unit tests, direct TypeScript typechecking, oxlint and SDK app builds pass.
 - Native app plan/apply installed and updated the app in the isolated preview.
@@ -75,12 +76,12 @@ Restart existing containers after starting the Docker daemon if necessary; do
 not reseed or reset the database to restore this preview. No Conductor wake action
 was configured, and survival across a VM shutdown is not claimed.
 
-## Limits And Remaining Work
+## Initial Preview Limits
 
-Production Influencer records were not copied. Mac access timed out, and the
-preview uses neutral Influencer demo records plus one real public Twitter profile.
-The import action is ready for existing Influencer data when installed in the
-intended workspace. Production deployment and migration were not performed.
+At the initial preview handoff, production Influencer records had not been
+copied. Mac access timed out, so that preview used neutral demo records plus one
+real public profile. Subsequent owner approval and production rollout are recorded
+below; production CRM records were never copied into the isolated preview.
 
 The Hindsight CLI profile is unavailable in this VM (`Missing/invalid repo
 metadata or private profile`); both recall and retention were unavailable. The
@@ -114,9 +115,8 @@ responses remain ignored under `.context/twitter-api-*-response.json`; abridged
 public examples are documented in the app's API.md. No customer records or keys
 are in those documents.
 
-PR #19 remains the source PR until the expanded version is merged. Live app
-installation and the Influencer relation backfill follow the source merge; preview
-installation alone is not a production rollout.
+PR #19 merged before installation, as requested. The source commit and live
+installation are verified separately below.
 
 Additional workflow verification covered clearing and restoring an X field: the
 managed membership is soft-deleted and restored when the same handle returns.
@@ -132,3 +132,48 @@ and completed both preview and application across all 601 preview Companies:
 and no browser page errors. Unit coverage now totals 122 passing tests, including
 native metadata field discovery, independent many-to-many memberships, managed
 membership restoration/manual-deletion preservation and the multi-key waterfall.
+
+
+## Final Production Rollout
+
+- Source: [merged PR #19](https://github.com/fundlevel-digital/twenty/pull/19),
+  commit c0899348c83d013de78db921d1b82e4183e1544e.
+- Installed the exact merged source using CLI 2.59.0, remote fundlevel, and
+  app apply --create --no-prune from an isolated Mac worktree. Content hash:
+  7186e820623263dbb29f93dfeee089cd80348f86ea8390d7d7a4745d5540cf8d.
+- Installation completed all build/registration/installation/upload/sync phases:
+  **286 entities created, zero updates, zero deletions, zero destructive actions**.
+- Read all **479 Influencers** with cursor pagination and imported their existing
+  xUrl values in ten resumable batches. Created **235 Twitter Profiles**, all
+  related to an existing Influencer; no duplicate normalized handles.
+- The source audit found **214 empty URLs**, **26 invalid URLs** and **239 valid
+  account claims representing 235 distinct handles**. The four additional shared
+  claims were skipped to preserve the profile's existing Influencer parent and
+  the agreed Influencer Has Many model. No parent was silently reassigned.
+- All **235 imported profiles have Calculations Enabled off**. No paid Twitter
+  batch was run as part of backfilling relations.
+- Live Profile Relations exposes the existing PDL X / Twitter and legacy Twitter
+  fields for Companies and People. Both automatic modes remain **Off**, relation
+  changes default to **Keep Existing Relations**, and their backfills remain
+  optional through the preview/run controls.
+- Connected the supplied API key through the normal authenticated native CRM
+  form. The endpoint rejected CLI OAuth (PERMISSION_DENIED), and browser
+  JavaScript automation was unavailable. Existing native accessibility controls
+  completed the form; no browser security setting was changed. Temporary key
+  transport was encrypted, no key appeared in command arguments/logs, and the
+  temporary plaintext/RSA transport files were removed.
+- Independent native metadata audit confirms **one usable WORKSPACE connection**
+  with no authentication failure or archival flag. An explicit empty-selection
+  refresh initialized **36 managed metric columns**. That CLI command timed out
+  waiting for its HTTP result; the subsequent metadata audit verified the saved
+  connection and all 36 fields. No source profiles were selected for that check.
+- Source validation: **122 tests pass**, direct typecheck, lint and SDK build pass.
+  Preview browser/workflow checks are described above. Production verification
+  used native metadata, authenticated app routes, a native browser connection form
+  and source/record audits; no production analytics batch was triggered.
+
+Private progress, record IDs and audit outputs remain only in the isolated Mac
+release directory, referenced by the local repository's ignored
+.context/twitter-live-w930-release-dir. They are not copied into these docs or
+into the cloud preview. The separate preview retains neutral demo records and
+its own native connection.
