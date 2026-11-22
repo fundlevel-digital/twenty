@@ -446,19 +446,23 @@ export const ProfileRelationSettings = () => {
         {error ? (
           <>
             <Text role="alert">
-              {error === 'session'
-                ? t('Your session expired. Sign in again, then retry.')
-                : error === 'permission'
-                  ? t(
-                      'Your account cannot access these settings. Ask a workspace admin to check your permissions.',
-                    )
-                  : error === 'application'
+              {error === 'preview-access'
+                ? t(
+                    'The preview access check blocked this request. Open the preview from Conductor, then retry.',
+                  )
+                : error === 'session'
+                  ? t('Your session expired. Sign in again, then retry.')
+                  : error === 'permission'
                     ? t(
-                        'Could not load the TwitterAPI.io app details. Try again.',
+                        'Your account cannot access these settings. Ask a workspace admin to check your permissions.',
                       )
-                    : t(
-                        'Could not load X link fields and relation preferences. Try again.',
-                      )}
+                    : error === 'application'
+                      ? t(
+                          'Could not load the TwitterAPI.io app details. Try again.',
+                        )
+                      : t(
+                          'Could not load X link fields and relation preferences. Try again.',
+                        )}
             </Text>
             <div>
               <Button type="button" onClick={() => void load()}>

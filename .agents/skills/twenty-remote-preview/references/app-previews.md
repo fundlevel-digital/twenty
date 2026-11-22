@@ -50,6 +50,19 @@ Verify download, PUT upload, completion, record binding and a loaded image.
 An analytics refresh can succeed while a separately caught avatar import fails;
 inspect both the execution logs and the saved avatar field.
 
+The embedded host fetch policy deliberately omits page cookies for `/s` routes,
+whose handlers receive request headers. An authenticated Conductor browser can
+therefore load native tables while app function requests receive the access
+gate's plain-text 401. CRM sign-in cannot fix this; distinguish it from a JSON
+CRM authentication error. Test the cookie gate itself, not just a local TLS
+origin that bypasses it.
+
+The Twitter preview uses a narrow `/rest` alias proxy so the access gate receives
+its cookie, then strips cookies and proxy identity headers before forwarding to
+an allowlisted function route. Preserve bearer authentication and method checks;
+do not enable ambient cookies for all `/s` handlers. See the maintained
+[preview proxy and checks](../../../../packages/twenty-apps/internal/twitter-analytics/preview/README.md).
+
 CLI auth may accept a user bearer token for GraphQL but classify a manually
 registered token as an API key and refuse `app exec`. In that case, use the
 authenticated app route or metadata execution mutation with the same user

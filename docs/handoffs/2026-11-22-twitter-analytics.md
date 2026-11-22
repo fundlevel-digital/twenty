@@ -76,6 +76,56 @@ malformed settings response, then restore the requests and verify recovery with
 local TLS proxy and do not verify Conductor's public edge. No TwitterAPI.io calls
 or backfills are involved.
 
+### Confirmed Preview Access Failure And Resolution
+
+Kareem confirmed "Preview" and reported "relogging-indoesn't workeither" and
+"Like it doesn't fix it" after the new message incorrectly suggested an expired
+CRM session. See [decision 0005](../decisions/twitter-analytics/0005-fix-the-protected-preview-path.md).
+
+The root cause is the renderer's host fetch policy: cookies are deliberately
+omitted for `/s` routes because function handlers receive request headers.
+Conductor requires its access cookie, so the function request receives the
+gate's plain-text 401 before reaching Twenty. The earlier local TLS tests
+bypassed that gate and did not establish public-preview success. This was not
+resolved by refreshing CRM credentials; the earlier generic 401 classification
+was misleading.
+
+The isolated preview now has `twitter-preview-gateway`, a supervised container
+with restart policy `unless-stopped`, listening on port 3002 and forwarding to
+the existing host on port 3000. Conductor's preview port is 3002, with the same
+public URL. Four method-restricted aliases under
+`/rest/twitter-preview-functions/twitter-analytics/` let the renderer send page
+cookies through the gate. Only Authorization, Content-Type, Accept, Origin and
+Host are forwarded from these aliases to their original `/s` routes. Cookies
+and access-proxy identity headers are excluded from function handlers. The host's
+other HTTP routes and upgraded connections continue through the proxy.
+
+Only the ignored preview app copy rewrites settings, backfill, Influencer import
+and refresh request paths. Production source paths, backend triggers and app
+permissions are unchanged. The maintained operational helper and tests are in
+the app's [preview directory](../../packages/twenty-apps/internal/twitter-analytics/preview/README.md).
+The app now identifies Conductor's plain-text access denial separately from a
+CRM session failure.
+
+Verification on 2026-11-22:
+
+- A TLS browser proxy enforcing a test access cookie reproduced the old path's
+  two 401 responses, including the client's unsuccessful CRM-token refresh.
+- The same cookie-gated browser loaded the fixed settings and previewed a
+  two-record Company backfill with HTTP 200 responses and no page errors.
+- A dedicated tab in the owner's existing authenticated Mac browser loaded the
+  actual public URL. Gateway diagnostics recorded its settings GET returning
+  200 at 16:51:44 UTC, with the access cookie present at the proxy. This check
+  did not bypass Conductor's edge or copy/extract cookies or tokens. It verifies
+  the public request, not an accessibility inspection of the rendered form.
+- Proxy tests verify native bearer forwarding, exclusion of cookies and proxy
+  identity headers, route and method restrictions, and upgraded connections.
+  The app has 135 passing unit tests; typecheck and lint pass. SDK preview
+  plan/apply updated three front components with zero destructive operations.
+- No production changes, Influencer/Company/Person backfill writes or
+  TwitterAPI.io calls occurred during this fix. The browser backfill was a
+  preview only.
+
 ## Delivered
 
 - Native TwitterAPI.io SDK app with the provider's favicon as its logo.

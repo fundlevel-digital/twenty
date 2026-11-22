@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { getProfileRelationLoadFailure } from 'src/front-components/utils/get-profile-relation-load-failure.util';
 
 describe('Profile relation settings load failures', () => {
+  it('distinguishes the preview access gate from an expired CRM session', () => {
+    expect(
+      getProfileRelationLoadFailure(
+        { status: 401, body: 'Sign in to view this preview.\n' },
+        'settings',
+      ),
+    ).toBe('preview-access');
+  });
+
   it('identifies an expired session after the REST client cannot refresh it', () => {
     expect(getProfileRelationLoadFailure({ status: 401 }, 'settings')).toBe(
       'session',
