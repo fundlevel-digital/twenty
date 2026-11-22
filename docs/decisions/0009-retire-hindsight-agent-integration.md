@@ -1,4 +1,4 @@
-# 0007. Retire The Hindsight Agent Integration
+# 0009. Retire The Hindsight Agent Integration
 
 - Date: 2026-11-22
 - Status: accepted

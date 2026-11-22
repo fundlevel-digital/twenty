@@ -48,6 +48,6 @@ identify scope, decisions, implementation and verification limits.
 | [0011](decisions/0011-install-plusvibe-and-cal-com-in-sunny-preview.md) | 2026-11-22 | Install PlusVibe and Cal.com in Sunny’s VM preview | accepted |
 | [0012](decisions/0012-verify-google-channel-app-feasibility.md) | 2026-11-22 | Verify shared-channel app feasibility in the running preview | accepted |
 | [0013](decisions/0013-install-matt-pocock-grilling-skill.md) | 2026-11-23 | Install Matt Pocock's Grilling Skill | accepted |
-| [0007](decisions/0007-retire-hindsight-agent-integration.md) | 2026-11-22 | Remove the obsolete Hindsight skill, invocation rules and MCP launch configuration | accepted |
+| [0009](decisions/0009-retire-hindsight-agent-integration.md) | 2026-11-22 | Remove the obsolete Hindsight skill, invocation rules and MCP launch configuration | accepted |
 
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).

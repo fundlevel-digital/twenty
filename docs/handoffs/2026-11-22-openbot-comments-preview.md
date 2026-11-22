@@ -118,3 +118,17 @@ The Comments workspace is implementing recipient validation, richer typed-mentio
 autocomplete, Company/Person record tabs and an inbound Inbox demo. Those
 follow-ups are not included in this merge. Connection privacy remains dependent
 on clarification in that workspace. This workspace has left those files alone.
+
+
+## Paused Checkpoint
+
+OpenBot work is paused at Kareem's request while standalone Comments is finished.
+See [the pause decision](../decisions/openbot/0004-pause-openbot-for-comments.md).
+Source through `33a4bdf40d` is pushed, including the Comments follow-up merge and
+picker separator fix. The app was installed in w928; all 60 app tests, app
+typecheck, and 47 focused renderer tests pass. Fresh prefilled login passes.
+The latest combined tab/sidebar bot browser check did not complete successfully;
+it must be resumed and verified later before claiming that interaction passes.
+The existing source, private runtime helpers and preview state are preserved.
+Privacy remains unresolved. No further bot implementation or verification is
+being performed during this pause.
