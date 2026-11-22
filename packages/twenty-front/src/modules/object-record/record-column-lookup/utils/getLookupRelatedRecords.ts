@@ -30,16 +30,6 @@ export const getLookupRelatedRecords = ({
     .map(({ lookupTarget }) => lookupTarget)
     .filter(isDefined);
 
-  const relationFieldNames = new Set(
-    lookupTargets
-      .filter(({ isMultiLevel }) => isMultiLevel !== true)
-      .map(({ relationFieldName }) => relationFieldName),
-  );
-
-  const multiLevelLookupTargets = lookupTargets.filter(
-    ({ isMultiLevel }) => isMultiLevel === true,
-  );
-
   const relatedRecordById = new Map<string, ObjectRecord>();
 
   // Two relations can reach one record with different selected fields
@@ -49,18 +39,7 @@ export const getLookupRelatedRecords = ({
       ...relatedRecord,
     });
 
-  for (const relationFieldName of relationFieldNames) {
-    for (const record of records) {
-      const relatedRecord: ObjectRecord | null | undefined =
-        record[relationFieldName];
-
-      if (isDefined(relatedRecord?.id)) {
-        addRelatedRecord(relatedRecord);
-      }
-    }
-  }
-
-  for (const { relationFieldName, relationHops } of multiLevelLookupTargets) {
+  for (const { relationFieldName, relationHops } of lookupTargets) {
     for (const record of records) {
       getLookupLeafRecords({
         relationValue: record[relationFieldName],

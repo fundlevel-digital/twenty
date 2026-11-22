@@ -396,3 +396,12 @@ Emails, while profile Email, both raw API responses and unrelated app preference
 are unchanged. The saved default is on. Browser verification used the existing
 local TLS/host mapping and the bundled 2.60.3 host; it does not claim authenticated
 Conductor-edge verification. No customer extraction batch ran.
+
+## Follow-Up: Merge Current Main
+
+On 2026-11-22 Kareem requested: "Merge the remote branch (main) into your branch and resolve conflicts. Then, commit and push your changes."
+Merged `origin/main` at `5ba1283351` into the existing feature branch. Only
+`docs/DECISIONS.md` and `docs/README.md` conflicted; both resolutions preserve the
+GitHub Profiles entries and every incoming main entry. GitHub Profiles app source
+is unchanged by the merge. All 65 app tests, direct typecheck, lint and staged
+whitespace checks passed. This updates the review branch, without deployment.

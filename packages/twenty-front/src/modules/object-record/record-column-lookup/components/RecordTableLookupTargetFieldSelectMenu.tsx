@@ -1,17 +1,23 @@
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
-import { getLookupTargetFieldMetadataItems } from '@/object-record/record-column-lookup/utils/getLookupTargetFieldMetadataItems';
-import { findRelationTargetObjectMetadataItem } from '@/related-record-paths/utils/findRelationTargetObjectMetadataItem';
-import { SelectOptionIcon } from '@/ui/input/components/SelectOptionIcon';
-import { useLingui } from '@lingui/react/macro';
+import { RecordTableLookupTargetFieldSelectPage } from '@/object-record/record-column-lookup/components/RecordTableLookupTargetFieldSelectPage';
+import { getLookupRelationSelection } from '@/object-record/record-column-lookup/utils/getLookupRelationSelection';
 import { type ReactNode, useState } from 'react';
-import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
+import { isDefined } from 'twenty-shared/utils';
 import { Dropdown } from 'twenty-ui/components/navigation';
-import { useIcons } from 'twenty-ui/icon/provider';
+
+type LookupSelectPage = {
+  id: string;
+  label: string;
+  relationPathFieldMetadataIds: string[];
+};
 
 type RecordTableLookupTargetFieldSelectMenuProps = {
   relationFieldMetadataItem: FieldMetadataItem;
-  onSelect: (lookupTargetFieldMetadataItem: FieldMetadataItem) => void;
+  onSelect: (
+    field: FieldMetadataItem,
+    relationPathFieldMetadataIds: string[],
+  ) => void;
   children?: ReactNode;
 };
 
@@ -20,60 +26,44 @@ export const RecordTableLookupTargetFieldSelectMenu = ({
   onSelect,
   children,
 }: RecordTableLookupTargetFieldSelectMenuProps) => {
-  const { t } = useLingui();
-  const { getIcon } = useIcons();
-  const [searchInput, setSearchInput] = useState('');
   const { objectMetadataItems } = useObjectMetadataItems();
-
-  const relationObjectMetadataItem = findRelationTargetObjectMetadataItem({
-    fieldMetadataItem: relationFieldMetadataItem,
+  const [pages, setPages] = useState<LookupSelectPage[]>([]);
+  const selection = getLookupRelationSelection({
+    relationFieldMetadataItem,
     objectMetadataItems,
   });
-
-  const filteredLookupTargetFieldMetadataItems = (
-    isDefined(relationObjectMetadataItem)
-      ? getLookupTargetFieldMetadataItems(relationObjectMetadataItem)
-      : []
-  ).filter(({ label }) =>
-    label.toLowerCase().includes(searchInput.toLowerCase()),
-  );
+  if (!isDefined(selection)) {
+    return null;
+  }
+  const rootPage = {
+    id: relationFieldMetadataItem.id,
+    label: relationFieldMetadataItem.label,
+    relationPathFieldMetadataIds: selection.relationPathFieldMetadataIds,
+  };
 
   return (
     <>
-      <Dropdown.Back
-        aria-label={t`${relationFieldMetadataItem.label}, back to fields`}
-      >
-        {relationFieldMetadataItem.label}
-      </Dropdown.Back>
-      <Dropdown.Search
-        value={searchInput}
-        placeholder={t`Search fields`}
-        aria-label={t`Search fields`}
-        onValueChange={setSearchInput}
-      />
-      <Dropdown.Separator />
-      {children}
-      <Dropdown.Section scrollable>
-        {isNonEmptyArray(filteredLookupTargetFieldMetadataItems) ? (
-          filteredLookupTargetFieldMetadataItems.map(
-            (lookupTargetFieldMetadataItem) => (
-              <Dropdown.ActionItem
-                key={lookupTargetFieldMetadataItem.id}
-                onClick={() => onSelect(lookupTargetFieldMetadataItem)}
-                startIcon={
-                  <SelectOptionIcon
-                    Icon={getIcon(lookupTargetFieldMetadataItem.icon)}
-                  />
-                }
-              >
-                {lookupTargetFieldMetadataItem.label}
-              </Dropdown.ActionItem>
-            ),
-          )
-        ) : (
-          <Dropdown.Empty>{t`No results`}</Dropdown.Empty>
-        )}
-      </Dropdown.Section>
+      {[rootPage, ...pages].map((page) => (
+        <Dropdown.Page key={page.id} id={page.id}>
+          <RecordTableLookupTargetFieldSelectPage
+            relationFieldMetadataItem={relationFieldMetadataItem}
+            relationPathFieldMetadataIds={page.relationPathFieldMetadataIds}
+            label={page.label}
+            onNavigate={(nextPage) =>
+              setPages((currentPages) =>
+                currentPages.some(
+                  (currentPage) => currentPage.id === nextPage.id,
+                )
+                  ? currentPages
+                  : [...currentPages, nextPage],
+              )
+            }
+            onSelect={onSelect}
+          >
+            {page.id === rootPage.id ? children : undefined}
+          </RecordTableLookupTargetFieldSelectPage>
+        </Dropdown.Page>
+      ))}
     </>
   );
 };

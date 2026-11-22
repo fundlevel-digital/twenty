@@ -170,7 +170,7 @@ describe('createWorkerGeometryStore', () => {
     });
 
     expect(store.resolveElementSnapshot(rootElement)).toMatchObject({
-      computedStyle: { direction: 'rtl' },
+      computedStyle: { direction: 'rtl', position: 'relative' },
       x: 120,
       y: 45,
       width: 640,
@@ -181,8 +181,9 @@ describe('createWorkerGeometryStore', () => {
       scrollLeft: 0,
     });
     expect(store.readObservedElementSnapshot(documentElement)).toMatchObject({
-      x: 120,
-      y: 45,
+      computedStyle: { direction: 'rtl', position: 'static' },
+      x: -30,
+      y: -700,
       scrollTop: 700,
       scrollLeft: 30,
     });
