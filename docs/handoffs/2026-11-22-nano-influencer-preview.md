@@ -102,7 +102,7 @@ connections take precedence over the deprecated single-token variable.
 Eight new Select fields cover the enum audit of Nano, Cal.com, PlusVibe, Slack
 and LinkedIn. YouTube's calculation status and existing multi-value enums already
 used native types. See [operations](../../packages/twenty-apps/operations/README.md)
-for the resumable backfill and [decision 0007](../decisions/0007-use-native-enum-fields-across-apps.md)
+for the resumable backfill and [decision 0007](../decisions/0008-use-native-enum-fields-across-apps.md)
 for the rule now stored in canonical repository instructions. No production app
 or record was changed in this session.
 

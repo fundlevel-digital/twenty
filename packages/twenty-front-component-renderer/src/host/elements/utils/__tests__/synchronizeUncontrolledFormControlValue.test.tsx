@@ -16,6 +16,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { FrontComponentGeometryTrackerContext } from '@/host/geometry/contexts/FrontComponentGeometryTrackerContext';
 import { createGeometryTracker } from '@/host/geometry/utils/createGeometryTracker';
 import { installHostEventRetargetingPolyfill } from '@/polyfills/events/utils/installHostEventRetargetingPolyfill';
+import { patchRemoteElementAttributes } from '@/remote/elements/utils/patchRemoteElementAttributes';
 
 import { createHtmlHostWrapper } from '../createHtmlHostWrapper';
 
@@ -33,6 +34,7 @@ type WorkerFileInput = WorkerFormControl & {
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 installHostEventRetargetingPolyfill(HTMLElement.prototype);
+patchRemoteElementAttributes();
 
 const HOST_COMPONENTS = new Map(
   ['form', 'input', 'textarea', 'button'].map((htmlTag) => [
@@ -115,6 +117,27 @@ describe('uncontrolled form control value synchronization', () => {
       });
     }
   };
+
+  it('keeps Enter from inserting a newline before a worker autocomplete handles it', async () => {
+    const workerTextarea = createWorkerElement('html-textarea');
+    workerTextarea.setAttribute('aria-autocomplete', 'list');
+    workerTextarea.setAttribute('aria-expanded', 'true');
+    workerTextarea.setAttribute('aria-activedescendant', 'recipient');
+    const valuesReadOnEnter: unknown[] = [];
+    workerTextarea.addEventListener(
+      'keydown',
+      readValueOnEnter(valuesReadOnEnter),
+    );
+    mountWorkerElements(workerTextarea);
+
+    const hostTextarea = container.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    await pressKeysWithEchoAfterEach(hostTextarea, ['h', 'i', '{Enter}']);
+
+    expect(hostTextarea.value).toBe('hi');
+    expect(valuesReadOnEnter).toEqual(['hi']);
+  });
 
   it.each([
     { tagName: 'html-input', hostValueAfterEnter: 'hi' },

@@ -144,6 +144,10 @@ jest.mock('@/inbox/components/NavigationDrawerInboxChannelsSection', () => ({
   NavigationDrawerInboxChannelsSection: () => null,
 }));
 
+jest.mock('@/inbox/components/NavigationDrawerInboxCommentsSection', () => ({
+  NavigationDrawerInboxCommentsSection: () => null,
+}));
+
 jest.mock('@/inbox/components/NavigationDrawerInboxThreadSection', () => ({
   NavigationDrawerInboxThreadSection: ({
     title,

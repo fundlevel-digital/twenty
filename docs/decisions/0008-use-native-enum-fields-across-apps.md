@@ -1,4 +1,4 @@
-# 0007. Use Native Enum Fields Across Apps
+# 0008. Use Native Enum Fields Across Apps
 
 - Date: 2026-11-22
 - Status: accepted
@@ -47,3 +47,6 @@ See [backfill operations](../../packages/twenty-apps/operations/README.md), app
 source and the [preview handoff](../handoffs/2026-11-22-nano-influencer-preview.md).
 This record does not authorize a separate production deployment or copy of
 customer CRM records into the preview.
+
+The branch-local number was 0007; merging main renumbered this record to 0008
+to preserve the already merged preview-login decision. The decision is unchanged.

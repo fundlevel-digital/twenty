@@ -27,4 +27,4 @@ Record 0005 explicitly identifies an unresolved interpretation of the second
 thread endpoint. Records 0001 and 0007 preserve the pending production migration
 boundary. Record 0009 refines the creation controls introduced under 0007.
 
-[Repository decision 0007](../../../../../decisions/0007-use-native-enum-fields-across-apps.md) records the native enum correction and backfill request.
+[Repository decision 0007](../../../../../decisions/0008-use-native-enum-fields-across-apps.md) records the native enum correction and backfill request.

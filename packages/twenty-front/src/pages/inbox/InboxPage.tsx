@@ -2,7 +2,7 @@ import { styled } from '@linaria/react';
 import { AnimatePresence } from 'framer-motion';
 import { useLingui } from '@lingui/react/macro';
 import { type MouseEvent, useRef, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { Key } from 'ts-key-enum';
 import { AppPath } from 'twenty-shared/types';
 import { getAppPath, isDefined, isValidUuid } from 'twenty-shared/utils';
@@ -59,6 +59,8 @@ import { useNavigateToInboxThread } from '@/inbox/hooks/useNavigateToInboxThread
 import { AiChatNewThreadPageContent } from '@/ai-chat/instance/components/AiChatNewThreadPageContent';
 import { AiChatPageContinueInSidePanelEffect } from '@/ai-chat/components/AiChatPageContinueInSidePanelEffect';
 import { InboxThreadPageContent } from '@/inbox/components/InboxThreadPageContent';
+import { InboxCommentsPage } from '@/inbox/components/InboxCommentsPage';
+import { isCommentsInboxView } from '@/inbox/utils/isCommentsInboxView';
 import { InboxNewThreadListToggle } from '@/inbox/components/InboxNewThreadListToggle';
 
 const StyledInbox = styled.div`
@@ -404,6 +406,7 @@ export const InboxPage = () => {
   // A new instance per visit, so a selection does not outlive the inbox
   const recordSelectionInstanceId = useInboxRecordSelectionInstanceId();
   const { threadId } = useParams();
+  const location = useLocation();
   const isAiChatInboxEnabled = useIsFeatureEnabled(
     FeatureFlagKey.IS_AI_CHAT_INBOX_ENABLED,
   );
@@ -415,6 +418,10 @@ export const InboxPage = () => {
         replace
       />
     );
+  }
+
+  if (isCommentsInboxView(location)) {
+    return <InboxCommentsPage />;
   }
 
   return (

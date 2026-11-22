@@ -22,4 +22,4 @@ Owner decisions for the Slack application, conversation views, test data and con
 
 [Repository decision 0005](../0005-roll-out-six-sessions-to-live-crm.md) records the live core/app rollout and Kareem’s instruction to leave Slack OAuth pending.
 
-[Repository decision 0007](../0007-use-native-enum-fields-across-apps.md) records the cross-app native enum field rule and backfill request.
+[Repository decision 0007](../0008-use-native-enum-fields-across-apps.md) records the cross-app native enum field rule and backfill request.

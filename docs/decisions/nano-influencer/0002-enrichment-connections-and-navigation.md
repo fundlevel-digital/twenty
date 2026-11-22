@@ -4,7 +4,7 @@
 - Status: accepted
 - Decided by: Kareem
 - Area: NanoInfluencer
-- Related: [Native Enum Fields](../0007-use-native-enum-fields-across-apps.md)
+- Related: [Native Enum Fields](../0008-use-native-enum-fields-across-apps.md)
 
 ## Exchange
 

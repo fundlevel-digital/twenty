@@ -30,4 +30,4 @@ message migration and final pruning still pending.
 
 [Repository decision 0006](../0006-connect-linkedin-after-the-rollout.md) defers LinkedIn connection setup and history migration until the owner is ready.
 
-[Repository decision 0007](../0007-use-native-enum-fields-across-apps.md) records the cross-app native enum field rule and backfill request.
+[Repository decision 0007](../0008-use-native-enum-fields-across-apps.md) records the cross-app native enum field rule and backfill request.

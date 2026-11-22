@@ -6,6 +6,7 @@ import { themeCssVariables } from 'twenty-ui/theme';
 
 import { AiChatSkeletonLoader } from '@/ai-chat/components/internal/AiChatSkeletonLoader';
 import { NavigationDrawerInboxChannelsSection } from '@/inbox/components/NavigationDrawerInboxChannelsSection';
+import { NavigationDrawerInboxCommentsSection } from '@/inbox/components/NavigationDrawerInboxCommentsSection';
 import { NavigationDrawerInboxFavoritesSection } from '@/inbox/components/NavigationDrawerInboxFavoritesSection';
 import { NavigationDrawerInboxThreadSection } from '@/inbox/components/NavigationDrawerInboxThreadSection';
 import { NavigationDrawerInboxTriageSection } from '@/inbox/components/NavigationDrawerInboxTriageSection';
@@ -105,6 +106,7 @@ export const NavigationDrawerInboxContent = () => {
             onThreadClick={handleThreadClick}
           />
           <NavigationDrawerInboxChannelsSection />
+          <NavigationDrawerInboxCommentsSection />
           {isDirectMessageEnabled && (
             <NavigationDrawerDirectMessagesSection
               directMessages={inboxDirectMessageSidebarItems}

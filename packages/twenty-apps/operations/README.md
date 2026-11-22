@@ -31,4 +31,4 @@ node --test packages/twenty-apps/operations/backfill-enum-fields.test.mjs
 ```
 
 The owner's rule and request are recorded in
-[decision 0007](../../../docs/decisions/0007-use-native-enum-fields-across-apps.md).
+[decision 0008](../../../docs/decisions/0008-use-native-enum-fields-across-apps.md).
