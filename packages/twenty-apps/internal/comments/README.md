@@ -12,7 +12,7 @@ Comments works directly with Twenty's standard and custom records. A list entry 
 
 There is no Better Lists installation or merge-order dependency. The earlier workspace 932 prerequisite and reminder were canceled by [decision 0007](../../../../docs/decisions/comments/0007-independent-comments-for-any-object.md). Keep the instruction not to message that thread.
 
-OpenBot participants support selected bot mentions, attributed replies, per-bot settings, task assignment and reminder workflows. See [OpenBot setup](src/openbot/README.md).
+An optional adapter supports selected bot mentions and displays attributed replies from the separate [OpenBot app](../openbot/README.md). Bot settings, credentials, delivery and Task automation belong to OpenBot. See [adapter behavior](src/openbot/README.md).
 
 ## Behavior
 

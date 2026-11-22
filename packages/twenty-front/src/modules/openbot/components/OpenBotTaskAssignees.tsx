@@ -37,12 +37,12 @@ export const OpenBotTaskAssignees = ({
   } = useFindOneRecord({
     objectNameSingular: 'task',
     objectRecordId: recordId,
-    recordGqlFields: { id: true, openBotAssignees: true },
+    recordGqlFields: { id: true, botAssignees: true },
   });
   const { updateOneRecord } = useUpdateOneRecord();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
-  const selected = getOpenBotAssigneeIds(record?.openBotAssignees);
+  const selected = getOpenBotAssigneeIds(record?.botAssignees);
   const chooseBot = async (id: string) => {
     if (saving) {
       return;
@@ -54,11 +54,11 @@ export const OpenBotTaskAssignees = ({
         objectNameSingular: 'task',
         idToUpdate: recordId,
         updateOneRecordInput: {
-          openBotAssignees: selected.includes(id)
+          botAssignees: selected.includes(id)
             ? selected.filter((value) => value !== id)
             : [...selected, id],
         },
-        recordGqlFields: { id: true, openBotAssignees: true },
+        recordGqlFields: { id: true, botAssignees: true },
       });
     } catch {
       setSaveError(true);

@@ -151,12 +151,12 @@ export const CommentComposer = ({
   const users = results.filter(
     (mention) => mention.objectName === 'workspaceMember',
   );
-  const bots = results.filter(
-    (mention) => mention.objectName === 'openbotAgent',
+  const bots = results.filter((mention) =>
+    ['bot', 'openbotAgent'].includes(mention.objectName),
   );
   const records = results.filter(
     (mention) =>
-      !['workspaceMember', 'openbotAgent'].includes(mention.objectName),
+      !['workspaceMember', 'bot', 'openbotAgent'].includes(mention.objectName),
   );
   const orderedResults = [...users, ...bots, ...records];
   return (
@@ -369,9 +369,11 @@ export const CommentComposer = ({
                               orderedResults[activeIndex] === mention
                             }
                             indicator="none"
-                            aria-label={`${mention.label} · ${mention.objectName === 'workspaceMember' ? t('User') : mention.objectName === 'openbotAgent' ? t('Bot') : mention.objectName}`}
+                            aria-label={`${mention.label} · ${mention.objectName === 'workspaceMember' ? t('User') : ['bot', 'openbotAgent'].includes(mention.objectName) ? t('Bot') : mention.objectName}`}
                             startIcon={
-                              mention.objectName === 'openbotAgent' ? (
+                              ['bot', 'openbotAgent'].includes(
+                                mention.objectName,
+                              ) ? (
                                 <OpenBotAvatar
                                   name={mention.label}
                                   avatarUrl={mention.avatarUrl}

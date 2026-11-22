@@ -8,7 +8,7 @@ import {
   type LogicFunctionExecutionContext,
 } from 'twenty-sdk/logic-function';
 import { IDENTIFIERS } from '../constants/identifiers';
-import { getOpenBotDeliveryStatuses } from '../openbot/delivery-status';
+import { readBotRecord, botProviderRequest } from '../openbot/provider';
 import {
   getPublicOpenBotAgents,
   searchOpenBotMentions,
@@ -92,7 +92,7 @@ export const commentsHandler = async (
       ),
     ]);
     return [
-      ...searchOpenBotMentions(query),
+      ...(await searchOpenBotMentions(query)),
       ...members.workspaceMembers.edges
         .map(({ node }) => ({
           id: node.id,
@@ -104,11 +104,13 @@ export const commentsHandler = async (
           label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
         )
         .slice(0, 8),
-      ...records.search.edges.map(({ node }) => ({
-        id: node.recordId,
-        label: node.label,
-        objectName: node.objectNameSingular,
-      })),
+      ...records.search.edges
+        .filter(({ node }) => node.objectNameSingular !== 'bot')
+        .map(({ node }) => ({
+          id: node.recordId,
+          label: node.label,
+          objectName: node.objectNameSingular,
+        })),
     ];
   }
 
@@ -132,16 +134,31 @@ export const commentsHandler = async (
       : undefined;
   } while (cursor);
 
+  const botRecord = await readBotRecord(input);
+  comments.push(...botRecord.comments);
+  comments.sort(
+    (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
+  );
   const result = {
     comments,
     memberId,
     recordLabel,
     objectLabel,
-    openBotAgents: getPublicOpenBotAgents(),
-    openBotDeliveries: await getOpenBotDeliveryStatuses(comments),
+    openBotAgents: await getPublicOpenBotAgents(),
+    openBotDeliveries: botRecord.statuses,
   };
   if (input.action === 'list') return result;
   const existing = comments.find(({ id }) => id === input.id);
+  if (
+    (input.action === 'delete' || input.action === 'resolve') &&
+    existing?.botOwned
+  ) {
+    await botProviderRequest({ ...input });
+    return commentsHandler(
+      { body: { ...input, action: 'list' } } as RoutePayload<CommentRequest>,
+      context,
+    );
+  }
   if (input.action === 'delete' || input.action === 'resolve') {
     if (!existing || (existing.deleted && input.action === 'delete'))
       throw new Error('Comment unavailable');
@@ -193,19 +210,18 @@ export const commentsHandler = async (
     ),
   ];
   if (mentions.length > 20) throw new Error('Mention up to 20 recipients');
-  if (
-    mentions.some(
-      (mention) =>
-        mention.objectName === 'openbotAgent' &&
-        !validateOpenBotMention(mention, input.body ?? ''),
-    )
-  ) {
+  const botValidation = await Promise.all(
+    mentions
+      .filter((mention) => ['bot', 'openbotAgent'].includes(mention.objectName))
+      .map((mention) => validateOpenBotMention(mention, input.body ?? '')),
+  );
+  if (botValidation.some((valid) => !valid)) {
     throw new Error('Select a connected OpenBot agent from the mention picker');
   }
   // Validate references as the caller before saving or delivering any mention.
   const references = await Promise.all(
     mentions
-      .filter(({ objectName }) => objectName !== 'openbotAgent')
+      .filter(({ objectName }) => !['bot', 'openbotAgent'].includes(objectName))
       .map(async (mention) => ({
         mention,
         text:
@@ -287,7 +303,7 @@ export const commentsHandler = async (
     comments: [...comments, comment],
     notificationFailed,
     openBotDeliveryFailed,
-    openBotDeliveries: await getOpenBotDeliveryStatuses([...comments, comment]),
+    openBotDeliveries: (await readBotRecord(input)).statuses,
   };
 };
 

@@ -7,7 +7,7 @@ const updateOneRecord = jest.fn();
 const useDirectory = jest.fn();
 jest.mock('@/object-record/hooks/useFindOneRecord', () => ({
   useFindOneRecord: () => ({
-    record: { id: 'task', openBotAssignees: ['research'], assigneeId: 'human' },
+    record: { id: 'task', botAssignees: ['research'], assigneeId: 'human' },
     loading: false,
   }),
 }));
@@ -44,8 +44,8 @@ it('adds another bot while preserving the human assignee and existing bot', asyn
     expect(updateOneRecord).toHaveBeenCalledWith({
       objectNameSingular: 'task',
       idToUpdate: 'task',
-      updateOneRecordInput: { openBotAssignees: ['research', 'review'] },
-      recordGqlFields: { id: true, openBotAssignees: true },
+      updateOneRecordInput: { botAssignees: ['research', 'review'] },
+      recordGqlFields: { id: true, botAssignees: true },
     }),
   );
 });
@@ -59,7 +59,7 @@ it('removes a selected disabled bot without offering new disabled assignments', 
   await user.click(screen.getByRole('checkbox', { name: /Research Bot/ }));
   await waitFor(() =>
     expect(updateOneRecord.mock.calls[0][0].updateOneRecordInput).toEqual({
-      openBotAssignees: [],
+      botAssignees: [],
     }),
   );
 });

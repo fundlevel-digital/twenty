@@ -1,7 +1,7 @@
-import { getOpenBotConnections, publicOpenBotAgent } from './connections';
-
-export const searchOpenBotMentions = (query: string) =>
-  getOpenBotConnections()
+import { getPublicOpenBotAgents } from './provider';
+export { getPublicOpenBotAgents } from './provider';
+export const searchOpenBotMentions = async (query: string) =>
+  (await getPublicOpenBotAgents())
     .filter(({ name }) =>
       name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
     )
@@ -9,24 +9,19 @@ export const searchOpenBotMentions = (query: string) =>
     .map(({ id, name, avatarUrl }) => ({
       id,
       label: name,
-      objectName: 'openbotAgent',
       avatarUrl,
+      objectName: 'bot',
     }));
-
-export const getPublicOpenBotAgents = () =>
-  getOpenBotConnections().map(publicOpenBotAgent);
-
-export const validateOpenBotMention = (
+export const validateOpenBotMention = async (
   mention: { id: string; label: string; objectName: string },
   body: string,
-): boolean => {
-  const connection = getOpenBotConnections().find(
-    ({ id }) => id === mention.id,
+) =>
+  Boolean(
+    (await getPublicOpenBotAgents()).some(
+      (bot) =>
+        bot.id === mention.id &&
+        bot.name === mention.label &&
+        ['bot', 'openbotAgent'].includes(mention.objectName) &&
+        body.includes(`@${bot.name}`),
+    ),
   );
-  return Boolean(
-    connection &&
-    mention.objectName === 'openbotAgent' &&
-    mention.label === connection.name &&
-    body.includes(`@${connection.name}`),
-  );
-};

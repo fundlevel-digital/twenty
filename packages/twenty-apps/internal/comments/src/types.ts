@@ -8,6 +8,7 @@ export type Mention = {
   avatarUrl?: string | null;
 };
 export type RecordComment = {
+  botOwned?: boolean;
   id: string;
   body: string;
   authorId: string;

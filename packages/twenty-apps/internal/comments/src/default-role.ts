@@ -6,7 +6,6 @@ export default defineApplicationRole({
   permissionFlagUniversalIdentifiers: [
     SystemPermissionFlag.AI,
     SystemPermissionFlag.WORKFLOWS,
-    SystemPermissionFlag.APPLICATIONS,
   ],
   canBeAssignedToUsers: false,
   canBeAssignedToAgents: false,

@@ -12,8 +12,8 @@ export const useIsOpenBotTaskAssigneeField = (fieldMetadataId: string) => {
     fieldMetadataItem?.name === 'assignee' &&
     objectMetadataItem.fields.some(
       (field) =>
-        field.name === 'openBotAssignees' &&
-        field.universalIdentifier === '86f7dabe-2786-4de5-981d-3df239e797d8',
+        field.name === 'botAssignees' &&
+        field.universalIdentifier === '14b5cb89-458f-5958-a7e4-59b4b1f3d237',
     )
   );
 };

@@ -1,5 +1,10 @@
 # OpenBot Comments Integration And Preview
 
+**Architecture correction:** The bundled implementation below is historical.
+The [standalone app handoff](2026-11-22-openbot-standalone-preview.md) and
+[OpenBot README](../../packages/twenty-apps/internal/openbot/README.md) describe
+the current ownership and setup.
+
 Kareem requested OpenBot mentions and attributed replies in the new Comments
 app, plus an isolated VM preview. See the [decision](../decisions/openbot/0001-bot-participants-and-vm-preview.md).
 

@@ -52,7 +52,7 @@ export const useOpenBotDirectory = () => {
             const logicFunction = data?.findManyLogicFunctions.find(
               (item) =>
                 item.universalIdentifier ===
-                '22dd6f67-f509-4c8f-aedb-75ca3c369954',
+                'd0f8460f-d0c3-5e17-98f3-6d7531fe0d88',
             );
             if (!logicFunction) {
               return [];

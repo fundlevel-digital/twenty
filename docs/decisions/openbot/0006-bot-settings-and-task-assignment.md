@@ -1,7 +1,7 @@
 # 0006. Bot Settings, Task Assignment And Reminder Workflows
 
 - Date: 2026-11-22
-- Status: accepted
+- Status: app ownership superseded by [0007](0007-standalone-app-and-shared-bot-identities.md); settings and task requirements retained
 - Decided by: Kareem
 - Area: OpenBot
 - Related: [Manual webhooks](0005-resume-crm-with-manual-webhooks.md)
