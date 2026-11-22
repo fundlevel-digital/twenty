@@ -30,7 +30,7 @@ export default defineView({
       universalIdentifier: '8954bbd5-cf60-4234-a00f-781da35cffd2',
       fieldMetadataUniversalIdentifier: IDENTIFIERS.creatorEmailAvailability,
       position: 1,
-      isVisible: true,
+      isVisible: false,
       size: 180,
     },
     {

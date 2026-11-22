@@ -12,3 +12,4 @@ NanoInfluencer integration, list synchronization and creator discovery in Twenty
 | [0006](0006-configure-people-sync-deletion-and-attribution.md) | 2026-11-22 | Configure People creation, email relations, sync/deletion policies and attribution | accepted |
 | [0007](0007-backfill-search-history-and-native-groups.md) | 2026-11-22 | Backfill saved searches/results, validate emails, add native Country and populated relation groups | accepted |
 | [0008](0008-group-both-decision-email-and-creator-email-availability.md) | 2026-11-22 | Support both decision-maker email grouping and creator Has Email/No Email grouping | accepted |
+| [0009](0009-hide-email-availability-column.md) | 2026-11-22 | Hide the Email Availability column while retaining creator email grouping | accepted |

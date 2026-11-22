@@ -232,7 +232,8 @@ native load limit of 100; Twenty controls how groups are displayed. Native view
 refresh is asynchronous, like the list import.
 
 Creator **Email Availability** is a native Select: **Has Email** or **No Email**.
-Choose **By Email Availability** or **By Country** in Nano Creators. Availability
+Choose **By Email Availability** or **By Country** in Nano Creators. The Email
+Availability column is hidden by default; its grouping remains available. Availability
 counts only usable saved addresses; an empty incoming Nano email response does
 not erase known addresses. Native create/update hooks keep the category current
 when an address is added or removed in Twenty. They watch only email/availability

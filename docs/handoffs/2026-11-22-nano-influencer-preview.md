@@ -456,3 +456,25 @@ LinkedIn mappers 10, Slack attachments 13, PlusVibe email/sync 35 and Cal.com
 booking sync 10. Direct typechecks pass for Nano, Cal.com, LinkedIn, Slack and PlusVibe; Nano lint also passes. Runtime credentials,
 preview adapters, browser state and customer records remain ignored under
 .context and are excluded from the commit.
+
+
+## Hide Email Availability Column — 2026-11-22
+
+Kareem requested removing the Email Availability column, as recorded in
+[Nano decision 0009](../decisions/nano-influencer/0009-hide-email-availability-column.md).
+The app's All Nano Creators and By Email Availability view definitions now hide
+that column while retaining the Select field, update hooks and both groups.
+
+The isolated preview plan contained exactly two view-field visibility updates,
+zero creates, zero deletions and zero destructive actions; apply succeeded.
+An older All Nano Creators view also displayed the column and was hidden through
+the owner's native view-field mutation. Metadata checks confirmed all three
+preview views hide it and retain AVAILABLE/MISSING groups. Browser checks rendered
+60 rows in each All Nano Creators view and 200 in By Email Availability, without
+the column; Has Email grouping remained visible. The browser used the existing
+published 2.59.0 host and local TLS hostname mapping, bypassing Conductor's edge.
+This is an SDK view change; no host frontend or production deployment occurred.
+
+The branch is now committed and published as
+[draft PR #28](https://github.com/fundlevel-digital/twenty/pull/28) against main.
+Earlier uncommitted/no-PR statements above describe their historical checkpoints.
