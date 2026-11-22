@@ -36,7 +36,7 @@ export const measureOverflowingListLayout = ({
     itemWidths,
     availableWidth,
     gap,
-    includePartialItem: true,
+    includePartialItem: false,
   });
 
   return { visibleItemCount, hasOverflow };

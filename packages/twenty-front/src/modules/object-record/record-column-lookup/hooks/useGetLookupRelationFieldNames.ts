@@ -18,11 +18,16 @@ export const useGetLookupRelationFieldNames = (recordTableId?: string) => {
       store
         .get(visibleRecordFieldsSelector)
         .map(
-          ({ fieldMetadataItemId, relationTargetFieldMetadataId }) =>
+          ({
+            fieldMetadataItemId,
+            relationTargetFieldMetadataId,
+            relationPathFieldMetadataIds,
+          }) =>
             store.get(
               recordFieldLookupTargetFamilySelector.selectorFamily({
                 fieldMetadataItemId,
                 relationTargetFieldMetadataId,
+                relationPathFieldMetadataIds,
               }),
             )?.relationFieldName,
         )
