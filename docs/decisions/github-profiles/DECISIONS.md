@@ -15,3 +15,4 @@ Native GitHub enrichment, shared CRM relations, configurable workflows and authe
 | [0009](0009-use-twenty-select-and-explain-refresh.md) | 2026-11-22 | Use Twenty Dropdowns And Explain Profile Refresh | accepted |
 | [0010](0010-commit-email-command-and-workflow.md) | 2026-11-22 | Extract Commit Emails Into A Separate Column With A Command And Workflow Action | accepted |
 | [0011](0011-configurable-noreply-email-filter.md) | 2026-11-22 | Configure Noreply Email Filtering With App Defaults And Per-Run Overrides | accepted |
+| [0012](0012-deploy-github-profiles-to-live-crm.md) | 2026-11-22 | Deploy The Merged GitHub Profiles App To The Live CRM | accepted |
