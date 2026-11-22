@@ -13,3 +13,4 @@ Owner requirements for the record comments app.
 | [0007](0007-independent-comments-for-any-object.md) | 2026-11-22 | Keep Comments independent of Better Lists and cancel the workspace 932 merge dependency/reminder | accepted |
 | [0008](0008-record-discussions-in-inbox.md) | 2026-11-22 | Put Comments beside DMs and Channels in Inbox, grouped by record with normal comment replies | accepted |
 | [0009](0009-shareable-inbox-selection-and-record-links.md) | 2026-11-22 | Preserve the selected record and thread in Inbox URLs, link the record caption, and fix Open Record spacing | accepted |
+| [0010](0010-deploy-comments-to-live-crm.md) | 2026-11-22 | Deploy merged Comments and its core Inbox/renderer integration to the live CRM | accepted |
