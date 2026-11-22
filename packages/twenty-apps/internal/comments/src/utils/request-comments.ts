@@ -2,6 +2,8 @@ import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 import { IDENTIFIERS } from '../constants/identifiers';
 import {
   type CommentRequest,
+  type CommentInboxResponse,
+  type CommentInboxTargetResponse,
   type CommentResponse,
   type Mention,
 } from '../types';
@@ -20,7 +22,11 @@ const findFunctionId = async (): Promise<string> => {
 
 // Metadata requests preserve the host's auth-proxy session; app routes deliberately omit it.
 export const requestComments = async <
-  TResult extends CommentResponse | Mention[] = CommentResponse,
+  TResult extends
+    | CommentResponse
+    | CommentInboxResponse
+    | CommentInboxTargetResponse
+    | Mention[] = CommentResponse,
 >(
   input: CommentRequest,
 ): Promise<TResult> => {

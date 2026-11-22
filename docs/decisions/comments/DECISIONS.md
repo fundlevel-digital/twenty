@@ -11,3 +11,4 @@ Owner requirements for the record comments app.
 | [0005](0005-finish-comments-before-openbot.md) | 2026-11-22 | Finish standalone Comments first and leave OpenBot paused | accepted |
 | [0006](0006-list-entry-comments-after-better-lists.md) | 2026-11-22 | Add separate list-entry comments; merge after workspace 932, remind Kareem before merge/deploy, and do not message its thread | superseded by 0007 |
 | [0007](0007-independent-comments-for-any-object.md) | 2026-11-22 | Keep Comments independent of Better Lists and cancel the workspace 932 merge dependency/reminder | accepted |
+| [0008](0008-record-discussions-in-inbox.md) | 2026-11-22 | Put Comments beside DMs and Channels in Inbox, grouped by record with normal comment replies | accepted |

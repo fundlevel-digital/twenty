@@ -11,7 +11,7 @@ Reference: [Attio Comments And Mentions](https://attio.com/help/reference/produc
 | Emoji reactions with membership and removal | Pending. Emoji insertion into comment text is available. |
 | Resolve/reopen, own deletion, thread filters and comment links | Implemented. Links select the thread after opening Comments. |
 | Comments from record/list views and a view-wide feed | Record command/widget and Company/Person tabs exist. Custom records use the same command/widget. A view-wide feed remains to implement. |
-| Respond directly from Inbox | Pending. Notifications reference the record/entry; replies currently continue in Comments. |
+| Respond directly from Inbox | Implemented in the Comments section, grouped by record. Existing mention notifications open the same discussion and normal reply composer without AI. |
 | Optional email notifications | Pending. |
 
 ## Independent Record Model

@@ -11,6 +11,7 @@ export const IDENTIFIERS = {
   resolved: 'b6e4a532-4d1e-434d-b4f8-6d06dbe6a75a',
   deleted: '7ca47a2c-86c9-4aa6-a6e5-5fb27df7085a',
   mentions: '3bf977c2-a1ac-461d-82d9-7a6b54654c2f',
+  inboxFront: '93fb26b8-7593-4d9e-91ee-a1aa52821d17',
   front: '94b2b4dc-f5fd-4466-8805-17a6579b384a',
   command: 'ee5b21dc-682b-4b0e-9af2-16eb4fdf06f5',
   function: '92e11947-8b63-498f-a69c-7ece7cd6071c',

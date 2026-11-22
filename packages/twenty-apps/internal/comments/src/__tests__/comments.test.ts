@@ -83,6 +83,23 @@ beforeEach(() => {
   });
 });
 describe('comment access', () => {
+  it('requires a signed-in member for targetless Inbox actions', async () => {
+    const anonymous = {
+      ...context,
+      workspaceMemberId: null,
+    } as unknown as typeof context;
+    await expect(call({ action: 'inbox' }, anonymous)).rejects.toThrow(
+      'Sign in',
+    );
+    await expect(
+      call(
+        { action: 'inbox-target', notificationId: target.recordId },
+        anonymous,
+      ),
+    ).rejects.toThrow('Sign in');
+    expect(mocks.graphql).not.toHaveBeenCalled();
+    expect(mocks.query).not.toHaveBeenCalled();
+  });
   it('rejects unauthenticated callers before reading anything', async () => {
     await expect(
       call({ ...target, action: 'list' }, {

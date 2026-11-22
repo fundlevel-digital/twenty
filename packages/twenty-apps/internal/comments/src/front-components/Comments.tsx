@@ -18,7 +18,7 @@ import {
   IconRefresh,
 } from 'twenty-ui/icon';
 import {
-  type CommentRequest,
+  type CommentRecordRequest,
   type CommentResponse,
   type CommentTarget,
   type RecordComment,
@@ -67,7 +67,12 @@ export const Comments = () => {
     />
   );
 };
-const RecordComments = ({ target }: { target: CommentTarget }) => {
+type RecordCommentsProps = {
+  target: CommentTarget;
+  onChange?: (data: CommentResponse) => void;
+};
+
+export const RecordComments = ({ target, onChange }: RecordCommentsProps) => {
   const { t } = useTranslate();
   const location = useLocation();
   const linkedId = new URLSearchParams(location?.search).get('comment');
@@ -92,7 +97,7 @@ const RecordComments = ({ target }: { target: CommentTarget }) => {
     };
   }, [target.objectName, target.recordId, t]);
   const run = async (
-    input: Omit<CommentRequest, 'objectName' | 'recordId'>,
+    input: Omit<CommentRecordRequest, 'objectName' | 'recordId'>,
   ) => {
     setBusy(true);
     setError('');
@@ -100,6 +105,7 @@ const RecordComments = ({ target }: { target: CommentTarget }) => {
     try {
       const result = await requestComments({ ...target, ...input });
       setData(result);
+      onChange?.(result);
       if (result.notificationFailed)
         setNotice(
           t(

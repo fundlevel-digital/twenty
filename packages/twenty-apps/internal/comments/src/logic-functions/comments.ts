@@ -11,10 +11,20 @@ import { IDENTIFIERS } from '../constants/identifiers';
 import {
   type CommentRequest,
   type CommentResponse,
+  type CommentInboxResponse,
+  type CommentInboxTargetResponse,
   type RecordComment,
   type Mention,
 } from '../types';
 import { graphql } from '../utils/graphql';
+import {
+  readCommentInbox,
+  readCommentNotificationTarget,
+} from '../utils/comment-inbox';
+import {
+  getCommentObjects,
+  readCommentTarget,
+} from '../utils/read-comment-target';
 import { getMentionRanges, hasUnselectedMention } from '../utils/mention-draft';
 
 const FIELDS =
@@ -29,48 +39,22 @@ type CommentEdges = {
 export const commentsHandler = async (
   { body: input }: RoutePayload<CommentRequest>,
   context: LogicFunctionExecutionContext,
-): Promise<CommentResponse | Mention[]> => {
+): Promise<
+  | CommentResponse
+  | CommentInboxResponse
+  | CommentInboxTargetResponse
+  | Mention[]
+> => {
   const memberId = context.workspaceMemberId;
   if (!memberId) throw new Error('Sign in to use comments');
-  if (
-    !input ||
-    !/^[a-zA-Z][a-zA-Z0-9]*$/.test(input.objectName) ||
-    !/^[0-9a-f-]{36}$/i.test(input.recordId)
-  )
-    throw new Error('Select a record');
-
-  const { objects } = await new MetadataApiClient().query({
-    objects: {
-      __args: { filter: {}, paging: { first: 1000 } },
-      edges: {
-        node: {
-          nameSingular: true,
-          namePlural: true,
-          labelPlural: true,
-        },
-      },
-    },
-  });
-  const objectMetadata = objects.edges.find(
-    ({ node }) => node.nameSingular === input.objectName,
-  )?.node;
-  if (!objectMetadata || input.objectName === 'recordComment')
-    throw new Error('Object unavailable');
-  // Resolve access with the caller's token before using the app's comment permissions.
-  const target = await new RestApiClient().get<{
-    data: Record<
-      string,
-      { id: string; name?: string | { firstName?: string; lastName?: string } }
-    >;
-  }>(`/rest/${objectMetadata.namePlural}/${input.recordId}`);
-  const record = target.data[input.objectName];
-  if (!record?.id) throw new Error('Record unavailable');
-  const recordLabel =
-    typeof record.name === 'string'
-      ? record.name
-      : record.name
-        ? `${record.name.firstName ?? ''} ${record.name.lastName ?? ''}`.trim()
-        : input.objectName;
+  if (!input) throw new Error('Select a record');
+  if (input.action === 'inbox') return readCommentInbox(input.cursor);
+  if (input.action === 'inbox-target')
+    return readCommentNotificationTarget(input.notificationId);
+  const { recordLabel, objectLabel } = await readCommentTarget(
+    input,
+    await getCommentObjects(),
+  );
 
   if (input.action === 'search') {
     const query = (input.query ?? '').slice(0, 100);
@@ -144,7 +128,7 @@ export const commentsHandler = async (
     comments,
     memberId,
     recordLabel,
-    objectLabel: objectMetadata.labelPlural ?? objectMetadata.namePlural,
+    objectLabel,
   };
   if (input.action === 'list') return result;
   const existing = comments.find(({ id }) => id === input.id);
