@@ -1,5 +1,7 @@
 # Twenty Engineering Notes
 
+- [GitHub Profiles Preview](handoffs/2026-11-22-github-profiles-preview.md): native app, influencer and many-to-many People/Company relations, configurable workflows/backfills, pooled authentication and owner-authorized preview population.
+
 - [Cal.com OAuth App And Release](handoffs/2026-11-21-cal-com-preview.md): implementation, isolated preview, live installation and OAuth verification status.
 
 - [Live CRM Rollout](handoffs/2026-11-21-live-crm-rollout.md): deployed core/apps, migration recovery, PlusVibe reconciliation and pending LinkedIn/Slack activation.

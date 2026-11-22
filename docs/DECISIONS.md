@@ -7,6 +7,7 @@ supersession. Operational instructions stay with their package or skill.
 
 | Area | Index | Implementation And Handoff |
 | --- | --- | --- |
+| GitHub Profiles | [Decisions](decisions/github-profiles/DECISIONS.md) | [App README](../packages/twenty-apps/internal/github-profiles/README.md), [preview handoff](handoffs/2026-11-22-github-profiles-preview.md) |
 | Cal.com | [Decisions](decisions/cal-com/DECISIONS.md) | [App README](../packages/twenty-apps/public/cal-com/README.md) |
 | Slack Sync | [Decisions](decisions/slack/DECISIONS.md) | [Implementation](slack-sync.md) |
 | LinkedIn Sync | [Decisions](decisions/linkedin/DECISIONS.md) | [App README](../packages/twenty-apps/internal/fundlevel-linkedin/README.md), [handoff](../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md) |
