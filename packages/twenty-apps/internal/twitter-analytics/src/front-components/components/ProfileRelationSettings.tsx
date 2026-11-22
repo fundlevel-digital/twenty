@@ -10,6 +10,7 @@ import { Button } from 'twenty-ui/primitives/input';
 import { Text } from 'twenty-ui/primitives/typography';
 import { themeCssVariables } from 'twenty-ui/theme';
 import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import { ProfileRelationSelect } from 'src/front-components/components/ProfileRelationSelect';
 import {
   getProfileRelationLoadFailure,
   type ProfileRelationLoadFailure,
@@ -34,14 +35,6 @@ const SourcePreferences = ({
   applicationId: string;
 }) => {
   const { t } = useTranslate();
-  const selectStyle = {
-    background: themeCssVariables.background.primary,
-    color: themeCssVariables.font.color.primary,
-    border: `1px solid ${themeCssVariables.border.color.medium}`,
-    borderRadius: themeCssVariables.border.radius.sm,
-    padding: themeCssVariables.spacing[2],
-    width: '100%',
-  };
   const inputId = useId();
   const [settings, setSettings] = useState<RelationSettings>(initial);
   const [saved, setSaved] = useState(JSON.stringify(initial));
@@ -175,53 +168,52 @@ const SourcePreferences = ({
           gap: themeCssVariables.spacing[4],
         }}
       >
-        <label htmlFor={`${inputId}-field`}>{t('X Link Field')}</label>
-        <select
+        <ProfileRelationSelect
           id={`${inputId}-field`}
-          aria-describedby={`${inputId}-field-help`}
-          style={selectStyle}
+          label={t('X Link Field')}
+          descriptionId={`${inputId}-field-help`}
           value={settings.sourceField}
           disabled={running !== null}
-          onChange={(event) =>
-            update({ ...settings, sourceField: event.target.value })
-          }
-        >
-          <option value="">{t('Detect Existing X Link Field')}</option>
-          {initial.fields.map((field) => (
-            <option key={field.name} value={field.name}>
-              {field.label}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: '', label: t('Detect Existing X Link Field') },
+            ...initial.fields.map((field) => ({
+              value: field.name,
+              label: field.label,
+            })),
+          ]}
+          onValueChange={(sourceField) => update({ ...settings, sourceField })}
+        />
         <Text id={`${inputId}-field-help`} color="secondary">
           {t(
             'Read X handles or profile URLs from this field, including additional links. Detect uses a recognized X field; it does not search every field on each record.',
           )}
         </Text>
-        <label htmlFor={`${inputId}-auto`}>
-          {t('When Records Are Created or Updated')}
-        </label>
-        <select
+        <ProfileRelationSelect
           id={`${inputId}-auto`}
-          aria-describedby={`${inputId}-auto-help`}
-          style={selectStyle}
+          label={t('When Records Are Created or Updated')}
+          descriptionId={`${inputId}-auto-help`}
           value={settings.autoMode}
           disabled={running !== null}
-          onChange={(event) =>
-            update({
-              ...settings,
-              autoMode: event.target.value as RelationSettings['autoMode'],
-            })
-          }
-        >
-          <option value="OFF">{t('Off')}</option>
-          <option value="LINK_EXISTING">
-            {t('Relate Existing Profiles Only')}
-          </option>
-          <option value="CREATE_MISSING">
-            {t('Create Missing Profiles and Relate')}
-          </option>
-        </select>
+          options={[
+            { value: 'OFF', label: t('Off') },
+            {
+              value: 'LINK_EXISTING',
+              label: t('Relate Existing Profiles Only'),
+            },
+            {
+              value: 'CREATE_MISSING',
+              label: t('Create Missing Profiles and Relate'),
+            },
+          ]}
+          onValueChange={(autoMode) => {
+            if (
+              autoMode === 'OFF' ||
+              autoMode === 'LINK_EXISTING' ||
+              autoMode === 'CREATE_MISSING'
+            )
+              update({ ...settings, autoMode });
+          }}
+        />
         <Text id={`${inputId}-auto-help`} color="secondary">
           {settings.autoMode === 'OFF'
             ? t(
@@ -235,25 +227,24 @@ const SourcePreferences = ({
                   'When a record is saved, reuse matching Twitter Profiles or create missing profiles from its X links, then relate them to the record. Existing records are only processed when saved or backfilled.',
                 )}
         </Text>
-        <label htmlFor={`${inputId}-changes`}>{t('When X Links Change')}</label>
-        <select
+        <ProfileRelationSelect
           id={`${inputId}-changes`}
-          aria-describedby={`${inputId}-changes-help`}
-          style={selectStyle}
+          label={t('When X Links Change')}
+          descriptionId={`${inputId}-changes-help`}
           value={settings.linkMode}
           disabled={running !== null}
-          onChange={(event) =>
-            update({
-              ...settings,
-              linkMode: event.target.value as RelationSettings['linkMode'],
-            })
-          }
-        >
-          <option value="ADD_ONLY">{t('Keep Existing Relations')}</option>
-          <option value="SYNC_MANAGED">
-            {t('Replace Automatically Managed Relations')}
-          </option>
-        </select>
+          options={[
+            { value: 'ADD_ONLY', label: t('Keep Existing Relations') },
+            {
+              value: 'SYNC_MANAGED',
+              label: t('Replace Automatically Managed Relations'),
+            },
+          ]}
+          onValueChange={(linkMode) => {
+            if (linkMode === 'ADD_ONLY' || linkMode === 'SYNC_MANAGED')
+              update({ ...settings, linkMode });
+          }}
+        />
         <Text id={`${inputId}-changes-help`} color="secondary">
           {settings.linkMode === 'ADD_ONLY'
             ? t(
@@ -278,26 +269,30 @@ const SourcePreferences = ({
             {t('Save Preferences')}
           </Button>
         </div>
-        <label htmlFor={`${inputId}-backfill`}>{t('Existing Records')}</label>
-        <select
+        <ProfileRelationSelect
           id={`${inputId}-backfill`}
-          aria-describedby={`${inputId}-backfill-help ${inputId}-backfill-scope`}
-          style={selectStyle}
+          label={t('Existing Records')}
+          descriptionId={`${inputId}-backfill-help ${inputId}-backfill-scope`}
           value={mode}
           disabled={running !== null}
-          onChange={(event) => {
-            setMode(event.target.value as typeof mode);
+          options={[
+            {
+              value: 'LINK_EXISTING',
+              label: t('Relate Existing Profiles Only'),
+            },
+            {
+              value: 'CREATE_MISSING',
+              label: t('Create Missing Profiles and Relate'),
+            },
+          ]}
+          onValueChange={(nextMode) => {
+            if (nextMode !== 'LINK_EXISTING' && nextMode !== 'CREATE_MISSING')
+              return;
+            setMode(nextMode);
             setPreviewSignature('');
             setResult(null);
           }}
-        >
-          <option value="LINK_EXISTING">
-            {t('Relate Existing Profiles Only')}
-          </option>
-          <option value="CREATE_MISSING">
-            {t('Create Missing Profiles and Relate')}
-          </option>
-        </select>
+        />
         <Text id={`${inputId}-backfill-help`} color="secondary">
           {t(
             'Run once for existing records, independently of the automatic setting above. Save preferences first. Preview shows proposed changes without saving them; Run Backfill applies them.',

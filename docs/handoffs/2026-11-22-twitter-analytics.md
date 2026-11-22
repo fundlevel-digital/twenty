@@ -126,6 +126,45 @@ Verification on 2026-11-22:
   TwitterAPI.io calls occurred during this fix. The browser backfill was a
   preview only.
 
+### Native UI Preference And Relation Controls
+
+On 2026-11-22 Kareem requested that existing native Twenty CRM components always
+be used when available, with new/custom UI only for capabilities existing
+components cannot support. He explicitly requested saving this as rules/skills.
+[Repository decision 0007](../decisions/0007-reuse-native-twenty-ui-components.md)
+contains his exact instruction and the implementation scope.
+
+The canonical Ruler source and design guide now explicitly cover SDK app front
+components. Ruler regenerated `AGENTS.md` and `CLAUDE.md`. A validated shared
+`twenty-native-ui` skill has committed Claude/Pi aliases, while the existing
+Claude-only UI design skill is preserved and links to it. The Hindsight service
+remains unavailable; these tracked rules, skill and decision provide the durable
+repository record.
+
+The app replaces its HTML selects with the published Twenty UI 2.59.0 compound
+Select: four controls per Company/Person section, eight in total. Its composition
+uses native labels, triggers, values, icons, popups, options and indicators. An
+explicit positioned portal container keeps popup coordinates within the embedded
+panel. A small compatibility handler supplies the missing `nativeEvent` alias on
+keyboard-generated clicks from older hosts; it does not replace the control's
+selection or keyboard implementation.
+
+Cookie-gated browser verification passed for option selection, the empty Detect
+value, keyboard navigation and Enter selection, mode-specific help, preserved
+accessible descriptions and the read-only backfill preview. The popup's left
+edge and width matched its trigger, and there were no page errors. Typechecking,
+oxlint, skill validation and SDK build/plan/apply passed. Metadata plans updated
+one front component with no destructive actions. Preview preferences were not
+saved or changed, and no source records, memberships or analytics were written.
+Production is unchanged.
+
+Kareem also asked whether Keep Existing Relations still relates the new X link.
+Confirmed from the existing logic: with saved Create Missing Profiles and Relate
+preferences, a record update reuses or creates the new profile and adds its
+membership while preserving old memberships. Relate Existing Profiles Only skips
+missing profiles; Off disables automatic processing. This behavior was explained
+and not changed by the UI work.
+
 ## Delivered
 
 - Native TwitterAPI.io SDK app with the provider's favicon as its logo.

@@ -20,7 +20,8 @@ Where this repo differs from your defaults:
 - Use existing guards and helpers before writing your own: `isDefined`, `isNonEmptyArray`, `isPlainObject`, … from `twenty-shared/utils`; `isNonEmptyString`, `isString`, `isNull`, `isObject`, … from `@sniptt/guards`. Reimplementing an existing util is the most common AI-authored defect here.
 - Lingui for user-facing strings, `doNotTranslate()` from `twenty-shared/i18n` for text that must stay as written (error diagnostics, protocol tokens); Linaria (zero-runtime, styled-components pattern) for twenty-front styling.
 - Owner preference: use Title Case for UI labels and titles, including fields, columns, objects, views and actions; see the Copy section of `DESIGN.md`. Keep API identifiers and customer-entered content unchanged.
-- Before building or changing UI in `twenty-front` or `twenty-ui`, read `DESIGN.md` at the repo root.
+- Use existing Twenty CRM components whenever they support the required behavior, including in SDK app front components. Do not substitute browser-native controls, custom lookalikes or third-party controls for available Twenty components. New/custom UI is appropriate only when existing components cannot support what is being built; identify that gap briefly. See the [native UI skill](.agents/skills/twenty-native-ui/SKILL.md).
+- Before building or changing Twenty UI, including SDK app front components, read `DESIGN.md` at the repo root.
 - For Twenty product concepts, consult `packages/twenty-ui/src/icon/icon-dictionary.md` and use the canonical icon.
 - Import icons from `twenty-ui/icon`, never directly from `@tabler/icons-react`; action and status concepts should use their action or status icons.
 - Test behavior, not implementation: query by user-visible text/roles, `@testing-library/user-event` for interactions.
