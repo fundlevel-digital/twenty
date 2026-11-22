@@ -132,3 +132,17 @@ it must be resumed and verified later before claiming that interaction passes.
 The existing source, private runtime helpers and preview state are preserved.
 Privacy remains unresolved. No further bot implementation or verification is
 being performed during this pause.
+
+
+## Rebase Onto Main
+
+Kareem requested: "rebase to main". Rebased onto `eb4afbe5b2`, retaining main's
+standalone Comments, record-grouped Inbox, renderer fixes and release records.
+Comments commits already included in main were omitted from the replay; bot
+changes were resolved against the current Comments implementation. The Hindsight
+retirement decision is now root 0009, preserving main's existing 0007/0008.
+
+After conflict resolution, all 87 combined app tests and the direct app typecheck
+pass. The working tree contains no new host renderer changes relative to main.
+The preview was not rebuilt or reinstalled during the rebase. OpenBot remains
+paused; the previously unfinished combined browser check remains unverified.
