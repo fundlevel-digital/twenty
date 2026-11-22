@@ -12,6 +12,7 @@ export const getMentionRanges = (body: string, mentions: Mention[]) => {
     while (start !== -1) {
       const end = start + text.length;
       if (
+        (start === 0 || /[\s([{]/.test(body[start - 1])) &&
         !/[\p{L}\p{N}_]/u.test(body[end] ?? '') &&
         !ranges.some((range) => start < range.end && end > range.start)
       )
@@ -39,7 +40,7 @@ export const getMentionQuery = (
   if (
     start === -1 ||
     start >= caret ||
-    (start > 0 && /[\p{L}\p{N}_]/u.test(body[start - 1])) ||
+    (start > 0 && !/[\s([{]/.test(body[start - 1])) ||
     getMentionRanges(body, mentions).some((range) => start === range.start)
   )
     return null;

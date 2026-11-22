@@ -31,3 +31,15 @@ it('validates repeated mentions and an unfinished @', () => {
   ).toBe(false);
   expect(hasUnselectedMention('Hello @', [])).toBe(true);
 });
+
+it('does not retain a selected reference inside an email address', () => {
+  const reference = {
+    id: 'record',
+    label: 'example.test',
+    objectName: 'company',
+  };
+  expect(getMentionRanges('alex@example.test', [reference])).toEqual([]);
+  expect(hasUnselectedMention('alex@example.test', [reference])).toBe(false);
+  expect(getMentionQuery('alex+@example.test', 18, [reference])).toBeNull();
+  expect(getMentionRanges('(@example.test)', [reference])).toHaveLength(1);
+});
