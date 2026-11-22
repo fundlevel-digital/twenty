@@ -4,7 +4,7 @@ An installable Twenty app for comments on records and list entries, inspired by 
 
 ## Live Release
 
-Deployed to the live CRM on 2026-11-22 from merged PR #23 (`43c3a322390f6c7485e8c5cc9fc7eafb7a06bd88`), including the core Inbox/renderer changes and the workspace app. Installation created 77 metadata entities without updating or deleting existing entities; all 13 previous apps were retained. Authenticated Inbox and record reads, public assets, service health and pre/post offsite backups passed. See the [release handoff](../../../../docs/handoffs/2026-11-22-comments-live-release.md) for evidence and limits, including recipient-access filtering before adding restricted members. OpenBot remains paused.
+Deployed to the live CRM on 2026-11-22 from merged PR #23 (`43c3a322390f6c7485e8c5cc9fc7eafb7a06bd88`), including the core Inbox/renderer changes and the workspace app. Installation created 77 metadata entities without updating or deleting existing entities; all 13 previous apps were retained. Authenticated Inbox and record reads, public assets, service health and pre/post offsite backups passed. See the [release handoff](../../../../docs/handoffs/2026-11-22-comments-live-release.md) for evidence and limits, including recipient-access filtering before adding restricted members. OpenBot changes in this branch have only been installed into an isolated preview.
 
 ## Standalone Object Support
 
@@ -12,7 +12,7 @@ Comments works directly with Twenty's standard and custom records. A list entry 
 
 There is no Better Lists installation or merge-order dependency. The earlier workspace 932 prerequisite and reminder were canceled by [decision 0007](../../../../docs/decisions/comments/0007-independent-comments-for-any-object.md). Keep the instruction not to message that thread.
 
-OpenBot participants support selected bot mentions and attributed replies. See [OpenBot setup](src/openbot/README.md).
+OpenBot participants support selected bot mentions, attributed replies, per-bot settings, task assignment and reminder workflows. See [OpenBot setup](src/openbot/README.md).
 
 ## Behavior
 
@@ -69,7 +69,7 @@ Current checks include 61 Comments tests and 13 focused native Inbox tests and 2
 
 The isolated preview contains native custom-record fixtures, including two records related to the same company. API checks verified separate record feeds, replies, cross-target deletion rejection and resolve/reopen without Better Lists installed. A plain custom record without a parent relation or provider marker was verified through both the API and the actual Comments panel, including its object label and saved reply.
 
-The requested privacy configuration still needs a final scope. Comments already checks native target-record access. A custom privacy-settings UI and filtering notifications for recipients without target access remain independent Comments work. OpenBot remains paused.
+The requested privacy configuration still needs a final scope. Comments already checks native target-record access. A custom privacy-settings UI and filtering notifications for recipients without target access remain independent Comments work. OpenBot changes in this branch have only been installed into an isolated preview.
 
 
 The record-grouped Inbox was browser-verified on 2026-11-22: an existing incoming mention redirected into the correct discussion, a reply saved and appeared on its source record, and the latest excerpt moved to the top. No AI message mutation or browser page error occurred during that path. Light and dark rendering, a 390px mobile layout, record search and a fresh login with both fields prefilled were also checked. Browser verification used local TLS with the public hostname mapped to the VM; the anonymous public edge returned the expected Conductor sign-in gate, so an authenticated edge session was not independently verified. Changed native Inbox files pass lint and focused tests. The attempted full frontend typecheck was killed by the VM memory limit; it is not reported as passing.

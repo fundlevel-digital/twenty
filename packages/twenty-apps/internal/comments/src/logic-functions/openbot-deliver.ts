@@ -11,6 +11,7 @@ import { getOpenBotConnections } from '../openbot/connections';
 import { openBotDeliveryKey } from '../openbot/queue-comment';
 import { sendOpenBotTask } from '../openbot/send-task';
 import { getOpenBotReplySecret, type OpenBotDelivery } from '../openbot/tasks';
+import { isCurrentTaskEvent } from '../openbot/task-events';
 import { graphql } from '../utils/graphql';
 
 export const deliverOpenBotTask = async (
@@ -31,7 +32,17 @@ export const deliverOpenBotTask = async (
   const connection = getOpenBotConnections().find(
     ({ id }) => id === delivery.task.agentId,
   );
-  if (!connection) throw new Error('OpenBot agent is no longer connected');
+  if (
+    !connection ||
+    (delivery.task.taskEvent &&
+      !(await isCurrentTaskEvent(delivery.task.taskEvent, connection)))
+  ) {
+    await kv.set(openBotDeliveryKey(deliveryId), {
+      ...delivery,
+      status: 'failed',
+    });
+    return { skipped: true };
+  }
   const { recordComments } = await graphql<{
     recordComments: {
       edges: {

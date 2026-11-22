@@ -1,5 +1,5 @@
 import { type SingleRecordPickerMenuItemsWithSearchProps } from '@/object-record/record-picker/single-record-picker/types/SingleRecordPickerMenuItemsWithSearchProps';
-import { useRef } from 'react';
+import { type ReactNode, useRef } from 'react';
 
 import { SingleRecordPickerMenuItemsWithSearch } from '@/object-record/record-picker/single-record-picker/components/SingleRecordPickerMenuItemsWithSearch';
 import { SingleRecordPickerComponentInstanceContext } from '@/object-record/record-picker/single-record-picker/states/contexts/SingleRecordPickerComponentInstanceContext';
@@ -14,6 +14,7 @@ export const SINGLE_RECORD_PICKER_LISTENER_ID = 'single-record-select';
 export type SingleRecordPickerProps = {
   componentInstanceId: string;
   dropdownWidth?: number;
+  additionalItems?: ReactNode;
 } & SingleRecordPickerMenuItemsWithSearchProps;
 
 export const SingleRecordPicker = ({
@@ -28,6 +29,7 @@ export const SingleRecordPicker = ({
   layoutDirection,
   dropdownWidth,
   focusId,
+  additionalItems,
 }: SingleRecordPickerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +88,7 @@ export const SingleRecordPicker = ({
             layoutDirection,
           }}
         />
+        {additionalItems}
       </LegacyDropdownContent>
     </SingleRecordPickerComponentInstanceContext.Provider>
   );

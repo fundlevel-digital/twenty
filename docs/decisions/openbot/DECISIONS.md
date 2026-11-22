@@ -9,3 +9,4 @@ OpenBot participation in CRM record comments.
 | [0003](0003-workflow-actions-and-sender-secrets.md) | 2026-11-22 | Approve Send/Get Status actions and account for sender-owned routine secrets | accepted |
 | [0004](0004-pause-openbot-for-comments.md) | 2026-11-22 | Pause OpenBot and preserve its source while standalone Comments is completed | superseded by 0005 |
 | [0005](0005-resume-crm-with-manual-webhooks.md) | 2026-11-22 | Resume CRM work using manually configured webhooks | accepted |
+| [0006](0006-bot-settings-and-task-assignment.md) | 2026-11-22 | Build bot settings, task assignees and configurable task reminder workflows | accepted |

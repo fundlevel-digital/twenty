@@ -12,7 +12,7 @@ export type RecordComment = {
   body: string;
   authorId: string;
   authorName: string;
-  authorKind?: 'HUMAN' | 'BOT' | null;
+  authorKind?: 'HUMAN' | 'BOT' | 'SYSTEM' | null;
   parentId: string | null;
   resolved: boolean;
   deleted: boolean;

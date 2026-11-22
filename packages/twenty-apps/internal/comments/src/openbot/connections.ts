@@ -1,6 +1,7 @@
 import { isNonEmptyString, isString, isObject } from '@sniptt/guards';
 import { isDefined } from 'twenty-sdk/utils';
 
+import { parseTaskPolicy } from './task-policy';
 import { type OpenBotAgent, type OpenBotConnection } from './types';
 
 const UUID_PATTERN =
@@ -29,6 +30,7 @@ export const parseOpenBotConnections = (
       !value.name.trim() ||
       value.name.length > 80 ||
       !isNonEmptyString(value.webhookUrl) ||
+      (value.enabled !== undefined && typeof value.enabled !== 'boolean') ||
       !isNonEmptyString(value.webhookSecret) ||
       value.webhookSecret.length < 32 ||
       (isDefined(value.avatarUrl) && !isString(value.avatarUrl))
@@ -61,12 +63,16 @@ export const parseOpenBotConnections = (
       avatarUrl: isNonEmptyString(value.avatarUrl) ? value.avatarUrl : null,
       webhookUrl: webhookUrl.href,
       webhookSecret: value.webhookSecret,
+      enabled: value.enabled !== false,
+      taskPolicy: parseTaskPolicy(value.taskPolicy),
     };
   });
 };
 
 export const getOpenBotConnections = (): OpenBotConnection[] =>
-  parseOpenBotConnections(process.env.OPENBOT_CONNECTIONS);
+  parseOpenBotConnections(process.env.OPENBOT_CONNECTIONS).filter(
+    ({ enabled }) => enabled !== false,
+  );
 
 export const publicOpenBotAgent = ({
   id,

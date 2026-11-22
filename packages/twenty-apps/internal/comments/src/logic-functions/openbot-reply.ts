@@ -16,6 +16,7 @@ import {
   getOpenBotReplySecret,
   type OpenBotDelivery,
 } from '../openbot/tasks';
+import { isCurrentTaskEvent } from '../openbot/task-events';
 import { type RecordComment } from '../types';
 import { graphql } from '../utils/graphql';
 
@@ -78,6 +79,8 @@ export const openBotReplyHandler = async (
     return response(401, 'Invalid reply signature');
 
   const task = delivery.task;
+  if (task.taskEvent && !(await isCurrentTaskEvent(task.taskEvent, connection)))
+    return response(409, 'The task is no longer eligible for this event');
   const replyId = getOpenBotReplyId(delivery.id);
   const fields =
     'id body authorId authorName authorKind parentId targetObject targetRecordId resolved deleted';
@@ -149,34 +152,36 @@ export const openBotReplyHandler = async (
     }
   }
   // A unique comment ID and Inbox idempotency key also cover simultaneous callback retries.
-  const metadataClient = new MetadataApiClient({ runAs: 'application' });
-  const {
-    sendInboxMessage: { threadId },
-  } = await metadataClient.mutation({
-    sendInboxMessage: {
-      __args: {
-        input: {
-          workspaceMemberIds: [task.requestedBy],
-          threadKey: `openbot:${task.threadId}`,
-          idempotencyKey: replyId,
-          title: `${connection.name} replied · ${task.recordLabel}`,
-          text: body.text.trim(),
+  if (task.requestedBy) {
+    const metadataClient = new MetadataApiClient({ runAs: 'application' });
+    const {
+      sendInboxMessage: { threadId },
+    } = await metadataClient.mutation({
+      sendInboxMessage: {
+        __args: {
+          input: {
+            workspaceMemberIds: [task.requestedBy],
+            threadKey: `openbot:${task.threadId}`,
+            idempotencyKey: replyId,
+            title: `${connection.name} replied · ${task.recordLabel}`,
+            text: body.text.trim(),
+          },
+        },
+        threadId: true,
+      },
+    });
+    await metadataClient.mutation({
+      attachRecordToInboxThread: {
+        __args: {
+          input: {
+            threadId,
+            objectNameSingular: task.objectName,
+            recordId: task.recordId,
+          },
         },
       },
-      threadId: true,
-    },
-  });
-  await metadataClient.mutation({
-    attachRecordToInboxThread: {
-      __args: {
-        input: {
-          threadId,
-          objectNameSingular: task.objectName,
-          recordId: task.recordId,
-        },
-      },
-    },
-  });
+    });
+  }
   await kv.set(openBotDeliveryKey(delivery.id), {
     ...delivery,
     status: 'replied',

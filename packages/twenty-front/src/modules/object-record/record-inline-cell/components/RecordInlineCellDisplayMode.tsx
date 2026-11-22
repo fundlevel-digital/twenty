@@ -11,6 +11,7 @@ import {
 import { RecordInlineCellButton } from '@/object-record/record-inline-cell/components/RecordInlineCellEditButton';
 import { useLingui } from '@lingui/react/macro';
 import { useContext } from 'react';
+import { useIsOpenBotTaskAssigneeField } from '@/openbot/hooks/useIsOpenBotTaskAssigneeField';
 import { themeCssVariables } from 'twenty-ui/theme';
 
 const StyledRecordInlineCellNormalModeOuterContainer = styled.div<
@@ -75,7 +76,10 @@ export const RecordInlineCellDisplayMode = ({
   const { editModeContentOnly, label, buttonIcon, readonly } =
     useRecordInlineCellContext();
 
-  const { isForbidden } = useContext(FieldContext);
+  const { isForbidden, fieldDefinition } = useContext(FieldContext);
+  const isOpenBotAssignee = useIsOpenBotTaskAssigneeField(
+    fieldDefinition.fieldMetadataId,
+  );
 
   const isFieldEmpty = useIsFieldEmpty();
   const showEditButton =
@@ -94,7 +98,8 @@ export const RecordInlineCellDisplayMode = ({
 
   const emptyPlaceHolder = label ?? t`Empty`;
 
-  const shouldShowValue = !isFieldEmpty || isFieldInputOnly || isForbidden;
+  const shouldShowValue =
+    !isFieldEmpty || isFieldInputOnly || isForbidden || isOpenBotAssignee;
 
   const shouldShowEmptyPlaceholder = isFieldEmpty && !isForbidden;
 
