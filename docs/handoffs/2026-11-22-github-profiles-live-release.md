@@ -87,3 +87,10 @@ directory referenced by that repository's ignored
 `.context/github-profiles-live-release-path`. No secrets or customer record
 contents are included here. Hindsight recall remained unavailable because the
 private repository profile is missing; no remote retention is claimed.
+
+## Publication Request
+
+On 2026-11-22 Kareem requested "Create a PR" with instructions to publish the
+complete workspace diff against `main`. This documentation PR records the
+completed live installation and remaining OAuth setup; it changes no runtime
+code and does not perform another deployment.
