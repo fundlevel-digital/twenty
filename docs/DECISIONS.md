@@ -34,5 +34,6 @@ identify scope, decisions, implementation and verification limits.
 | [0005](decisions/0005-roll-out-six-sessions-to-live-crm.md) | 2026-11-21 | Roll out the six merged sessions to the live CRM | accepted |
 | [0006](decisions/0006-connect-linkedin-after-the-rollout.md) | 2026-11-21 | Leave LinkedIn connection and dependent history migration for later | accepted |
 | [0007](decisions/0007-require-autofilled-preview-login.md) | 2026-11-22 | Require autofilled demo email and password in every isolated preview | accepted |
+| [0008](decisions/0008-reuse-native-twenty-ui-components.md) | 2026-11-22 | Reuse native Twenty components across host UI and SDK apps, with custom UI only for unsupported capabilities | accepted |
 
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).

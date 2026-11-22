@@ -84,3 +84,23 @@ paced at 5.1 seconds between requests for free-tier compatibility. This matches
 the YouTube app's distinction between key exhaustion and transient retries;
 several keys do not imply independent balances if they belong to one provider
 account.
+
+
+## Refresh Entry Points
+
+The native **Refresh Profile and Analytics** command calls the app route
+`POST /s/twitter-analytics/refresh` with `{ "profileIds": ["<profile UUID>"] }`.
+An explicit empty list selects no records. Manual selection ignores the
+**Scheduled Calculations** checkbox.
+
+The installed **Refresh Twitter Profile and Analytics** workflow invokes the
+`workflow-refresh-twitter-profile` logic function with
+`{ "profileId": "<profile UUID>" }`. Its reusable workflow action requires one
+profile ID; missing IDs and unsuccessful refreshes fail the step. It uses the
+same provider endpoints and saved calculation windows as the manual command.
+
+The minute cron dispatcher selects only enrolled profiles when the saved
+Off/Hourly/Daily/Weekly UTC schedule is due. It uses native application metadata
+to save its attempted window before provider work; settings reads and skipped
+ticks make no TwitterAPI.io requests. These entry points add no new provider
+endpoints and retain the existing multiple-key waterfall.
