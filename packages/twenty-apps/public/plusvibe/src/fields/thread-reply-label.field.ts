@@ -10,7 +10,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
   name: 'plusvibeReplyLabel',
-  label: 'Latest Reply Label',
+  label: 'Latest Reply Label (Raw)',
   type: FieldType.TEXT,
   icon: 'IconTag',
 });

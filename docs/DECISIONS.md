@@ -17,6 +17,7 @@ supersession. Operational instructions stay with their package or skill.
 | YouTube Analytics | [Decisions](decisions/youtube-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/youtube-analytics/README.md), [handoff](../packages/twenty-apps/internal/youtube-analytics/HANDOFF.md) |
 | Twitter Analytics | [Decisions](decisions/twitter-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/twitter-analytics/README.md), [handoff](handoffs/2026-11-22-twitter-analytics.md) |
 | PlusVibe | [Decisions](decisions/packages/twenty-apps/public/plusvibe/DECISIONS.md) | [App README](../packages/twenty-apps/public/plusvibe/README.md) |
+| NanoInfluencer | [Decisions](decisions/nano-influencer/DECISIONS.md) | [App README](../packages/twenty-apps/internal/nano-influencer/README.md) |
 
 This repository uses the centralized layout from
 [fundlevel-digital/mono](https://github.com/fundlevel-digital/mono/blob/main/.agents/skills/decisions/SKILL.md).
@@ -35,5 +36,7 @@ identify scope, decisions, implementation and verification limits.
 | [0006](decisions/0006-connect-linkedin-after-the-rollout.md) | 2026-11-21 | Leave LinkedIn connection and dependent history migration for later | accepted |
 | [0007](decisions/0007-require-autofilled-preview-login.md) | 2026-11-22 | Require autofilled demo email and password in every isolated preview | accepted |
 | [0008](decisions/0008-reuse-native-twenty-ui-components.md) | 2026-11-22 | Reuse native Twenty components across host UI and SDK apps, with custom UI only for unsupported capabilities | accepted |
+
+| [0008](decisions/0008-use-native-enum-fields-across-apps.md) | 2026-11-22 | Use native Select/Multi-Select attributes for enums and backfill earlier apps | accepted |
 
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).

@@ -1,3 +1,4 @@
+import { normalizeEnumValue } from 'src/utils/enum-fields';
 import { isNonEmptyString } from '@sniptt/guards';
 import { CoreApiClient } from 'twenty-client-sdk/core';
 import { RestApiClient, RestApiClientError } from 'twenty-client-sdk/rest';
@@ -334,6 +335,7 @@ export const syncActivity = async (
     workspaceRecordId: recordId('workspace', event.workspaceId),
 
     eventType: event.eventType,
+    eventCategory: normalizeEnumValue('eventCategory', event.eventType),
     email: event.email,
     subject: event.subject,
     content: event.content,

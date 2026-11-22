@@ -341,7 +341,7 @@ export default defineObject({
       universalIdentifier: CONNECTION_FIELD.MEMBER_TYPE,
       type: FieldType.TEXT,
       name: 'memberType',
-      label: 'Member Type',
+      label: 'Member Type (Raw)',
       icon: 'IconUserCircle',
       description:
         'Kind of LinkedIn account the member is, as Unipile reports it.',

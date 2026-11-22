@@ -1,3 +1,4 @@
+import { normalizeEnumValue } from 'src/utils/enum-fields';
 import { linkSlackReplies } from 'src/utils/link-slack-replies';
 import { MESSAGE_ATTACHMENT_STATUS_UNIVERSAL_IDENTIFIER } from 'src/constants/schema-identifiers';
 import {
@@ -30,6 +31,7 @@ export const ingestSlackMessage = async (
         message: {
           ...message.applicationFields?.message,
           [MESSAGE_ATTACHMENT_STATUS_UNIVERSAL_IDENTIFIER]: status,
+          '0ef0a237-15a4-5d8b-a617-b9b6c058a4ed': normalizeEnumValue('slackAttachmentState', status),
         },
       },
     };

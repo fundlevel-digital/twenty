@@ -179,3 +179,12 @@ three booking links and enabled missing-Person creation. Signed webhook delivery
 and token refresh remain unverified. See the
 [release handoff](../../../../docs/handoffs/2026-11-21-cal-com-preview.md#completed-live-connection-verification)
 for deployment evidence and verification details.
+
+## Native Enum Field Upgrade
+
+Categorical attributes use native Select/Multi-Select fields. This upgrade adds
+typed fields for earlier text categories and keeps the old raw values and field
+identifiers for compatibility. Imports populate the typed values; the shared
+[backfill CLI](../../operations/README.md) fills existing records without provider
+calls or overwriting selections. Review a dry run after installing the updated
+metadata. Source/preview verification does not imply production deployment.
