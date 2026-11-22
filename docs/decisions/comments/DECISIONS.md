@@ -9,4 +9,5 @@ Owner requirements for the record comments app.
 | [0003](0003-revise-comments-sidebar.md) | 2026-11-22 | Revise the initial Comments sidebar against the Attio reference | accepted |
 | [0004](0004-mention-autocomplete-tabs-and-inbox-preview.md) | 2026-11-22 | Add typed mention validation, record tabs and an incoming Inbox preview; clarify connection privacy scope | accepted |
 | [0005](0005-finish-comments-before-openbot.md) | 2026-11-22 | Finish standalone Comments first and leave OpenBot paused | accepted |
-| [0006](0006-list-entry-comments-after-better-lists.md) | 2026-11-22 | Add separate list-entry comments; merge after workspace 932, remind Kareem before merge/deploy, and do not message its thread | accepted |
+| [0006](0006-list-entry-comments-after-better-lists.md) | 2026-11-22 | Add separate list-entry comments; merge after workspace 932, remind Kareem before merge/deploy, and do not message its thread | superseded by 0007 |
+| [0007](0007-independent-comments-for-any-object.md) | 2026-11-22 | Keep Comments independent of Better Lists and cancel the workspace 932 merge dependency/reminder | accepted |

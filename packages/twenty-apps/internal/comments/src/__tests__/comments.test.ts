@@ -297,9 +297,9 @@ describe('thread filters', () => {
   });
 });
 
-describe('Better Lists entry comments', () => {
-  const entryObjectName = 'betterListaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-  const otherEntryObjectName = 'betterListbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+describe('custom object record comments', () => {
+  const entryObjectName = 'reviewEntry';
+  const otherEntryObjectName = 'followUpEntry';
   const entryTarget = { ...target, objectName: entryObjectName };
   const otherEntryTarget = { ...target, objectName: otherEntryObjectName };
   const storedComments = [
@@ -321,9 +321,11 @@ describe('Better Lists entry comments', () => {
           ...[entryObjectName, otherEntryObjectName].map((nameSingular) => ({
             node: {
               nameSingular,
-              namePlural: `${nameSingular}Entries`,
-              labelPlural: 'Account Ladder',
-              description: 'better-lists:v1:company|📋|account-ladder',
+              namePlural:
+                nameSingular === entryObjectName
+                  ? 'reviewEntries'
+                  : 'followUpEntries',
+              labelPlural: 'Review Queue',
             },
           })),
         ],
@@ -362,15 +364,29 @@ describe('Better Lists entry comments', () => {
   it('keeps the parent record and each list entry in separate feeds', async () => {
     expect(await call({ ...entryTarget, action: 'list' })).toMatchObject({
       comments: [{ id: 'entry-thread' }],
-      scope: { kind: 'listEntry', label: 'Account Ladder' },
+      objectLabel: 'Review Queue',
     });
     expect(await call({ ...otherEntryTarget, action: 'list' })).toMatchObject({
       comments: [{ id: 'other-list-thread' }],
     });
     expect(await call({ ...target, action: 'list' })).toMatchObject({
       comments: [{ id: 'parent-thread' }],
-      scope: { kind: 'record', label: 'Companies' },
+      objectLabel: 'Companies',
     });
+  });
+
+  it('supports a custom record without a parent relation or integration marker', async () => {
+    mocks.get.mockResolvedValueOnce({
+      data: {
+        [entryObjectName]: { id: target.recordId, name: 'Standalone Review' },
+      },
+    });
+    expect(await call({ ...entryTarget, action: 'list' })).toMatchObject({
+      recordLabel: 'Standalone Review',
+      objectLabel: 'Review Queue',
+      comments: [{ id: 'entry-thread' }],
+    });
+    expect(mocks.get).toHaveBeenCalledTimes(1);
   });
 
   it.each(['list', 'create', 'delete', 'resolve', 'search'] as const)(
@@ -381,7 +397,7 @@ describe('Better Lists entry comments', () => {
         'List access denied',
       );
       expect(mocks.get).toHaveBeenCalledWith(
-        `/rest/${entryObjectName}Entries/${target.recordId}`,
+        `/rest/reviewEntries/${target.recordId}`,
       );
       expect(mocks.graphql).not.toHaveBeenCalled();
       expect(mocks.send).not.toHaveBeenCalled();

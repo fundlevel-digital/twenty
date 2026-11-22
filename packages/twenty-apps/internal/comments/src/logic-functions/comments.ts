@@ -47,7 +47,6 @@ export const commentsHandler = async (
           nameSingular: true,
           namePlural: true,
           labelPlural: true,
-          description: true,
         },
       },
     },
@@ -141,13 +140,12 @@ export const commentsHandler = async (
       : undefined;
   } while (cursor);
 
-  const scope = {
-    kind: objectMetadata.description?.startsWith('better-lists:v1:')
-      ? ('listEntry' as const)
-      : ('record' as const),
-    label: objectMetadata.labelPlural ?? objectMetadata.namePlural,
+  const result = {
+    comments,
+    memberId,
+    recordLabel,
+    objectLabel: objectMetadata.labelPlural ?? objectMetadata.namePlural,
   };
-  const result = { comments, memberId, recordLabel, scope };
   if (input.action === 'list') return result;
   const existing = comments.find(({ id }) => id === input.id);
   if (input.action === 'delete' || input.action === 'resolve') {

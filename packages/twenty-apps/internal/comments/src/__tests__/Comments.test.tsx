@@ -68,7 +68,7 @@ afterEach(cleanup);
 
 it('copies the entry thread URL rather than its parent record URL', async () => {
   const user = userEvent.setup();
-  mocks.objectName = 'betterListaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  mocks.objectName = 'reviewEntry';
   mocks.post.mockResolvedValue({
     comments: [
       {
@@ -87,7 +87,7 @@ it('copies the entry thread URL rather than its parent record URL', async () => 
     ],
     memberId: 'member',
     recordLabel: 'Acme',
-    scope: { kind: 'listEntry', label: 'Account Ladder' },
+    objectLabel: 'Review Queue',
   });
   render(<Comments />);
   await screen.findByText('Entry discussion');
@@ -176,18 +176,17 @@ it('offers a clear retry when the initial load fails', async () => {
   expect(screen.queryByRole('alert')).toBeNull();
 });
 
-it('identifies a list-entry feed and posts to that entry object', async () => {
+it('identifies any custom object and posts to its own record', async () => {
   const user = userEvent.setup();
-  mocks.objectName = 'betterListaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  mocks.objectName = 'reviewEntry';
   mocks.post.mockResolvedValue({
     comments: [],
     memberId: 'member',
     recordLabel: 'Acme',
-    scope: { kind: 'listEntry', label: 'Account Ladder' },
+    objectLabel: 'Review Queue',
   });
   render(<Comments />);
-  await screen.findByText('List Entry in');
-  await screen.findByText('Account Ladder');
+  await screen.findByText('Review Queue');
   await user.type(
     screen.getByRole('textbox', { name: 'Comment' }),
     'Entry-only discussion',

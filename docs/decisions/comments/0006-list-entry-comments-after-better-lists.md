@@ -1,7 +1,7 @@
 # 0006. Add List-Entry Comments And Merge After Better Lists
 
 - Date: 2026-11-22
-- Status: accepted
+- Status: superseded by 0007
 - Decided by: Kareem
 - Area: Comments
 - Dependency: [Better Lists, Workspace 932](https://app.conductor.build/fundlevel/w/932)
