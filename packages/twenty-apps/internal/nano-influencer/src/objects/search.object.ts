@@ -13,6 +13,16 @@ export default defineObject({
     'e1c66d79-7226-5ef1-995a-461261af5eda',
   fields: [
     {
+      universalIdentifier: 'ea48bf48-f995-4fdf-820b-a71625405455',
+      name: 'searchInput',
+      label: 'Search Input',
+      description:
+        'The saved search options and exact Nano request body, recorded before submission. Older searches may not have this snapshot.',
+      type: FieldType.RAW_JSON,
+      isNullable: true,
+      isUIEditable: false,
+    },
+    {
       universalIdentifier: IDENTIFIERS.searchRawData,
       name: 'rawNanoSearch',
       label: 'Raw Nano Search',
@@ -254,7 +264,7 @@ export default defineObject({
     {
       universalIdentifier: '9c76106c-4bd4-5f36-b75d-bcf5c6a32274',
       name: 'seed',
-      label: 'Seed',
+      label: 'Lookalike Seed',
       type: FieldType.RELATION,
       isNullable: true,
       relationTargetObjectMetadataUniversalIdentifier:

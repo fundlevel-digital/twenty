@@ -241,3 +241,58 @@ changes, skip consistent snapshots and repair against current stored data.
 **Refresh Nano Grouped Views** also backfills both creator categories and groups.
 The country view populates actual values instead of filling its first groups
 with unused countries.
+
+### Search Commands And Workflow Inputs
+
+Open **Find Nano Lookalikes** from the global command menu. From a selected Nano
+Creator, the command preselects that record as the **Lookalike Seed**. The command
+opens a form so you can choose a saved **API Connection**, optionally scope the
+search to a **Nano List**, and set the same options exposed by the workflow
+step. Both use the shared definition in `src/utils/search-fields.ts`.
+
+| Input | Nano Request |
+| --- | --- |
+| Lookalike Seed | Resolved `cid` and `baseChannel`; profile topics are retained |
+| Keywords | `keyword` |
+| Include / Exclude Keywords | `posTags` / `negTags` |
+| Negative Seed Topics | Matching profile topics retain their terms and receive `neg: true` |
+| Subscribers / Followers, Median Views, Posts | `filters.subs`, `filters.views`, `filters.posts` |
+| Engagement Rate (%), View Rate (%) | `filters.er`, `filters.vr` |
+| Last Post Within Days | `filters.lastPostDays` |
+| Email Availability | Unrestricted, `filters.email: true`, or `filters.email: "deep"` |
+| Creator Personas | `filters.igender` values `male`, `female`, `neutral`, `org` |
+| Include / Exclude Countries | `filters.country` / `filters.excludeCountry`, ISO numeric codes |
+| Has Shop Sales | `filters.shopSales`, TikTok only |
+| Search YouTube Shorts | `useShortsSearch`, YouTube only |
+| Exclude List Favourites / Recent Results | `filterFavor` / `useRecentDedup`, both enabled by default |
+| Continue Previous Results | `more`, `nextToken`, `nextIds`, `exclude_cids` |
+
+Metric ranges use separate **Minimum** and **Maximum** inputs. A maximum without
+a minimum sends `[0, maximum]`; a minimum without a maximum sends `[minimum]`.
+Legacy one/two-element arrays remain accepted. Empty workflow controls do not
+set restrictions; explicit `false` and zero bounds remain meaningful. Countries
+are selected by name and converted to numeric ISO codes. Include and Exclude
+Countries cannot both be set. Persona and email-depth choices use readable
+labels with stable API values. Every input includes help text.
+
+The command generates a retry-safety UUID internally and reuses it on retries.
+The workflow hides that optional technical field; existing stored `requestId`
+values and advanced API/tool callers remain supported. Never reuse a completed
+request's key for a different intended search.
+
+A new **Search Input** JSON field retains validated options and the exact Nano
+request path/body before submission. It contains no credentials. If persisting
+the request fails, the paid submission does not run. Imported history remains
+in **Raw Nano Search**; older missing original filters cannot be reconstructed
+from history metadata and are not invented. Search Input is distinct from raw
+search results.
+
+Parity here refers to the lookalike website API used by creator-eagle, not the
+narrower [public API](https://www.nanoinfluencer.ai/public-api/docs). The command
+still requires a Lookalike Seed; the Keywords option is sent alongside that seed.
+It does not launch Nano's separate keyword-only discovery mode.
+
+Connection selection, readable enum labels, descriptions and hidden fields in
+workflow forms require this branch's host workflow renderer changes. The app
+command renders its own native Twenty UI form. The isolated preview continues
+to block paid submissions and outbound Nano writes.

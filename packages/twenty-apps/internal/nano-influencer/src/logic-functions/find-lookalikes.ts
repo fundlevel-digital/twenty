@@ -2,11 +2,13 @@ import { defineLogicFunction } from 'twenty-sdk/define';
 import { IDENTIFIERS } from '../constants/identifiers';
 import { startSearch, searchInputSchema } from './lib/search';
 import { unwrapInput } from './lib/unwrap-input';
+import { SEARCH_INPUT_PROPERTIES } from '../utils/search-fields';
 
 export default defineLogicFunction({
   universalIdentifier: IDENTIFIERS.findLookalikes,
   name: 'find-lookalikes',
-  description: 'Find Nano Lookalikes',
+  description:
+    'Find creators similar to a Lookalike Seed with Nano keywords, metric ranges, personas, countries and deduplication filters.',
   timeoutSeconds: 180,
   handler: (payload: unknown) =>
     startSearch(searchInputSchema.parse(unwrapInput(payload))),
@@ -16,31 +18,7 @@ export default defineLogicFunction({
     inputSchema: [
       {
         type: 'object',
-        properties: {
-          connectionId: { type: 'string', label: 'API Connection ID' },
-          creatorId: {
-            type: 'record',
-            objectUniversalIdentifier: IDENTIFIERS.creator,
-            label: 'Creator',
-          },
-          listId: {
-            type: 'record',
-            objectUniversalIdentifier: IDENTIFIERS.list,
-            label: 'List',
-          },
-          requestId: { type: 'string' },
-          filters: {
-            type: 'object',
-            properties: {
-              subs: { type: 'array', items: { type: 'number' } },
-              views: { type: 'array', items: { type: 'number' } },
-              posts: { type: 'array', items: { type: 'number' } },
-              lastPostDays: { type: 'number' },
-              email: { type: 'boolean' },
-              country: { type: 'array', items: { type: 'string' } },
-            },
-          },
-        },
+        properties: SEARCH_INPUT_PROPERTIES,
       },
     ],
     outputSchema: [
@@ -57,23 +35,13 @@ export default defineLogicFunction({
   toolTriggerSettings: {
     inputSchema: {
       type: 'object',
-      properties: {
-        connectionId: { type: 'string' },
-        creatorId: { type: 'string' },
-        listId: { type: 'string' },
-        requestId: { type: 'string' },
-        filters: {
-          type: 'object',
-          properties: {
-            subs: { type: 'array', items: { type: 'number' } },
-            views: { type: 'array', items: { type: 'number' } },
-            posts: { type: 'array', items: { type: 'number' } },
-            lastPostDays: { type: 'number' },
-            email: { type: 'boolean' },
-            country: { type: 'array', items: { type: 'string' } },
-          },
-        },
-      },
+      properties: Object.fromEntries(
+        Object.entries(SEARCH_INPUT_PROPERTIES).map(([key, field]) => [
+          key,
+          field.type === 'record' ? { ...field, type: 'string' } : field,
+        ]),
+      ),
+      required: ['creatorId'],
     },
   },
   httpRouteTriggerSettings: {

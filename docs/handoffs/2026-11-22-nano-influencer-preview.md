@@ -478,3 +478,74 @@ This is an SDK view change; no host frontend or production deployment occurred.
 The branch is now committed and published as
 [draft PR #28](https://github.com/fundlevel-digital/twenty/pull/28) against main.
 Earlier uncommitted/no-PR statements above describe their historical checkpoints.
+
+## Search Inputs And Native Forms — 2026-11-22
+
+[Nano decision 0010](../decisions/nano-influencer/0010-search-filter-parity-and-native-inputs.md)
+records Kareem's corrections to search commands, API connection selection,
+Lookalike Seed naming and readable filter inputs. The command and workflow now
+share one input definition, including five metric ranges, email depth, personas,
+country inclusion/exclusion, keyword options, Shorts, TikTok shop sales,
+deduplication and continuation values. The app README maps every supported
+option to its Nano request field and distinguishes seeded lookalike search from
+Nano's separate keyword-only discovery mode.
+
+New Twenty searches store Search Input JSON with validated input and the exact
+request path/body before a paid submission can start. Imported history does not
+invent unavailable original filters. The command generates its own retry key;
+the technical workflow input remains supported but hidden. Connections are read
+from native app settings without returning credentials. The global command
+opens an editable form and can preselect a selected Nano Creator.
+
+Two sandbox issues were found through browser verification: randomUUID is not
+available in the opaque sandbox origin, so the command uses uuid's supported
+random source; a long form scrolled the popup area outside the viewport, so the
+form now scrolls internally. The preview fixture retains its live-write guard,
+avatar adapter and transport aliases. No new paid search was submitted.
+
+The host workflow renderer changes require the checkout frontend. A persistent
+Vite process serves this source on port 3004, using a private proxy on 3006 that
+preserves the existing 2.59 backend's metadata shape. The proxy removes optional
+metadata fields unavailable on that backend, aliases its navigation folder IDs
+and fills legacy navigation defaults. It does not change the database or shipped
+application source. The stable API gateway remains on 3003 and backend on 3002.
+This adapter verifies the requested source UI against this isolated existing
+preview; it is not a production compatibility change. Local TLS hostname mapping
+checks the application origin and bypasses Conductor's authenticated edge.
+
+Source UI builds needed private VM swap outside the synced workspace. Imports
+were drained and temporarily paused to avoid exhausting memory; no queued jobs
+or records were deleted. The preview worker's compiled VM-only concurrency and
+priority supervisor are configured for two concurrent logic-function jobs so
+imports can coexist with the source frontend. The supervisor must be restarted
+when the worker container is restarted. This does not alter production worker
+configuration or the saved manual sync, People or removal preferences.
+
+Fresh app checks pass 112 tests, direct typecheck and lint. Workflow helper checks
+cover readable enum labels and actual connection choices. The focused host
+frontend typecheck covers the changed workflow components and their dependencies;
+the full host typecheck exceeded this VM's memory limit, so no full-host pass is
+claimed. Hindsight remains unavailable due to the missing private profile/repo
+metadata; this handoff and the decision record retain the verified changes.
+
+Browser checks on the source frontend verified the real workflow editor and
+global command: both offered two saved API connections and selected a named
+country; the command also selected the deep-email option. Both displayed
+Lookalike Seed, hid the retry key and showed descriptions; the workflow rendered
+all five Minimum/Maximum pairs. No workflow was run or activated. The disposable
+manual draft used for this check was deleted afterwards. The command's internal
+scrolling fix passed the formerly blocked country-option click.
+
+The public Conductor preview now targets port 3004 at the same existing URL.
+Imports are resumed (`paused: false`) with two active jobs and a global limit of
+two; existing settings and data are retained. Both workflow helper suites pass
+(four tests), and the direct focused frontend typecheck passes. The app's final
+metadata apply changed one front component with no creates or deletions.
+
+A fresh browser context verified source-frontend sign-in with both seeded fields
+already filled and no credential typing, followed by the loaded workspace and
+Nano navigation. This host automatically advances to the email step when password
+is the only configured provider. Health checks pass on ports 3002, 3003, 3004 and
+3006. Anonymous access to Conductor's edge returns its expected authorization
+gate; authenticated edge access was not independently tested. Preview processes
+are detached and survive tool completion; no VM-shutdown persistence is claimed.

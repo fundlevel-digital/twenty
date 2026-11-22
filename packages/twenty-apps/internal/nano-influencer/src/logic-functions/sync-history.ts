@@ -1,4 +1,5 @@
 import { defineLogicFunction } from 'twenty-sdk/define';
+import { SEARCH_INPUT_PROPERTIES } from '../utils/search-fields';
 import { z } from 'zod';
 import { IDENTIFIERS } from '../constants/identifiers';
 import { startHistorySync } from './lib/history';
@@ -28,7 +29,7 @@ export default defineLogicFunction({
       {
         type: 'object',
         properties: {
-          connectionId: { type: 'string', label: 'API Connection ID' },
+          connectionId: SEARCH_INPUT_PROPERTIES.connectionId,
         },
       },
     ],

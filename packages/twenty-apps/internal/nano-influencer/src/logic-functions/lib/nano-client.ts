@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { type SearchInput } from '../../utils/search-input';
 
 export const platformSchema = z.enum(['ytb', 'twt', 'ins', 'tik']);
 export const channelSchema = z.object({
@@ -183,10 +184,12 @@ export class NanoClient {
       .parse(await this.request(`/api/flag?${query}`)).data;
     return {
       ...response,
-      channels: response.channels.map((rawNanoListData): NanoChannel => ({
-        ...channelSchema.parse(rawNanoListData),
-        rawNanoListData,
-      })),
+      channels: response.channels.map(
+        (rawNanoListData): NanoChannel => ({
+          ...channelSchema.parse(rawNanoListData),
+          rawNanoListData,
+        }),
+      ),
     };
   }
 
@@ -218,7 +221,20 @@ export class NanoClient {
     channel: NanoChannel,
     filters: Record<string, unknown>,
     projectId?: string,
+    options: Partial<SearchInput> = {},
+    beforeSubmit?: (request: {
+      path: string;
+      body: Record<string, unknown>;
+    }) => Promise<void>,
   ) {
+    if (options.useShortsSearch && channel.platform !== 'ytb')
+      throw new Error(
+        'Shorts Search is available for YouTube lookalike seeds only.',
+      );
+    if (filters.shopSales && channel.platform !== 'tik')
+      throw new Error(
+        'Shop Sales is available for TikTok lookalike seeds only.',
+      );
     const raw = await this.request(
       `/api/profile/${channel.platform}/${encodeURIComponent(channel.id)}`,
     );
@@ -227,27 +243,52 @@ export class NanoClient {
       .parse(raw);
     const profile = z
       .object({
+        id: z.union([z.string(), z.number()]).transform(String).optional(),
+        name: z.string().optional(),
+        icon: z.string().nullish(),
         topic_terms: z
-          .array(z.object({ topic: z.string(), terms: z.array(z.string()) }))
+          .array(
+            z
+              .object({ topic: z.string(), terms: z.array(z.string()) })
+              .passthrough(),
+          )
           .optional(),
       })
       .parse(envelope.data ?? raw);
-    const topics = profile.topic_terms ?? [];
-    const response = await this.request(`/api/search/${channel.platform}`, {
-      cid: channel.id,
+    const negativeTopics = new Set(options.negativeTopics ?? []);
+    const topics = (profile.topic_terms ?? []).map((topic) =>
+      negativeTopics.has(topic.topic) ? { ...topic, neg: true } : topic,
+    );
+    const body = {
+      cid: profile.id ?? channel.id,
       baseChannel: {
-        id: channel.id,
+        id: profile.id ?? channel.id,
         platform: channel.platform,
-        name: channel.name,
+        name: profile.name ?? channel.name,
+        icon: profile.icon ?? channel.icon,
       },
-      keyword: '',
+      keyword: options.keyword ?? '',
       searchTopics: topics,
       useTopic: topics.length > 0,
-      filterFavor: true,
-      useRecentDedup: true,
+      filterFavor: options.filterFavor ?? true,
+      useRecentDedup: options.useRecentDedup ?? true,
       filters,
+      ...(options.posTags?.length ? { posTags: options.posTags } : {}),
+      ...(options.negTags?.length ? { negTags: options.negTags } : {}),
+      ...(options.useShortsSearch ? { useShortsSearch: true } : {}),
       ...(projectId ? { group_id: Number(projectId) } : {}),
-    });
+      ...(options.pagination
+        ? {
+            more: true,
+            nextToken: options.pagination.nextToken,
+            nextIds: options.pagination.nextIds,
+            exclude_cids: options.pagination.excludeIds,
+          }
+        : {}),
+    };
+    const path = `/api/search/${channel.platform}`;
+    await beforeSubmit?.({ path, body });
+    const response = await this.request(path, body);
     const job = z
       .object({
         job_id: z.string().optional(),

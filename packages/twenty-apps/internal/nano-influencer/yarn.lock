@@ -1303,6 +1303,7 @@ __metadata:
     twenty-sdk: "npm:2.59.0"
     twenty-ui: "npm:2.59.0"
     typescript: "npm:^5.9.3"
+    uuid: "npm:^13.0.2"
     vite-tsconfig-paths: "npm:^4.2.1"
     vitest: "npm:^4.1.12"
     zod: "npm:^4.1.12"

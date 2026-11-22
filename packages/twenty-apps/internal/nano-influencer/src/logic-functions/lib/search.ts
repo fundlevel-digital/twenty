@@ -6,36 +6,8 @@ import { enqueue } from './jobs';
 import { channelSchema, NanoClient } from './nano-client';
 import { getNanoClient } from './credentials';
 import { Workspace } from './workspace';
-
-const rangeSchema = z
-  .array(z.number().nonnegative())
-  .min(1)
-  .max(2)
-  .refine(
-    (range) => range.length === 1 || range[0] <= range[1],
-    'Minimum must be at most maximum',
-  );
-export const searchInputSchema = z.object({
-  creatorId: z.uuid(),
-  connectionId: z.string().min(1).optional(),
-  listId: z.uuid().optional(),
-  requestId: z
-    .uuid()
-    .optional()
-    .describe(
-      'Reuse this ID when retrying a workflow to avoid submitting a second paid search.',
-    ),
-  filters: z
-    .object({
-      subs: rangeSchema.optional(),
-      views: rangeSchema.optional(),
-      posts: rangeSchema.optional(),
-      lastPostDays: z.number().int().positive().optional(),
-      email: z.boolean().optional(),
-      country: z.array(z.string()).optional(),
-    })
-    .optional(),
-});
+import { getSearchFilters, searchInputSchema } from '../../utils/search-input';
+export { searchInputSchema } from '../../utils/search-input';
 export const pollInputSchema = z.object({
   searchId: z.uuid(),
   attempt: z.number().int().min(0).max(60).default(0),
@@ -63,6 +35,12 @@ export const startSearch = async (
     input.creatorId,
     'nanoId platform name emails',
   );
+  if (input.useShortsSearch && seed.platform !== 'ytb')
+    throw new Error(
+      'Shorts Search is available for YouTube lookalike seeds only.',
+    );
+  if (input.filters?.shopSales && seed.platform !== 'tik')
+    throw new Error('Shop Sales is available for TikTok lookalike seeds only.');
   const list = input.listId
     ? await workspace.get(
         'List',
@@ -102,6 +80,7 @@ export const startSearch = async (
       connectionId: nano.connectionId,
       status: 'SUBMITTING',
       error: '',
+      searchInput: { input, nanoRequest: null },
     });
   } catch (error) {
     const winner = await workspace.find(
@@ -118,7 +97,17 @@ export const startSearch = async (
   }
   let jobId: string;
   try {
-    jobId = await nano.submit(toChannel(seed), input.filters ?? {}, projectId);
+    jobId = await nano.submit(
+      toChannel(seed),
+      getSearchFilters(input.filters),
+      projectId,
+      input,
+      async (nanoRequest) => {
+        await workspace.update('Search', search.id, {
+          searchInput: { input, nanoRequest },
+        });
+      },
+    );
   } catch (error) {
     await workspace.update('Search', search.id, {
       status: 'SUBMISSION_UNKNOWN',

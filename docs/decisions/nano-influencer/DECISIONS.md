@@ -13,3 +13,4 @@ NanoInfluencer integration, list synchronization and creator discovery in Twenty
 | [0007](0007-backfill-search-history-and-native-groups.md) | 2026-11-22 | Backfill saved searches/results, validate emails, add native Country and populated relation groups | accepted |
 | [0008](0008-group-both-decision-email-and-creator-email-availability.md) | 2026-11-22 | Support both decision-maker email grouping and creator Has Email/No Email grouping | accepted |
 | [0009](0009-hide-email-availability-column.md) | 2026-11-22 | Hide the Email Availability column while retaining creator email grouping | accepted |
+| [0010](0010-search-filter-parity-and-native-inputs.md) | 2026-11-22 | Match Nano search filters across commands/workflows with native pickers, descriptions and input snapshots | accepted |
