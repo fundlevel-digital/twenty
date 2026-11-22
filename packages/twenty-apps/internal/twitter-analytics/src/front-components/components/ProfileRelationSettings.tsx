@@ -1,7 +1,7 @@
 import 'twenty-ui/style.css';
 import 'twenty-ui/theme-light.css';
 import 'twenty-ui/theme-dark.css';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 import { RestApiClient } from 'twenty-client-sdk/rest';
 import { useColorScheme, useTranslate } from 'twenty-sdk/front-component';
@@ -10,6 +10,10 @@ import { Button } from 'twenty-ui/primitives/input';
 import { Text } from 'twenty-ui/primitives/typography';
 import { themeCssVariables } from 'twenty-ui/theme';
 import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import {
+  getProfileRelationLoadFailure,
+  type ProfileRelationLoadFailure,
+} from 'src/front-components/utils/get-profile-relation-load-failure.util';
 import {
   type ProfileRelationKind,
   type ProfileRelationSettings as RelationSettings,
@@ -378,48 +382,94 @@ export const ProfileRelationSettings = () => {
     person: SourceSettings;
     applicationId: string;
   } | null>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<ProfileRelationLoadFailure | null>(null);
+  const loadRequest = useRef(0);
+  const load = useCallback(async () => {
+    const requestId = ++loadRequest.current;
+    setError(null);
+    const [settings, application] = await Promise.allSettled([
+      Promise.resolve().then(() =>
+        new RestApiClient().get<{
+          company: SourceSettings;
+          person: SourceSettings;
+        }>('/s/twitter-analytics/relation-settings'),
+      ),
+      Promise.resolve().then(() =>
+        new MetadataApiClient().query({
+          findOneApplication: {
+            __args: { universalIdentifier: APPLICATION_UNIVERSAL_IDENTIFIER },
+            id: true,
+          },
+        }),
+      ),
+    ]);
+    if (requestId !== loadRequest.current) return;
+    if (settings.status === 'rejected') {
+      setError(getProfileRelationLoadFailure(settings.reason, 'settings'));
+      return;
+    }
+    if (!settings.value?.company || !settings.value?.person) {
+      setError('settings');
+      return;
+    }
+    if (application.status === 'rejected') {
+      setError(
+        getProfileRelationLoadFailure(application.reason, 'application'),
+      );
+      return;
+    }
+    if (!application.value?.findOneApplication) {
+      setError('application');
+      return;
+    }
+    setData({
+      ...settings.value,
+      applicationId: application.value.findOneApplication.id,
+    });
+  }, []);
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        const [settings, application] = await Promise.all([
-          new RestApiClient().get<{
-            company: SourceSettings;
-            person: SourceSettings;
-          }>('/s/twitter-analytics/relation-settings'),
-          new MetadataApiClient().query({
-            findOneApplication: {
-              __args: { universalIdentifier: APPLICATION_UNIVERSAL_IDENTIFIER },
-              id: true,
-            },
-          }),
-        ]);
-        if (!application.findOneApplication)
-          throw new Error('Application unavailable');
-        if (mounted)
-          setData({
-            ...settings,
-            applicationId: application.findOneApplication.id,
-          });
-      } catch {
-        if (mounted) setError(true);
-      }
-    };
     void load();
     return () => {
-      mounted = false;
+      loadRequest.current++;
     };
-  }, []);
+  }, [load]);
   if (!data)
     return (
-      <Text>
-        {error
-          ? t(
-              'Could not load profile relations. Reload this page to try again.',
-            )
-          : t('Loading preferences…')}
-      </Text>
+      <div
+        data-theme={colorScheme}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: themeCssVariables.spacing[4],
+        }}
+      >
+        {error ? (
+          <>
+            <Text role="alert">
+              {error === 'session'
+                ? t('Your session expired. Sign in again, then retry.')
+                : error === 'permission'
+                  ? t(
+                      'Your account cannot access these settings. Ask a workspace admin to check your permissions.',
+                    )
+                  : error === 'application'
+                    ? t(
+                        'Could not load the TwitterAPI.io app details. Try again.',
+                      )
+                    : t(
+                        'Could not load X link fields and relation preferences. Try again.',
+                      )}
+            </Text>
+            <div>
+              <Button type="button" onClick={() => void load()}>
+                {t('Retry')}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <Text role="status">{t('Loading preferences…')}</Text>
+        )}
+      </div>
     );
   return (
     <div

@@ -49,6 +49,33 @@ The Hindsight service was unavailable in this workspace (private profile/repo
 metadata missing), so verified findings and the owner correction are retained
 in this handoff and decision 0004 instead.
 
+### Profile Relations Loading Failure
+
+On 2026-11-22 Kareem supplied a screenshot showing "Could not load profile
+relations. Reload this page to try again." The screenshot omitted its origin.
+Read-only diagnostics found the live settings function successful, its HTTP GET
+route returning 200 with both source configurations, and the app identification
+query successful. The isolated preview route and browser also loaded correctly.
+The original failure was not reproduced; a session, permission or temporary
+request failure remains possible, not a verified root cause.
+
+The continuation adds an inline **Retry** button and separates settings-request,
+app-identification, session and permission messages. Retrying reloads the two
+read-only requests without a full page refresh. Responses from earlier attempts
+or unmounted components are ignored, and missing response data becomes a
+recoverable error instead of a component exception. Raw server errors are not
+displayed. The change is installed only in preview; live configuration and
+records were not changed.
+
+The unit suite now has 134 passing tests across 15 files, with direct TypeScript
+checking and oxlint passing. SDK plan/apply updated one front component with zero
+creates, deletes or destructive actions. Browser tests inject a settings 503,
+settings 403, expired session, metadata permission error, missing app details and
+malformed settings response, then restore the requests and verify recovery with
+**Retry**, with no page errors. These use the existing preview host through the
+local TLS proxy and do not verify Conductor's public edge. No TwitterAPI.io calls
+or backfills are involved.
+
 ## Delivered
 
 - Native TwitterAPI.io SDK app with the provider's favicon as its logo.
