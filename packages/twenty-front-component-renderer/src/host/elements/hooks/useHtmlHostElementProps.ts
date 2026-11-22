@@ -11,6 +11,7 @@ import { useReactUnsupportedEventListenerRef } from '@/host/events/hooks/useReac
 import { type ElementRefCallback } from '@/host/elements/types/ElementRefCallback';
 import { buildHostReactPropsFromRemoteProps } from '@/host/elements/utils/buildHostReactPropsFromRemoteProps';
 import { createDropTargetGuardProps } from '@/host/elements/utils/createDropTargetGuardProps';
+import { createEditableKeyboardGuardProps } from '@/host/elements/utils/createEditableKeyboardGuardProps';
 import { createSliderPointerCaptureProps } from '@/host/elements/utils/createSliderPointerCaptureProps';
 import { createResizableSeparatorProps } from '@/host/elements/utils/createResizableSeparatorProps';
 import { extractReactUnsupportedEventHandlers } from '@/host/events/utils/extractReactUnsupportedEventHandlers';
@@ -76,6 +77,8 @@ export const useHtmlHostElementProps = ({
   ]);
 
   const hostEnforcedProps: Record<string, unknown> = {
+    ...((htmlTag === 'textarea' || htmlTag === 'input') &&
+      createEditableKeyboardGuardProps(reactBindableProps)),
     ...createDropTargetGuardProps(reactBindableProps),
     ...createResizableSeparatorProps(reactBindableProps),
     ...createSliderPointerCaptureProps({

@@ -131,7 +131,7 @@ Verification on 2026-11-22:
 On 2026-11-22 Kareem requested that existing native Twenty CRM components always
 be used when available, with new/custom UI only for capabilities existing
 components cannot support. He explicitly requested saving this as rules/skills.
-[Repository decision 0007](../decisions/0007-reuse-native-twenty-ui-components.md)
+[Repository decision 0008](../decisions/0008-reuse-native-twenty-ui-components.md)
 contains his exact instruction and the implementation scope.
 
 The canonical Ruler source and design guide now explicitly cover SDK app front
@@ -395,3 +395,18 @@ are available at https://fundlevel-w930.conductor.show/settings/app-preferences;
 its containers restart within the running VM, not across VM destruction.
 Hindsight remains unavailable because workspace repo/private-profile metadata
 is missing; these verified findings are retained in tracked documentation.
+
+### Main Branch Integration
+
+On 2026-11-22 Kareem requested: "Merge the remote branch (main) into your branch and resolve conflicts. Then, commit and push your changes."
+Integrated `origin/main` at `ea0a75d756` into `conductor/untitled-v5`.
+The conflicts were limited to the Ruler source, generated agent instructions and
+root decision index. Resolution preserves both the app-only boundary from main
+and this branch's native Twenty UI rule; Ruler regenerated AGENTS.md and
+CLAUDE.md. Main's existing decision 0007 remains unchanged, and this branch's
+native UI decision moves to 0008 with all references updated to avoid the
+number collision. Twitter app source merged without conflicts.
+
+Post-merge verification: 160 app unit tests, two preview proxy tests, direct
+TypeScript checking and oxlint pass. This is repository integration only; no
+preview reinstall, paid API calls or production deployment occurred.

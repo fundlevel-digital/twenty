@@ -1,3 +1,5 @@
+import { parseBetterList } from '@/better-lists/utils/betterListMetadata';
+import { getBetterListSettingsPath } from '@/better-lists/utils/betterListsPreferencesPath';
 import { SettingsDataModelFieldComputationForm } from '@/settings/data-model/fields/forms/components/SettingsDataModelFieldComputationForm';
 import { WorkspaceRouteUnavailable } from '@/ui/layout/page/components/WorkspaceRouteUnavailable';
 import { isValidReturnToPath } from '@/auth/utils/isValidReturnToPath';
@@ -36,7 +38,12 @@ import { useLingui } from '@lingui/react/macro';
 import omit from 'lodash.omit';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 import { AppPath, SettingsPath } from 'twenty-shared/types';
 import {
   getSettingsPath,
@@ -193,6 +200,15 @@ export const SettingsObjectFieldEdit = () => {
     return workspaceSurface.type === 'side-panel' ? (
       <WorkspaceRouteUnavailable />
     ) : null;
+  }
+
+  if (
+    isDefined(parseBetterList(objectMetadataItem.description)) &&
+    fieldMetadataItem.name === 'parentRecord'
+  ) {
+    return (
+      <Navigate to={getBetterListSettingsPath(objectMetadataItem.id)} replace />
+    );
   }
 
   const isCustomField = getIsMetadataItemCustom(fieldMetadataItem);

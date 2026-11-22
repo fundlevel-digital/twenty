@@ -1,12 +1,19 @@
+import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
+import { getImageIdentifierFieldMetadataItem } from '@/object-metadata/utils/getImageIdentifierFieldMetadataItem';
+import { getLabelIdentifierFieldMetadataItem } from '@/object-metadata/utils/getLabelIdentifierFieldMetadataItem';
+import { getLookupSourceHopIndex } from '@/object-record/record-column-lookup/utils/getLookupSourceHopIndex';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { type RecordGqlFields } from 'twenty-shared/types';
-import { isPlainObject } from 'twenty-shared/utils';
+import { isDefined, isPlainObject } from 'twenty-shared/utils';
 
 type LookupTargetGqlFieldsInput = {
   relationFieldName: string;
   lookupTargetFieldMetadataItem: Pick<FieldMetadataItem, 'name'>;
   relationHops?: {
-    relationFieldMetadataItem: Pick<FieldMetadataItem, 'name'>;
+    relationFieldMetadataItem: Pick<FieldMetadataItem, 'name'> &
+      Partial<Pick<FieldMetadataItem, 'id' | 'settings'>>;
+    isOneToMany?: boolean;
+    targetObjectMetadataItem?: EnrichedObjectMetadataItem;
   }[];
 };
 
@@ -38,14 +45,43 @@ const buildLookupPathGqlFields = ({
 }: {
   relationHops: NonNullable<LookupTargetGqlFieldsInput['relationHops']>;
   lookupTargetFieldMetadataItem: Pick<FieldMetadataItem, 'name'>;
-}): RecordGqlFields =>
-  relationHops.slice(1).reduceRight<RecordGqlFields>(
-    (nestedGqlFields, { relationFieldMetadataItem }) => ({
-      id: true,
-      [relationFieldMetadataItem.name]: nestedGqlFields,
-    }),
-    { id: true, [lookupTargetFieldMetadataItem.name]: true },
-  );
+}): RecordGqlFields => {
+  const sourceHopIndex = relationHops.some(({ isOneToMany }) => isOneToMany)
+    ? getLookupSourceHopIndex(relationHops)
+    : -1;
+  let nestedGqlFields: RecordGqlFields = {
+    id: true,
+    [lookupTargetFieldMetadataItem.name]: true,
+  };
+
+  for (let hopIndex = relationHops.length - 1; hopIndex >= 0; hopIndex--) {
+    const { targetObjectMetadataItem } = relationHops[hopIndex];
+    if (hopIndex === sourceHopIndex && isDefined(targetObjectMetadataItem)) {
+      const identifierFields = [
+        getLabelIdentifierFieldMetadataItem(targetObjectMetadataItem),
+        getImageIdentifierFieldMetadataItem(targetObjectMetadataItem),
+      ]
+        .filter(isDefined)
+        .filter((field) =>
+          targetObjectMetadataItem.readableFields.some(
+            ({ id }) => id === field.id,
+          ),
+        );
+      nestedGqlFields = mergeRecordGqlFields(
+        nestedGqlFields,
+        Object.fromEntries(identifierFields.map(({ name }) => [name, true])),
+      );
+    }
+    if (hopIndex > 0) {
+      nestedGqlFields = {
+        id: true,
+        [relationHops[hopIndex].relationFieldMetadataItem.name]:
+          nestedGqlFields,
+      };
+    }
+  }
+  return nestedGqlFields;
+};
 
 export const addLookupTargetsToRecordGqlFields = ({
   recordGqlFields,

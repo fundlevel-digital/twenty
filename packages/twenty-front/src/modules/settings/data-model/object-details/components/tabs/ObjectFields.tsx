@@ -1,4 +1,5 @@
 import { NavigationButton } from '@/ui/input/components/NavigationButton';
+import { parseBetterList } from '@/better-lists/utils/betterListMetadata';
 
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { isHiddenSystemField } from '@/object-metadata/utils/isHiddenSystemField';
@@ -9,7 +10,7 @@ import { styled } from '@linaria/react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useLingui } from '@lingui/react/macro';
 import { FieldMetadataType, SettingsPath } from 'twenty-shared/types';
-import { getSettingsPath } from 'twenty-shared/utils';
+import { getSettingsPath, isDefined } from 'twenty-shared/utils';
 import { Section } from 'twenty-ui/components/layout';
 import { IconPlus } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme';
@@ -41,6 +42,9 @@ export const ObjectFields = ({ objectMetadataItem }: ObjectFieldsProps) => {
     }) || isDDLLocked;
 
   const objectLabelSingular = objectMetadataItem.labelSingular;
+  const isBetterList = isDefined(
+    parseBetterList(objectMetadataItem.description),
+  );
 
   const hasRelations = objectMetadataItem.fields.some(
     (field) =>
@@ -61,7 +65,7 @@ export const ObjectFields = ({ objectMetadataItem }: ObjectFieldsProps) => {
             objectMetadataItem={objectMetadataItem}
           />
           <StyledButtonContainer>
-            {!readonly && (
+            {!readonly && !isBetterList && (
               <NavigationButton
                 to={getSettingsPath(
                   SettingsPath.ObjectNewFieldConfigure,

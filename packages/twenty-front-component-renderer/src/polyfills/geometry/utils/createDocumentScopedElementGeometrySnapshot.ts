@@ -10,9 +10,13 @@ export const createDocumentScopedElementGeometrySnapshot = ({
   isDocumentElement: boolean;
 }): ElementGeometrySnapshot => ({
   ...EMPTY_ELEMENT_GEOMETRY_SNAPSHOT,
-  computedStyle: viewport.computedStyle,
-  x: viewport.rootContainerX,
-  y: viewport.rootContainerY,
+  // Portals use the component's containing block, not the host document origin.
+  computedStyle: {
+    ...viewport.computedStyle,
+    position: isDocumentElement ? 'static' : 'relative',
+  },
+  x: isDocumentElement ? -viewport.scrollX : viewport.rootContainerX,
+  y: isDocumentElement ? -viewport.scrollY : viewport.rootContainerY,
   width: viewport.rootContainerWidth,
   height: viewport.rootContainerHeight,
   offsetWidth: viewport.rootContainerWidth,

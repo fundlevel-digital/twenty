@@ -45,6 +45,13 @@ production bootstrap configuration removed and its server origin replaced.
 
 ## Verify Before Sharing
 
+Autofilled demo login is mandatory for every isolated preview, including
+recovered previews and cached host UIs. Verify in a fresh browser session that
+both the seeded email and password are already filled at their respective login
+steps and that signing in requires no typing. Do not hand off a preview that
+requires the owner to enter credentials manually. See
+[VM setup](references/vm-setup.md) for the configuration.
+
 Check backend health, the public port's proxied health endpoint, login, the
 requested page, relevant API responses and browser errors. An HTTP 200 shell or
 startup page alone does not prove the app is ready. If app logic changes schema,

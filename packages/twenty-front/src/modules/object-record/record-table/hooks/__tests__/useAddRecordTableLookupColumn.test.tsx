@@ -58,6 +58,30 @@ describe('useAddRecordTableLookupColumn', () => {
     jest.clearAllMocks();
   });
 
+  it('persists the junction path so a many-to-many lookup survives reload', async () => {
+    const store = createStore();
+    store.set(currentRecordFieldsAtom, [companyColumn]);
+    performViewFieldApiCreateMock.mockResolvedValue({ status: 'successful' });
+    const { result } = renderAddHook(store);
+    await act(() =>
+      result.current.addRecordTableLookupColumn({
+        relationFieldMetadataItemId: 'companies-field',
+        relationTargetFieldMetadataId: 'name-field',
+        relationPathFieldMetadataIds: ['terminal-company-field'],
+      }),
+    );
+    expect(store.get(currentRecordFieldsAtom)[1]).toMatchObject({
+      relationPathFieldMetadataIds: ['terminal-company-field'],
+    });
+    expect(performViewFieldApiCreateMock).toHaveBeenCalledWith({
+      inputs: [
+        expect.objectContaining({
+          relationPathFieldMetadataIds: ['terminal-company-field'],
+        }),
+      ],
+    });
+  });
+
   it('shows the lookup column and saves it as a non-canonical view field', async () => {
     const store = createStore();
     store.set(currentRecordFieldsAtom, [companyColumn]);

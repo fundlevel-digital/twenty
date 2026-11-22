@@ -30,4 +30,4 @@ Verify the actual control opens, selects, responds to the keyboard and retains
 labels and helper descriptions in the embedded app runtime. For protected
 previews, use the remote preview skill to verify through the access gate.
 
-See [the owner decision](../../../docs/decisions/0007-reuse-native-twenty-ui-components.md).
+See [the owner decision](../../../docs/decisions/0008-reuse-native-twenty-ui-components.md).

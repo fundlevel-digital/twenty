@@ -37,6 +37,20 @@ const personJobTitleField = getMockFieldMetadataItemOrThrow({
 });
 
 describe('getRecordFieldLookupTarget', () => {
+  it('resolves a direct one-to-many lookup as multiple values', () => {
+    expect(
+      getRecordFieldLookupTarget({
+        recordField: { relationTargetFieldMetadataId: personJobTitleField.id },
+        fieldMetadataItem: companyPeopleField,
+        objectMetadataItems,
+      }),
+    ).toMatchObject({
+      leafObjectMetadataItem: { id: person.id },
+      isMultiLevel: false,
+      isMultiValued: true,
+    });
+  });
+
   it('resolves a one-level lookup as before', () => {
     const lookupTarget = getRecordFieldLookupTarget({
       recordField: { relationTargetFieldMetadataId: companyNameField.id },

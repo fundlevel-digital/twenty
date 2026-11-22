@@ -4,7 +4,7 @@
 - Status: accepted
 - Decided by: Kareem
 - Area: Twitter Analytics
-- Related: [preview scope](0004-preview-scope-and-backfill-explanations.md), [native UI](../0007-reuse-native-twenty-ui-components.md)
+- Related: [preview scope](0004-preview-scope-and-backfill-explanations.md), [native UI](../0008-reuse-native-twenty-ui-components.md)
 
 ## Context
 
