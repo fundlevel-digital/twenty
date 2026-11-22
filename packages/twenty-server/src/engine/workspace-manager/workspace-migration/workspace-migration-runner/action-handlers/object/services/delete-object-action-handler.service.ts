@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isDefined } from 'twenty-shared/utils';
 
 import { WorkspaceMigrationRunnerActionHandler } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/interfaces/workspace-migration-runner-action-handler-service.interface';
 
@@ -84,6 +85,34 @@ export class DeleteObjectActionHandlerService extends WorkspaceMigrationRunnerAc
       workspaceId,
       objectMetadata: flatObjectMetadata,
     });
+
+    if (flatObjectMetadata.description?.startsWith('better-lists:v1:')) {
+      const parentName = flatObjectMetadata.description
+        .slice('better-lists:v1:'.length)
+        .split('|')[0];
+      const parent = Object.values(
+        flatObjectMetadataMaps.byUniversalIdentifier,
+      ).find((objectMetadata) => objectMetadata?.nameSingular === parentName);
+      const membershipField = Object.values(
+        flatFieldMetadataMaps.byUniversalIdentifier,
+      ).find(
+        (fieldMetadata) =>
+          fieldMetadata?.objectMetadataId === parent?.id &&
+          fieldMetadata?.name === 'betterListEntries',
+      );
+      if (isDefined(parent) && isDefined(membershipField)) {
+        const parentContext = getWorkspaceSchemaContextForMigration({
+          workspaceId,
+          objectMetadata: parent,
+        });
+        const escape = (identifier: string) =>
+          queryRunner.connection.driver.escape(identifier);
+        await queryRunner.query(
+          `UPDATE ${escape(parentContext.schemaName)}.${escape(parentContext.tableName)} SET "betterListEntries" = array_remove("betterListEntries", $1) WHERE $1 = ANY("betterListEntries")`,
+          [`LIST_${flatObjectMetadata.id.replace(/-/g, '').toUpperCase()}`],
+        );
+      }
+    }
 
     await this.workspaceSchemaManagerService.tableManager.dropTable({
       queryRunner,

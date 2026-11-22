@@ -15,6 +15,8 @@ import {
   type WorkspaceRouteObject,
 } from '@/app/routing/types/WorkspaceRouteObject';
 import { SETTINGS_AI_TABS } from '@/settings/ai/constants/SettingsAiTabs';
+import { BetterListsPreferencesRedirect } from '@/better-lists/components/BetterListsPreferencesRedirect';
+import { BETTER_LISTS_PREFERENCES_SETTINGS_PATH } from '@/better-lists/utils/betterListsPreferencesPath';
 import { SettingsLegacyAccountsRedirect } from '@/settings/app-preferences/components/SettingsLegacyAccountsRedirect';
 import { APP_PREFERENCES_PATH_BY_LEGACY_ACCOUNTS_PATH } from '@/settings/app-preferences/constants/AppPreferencesPathByLegacyAccountsPath';
 import { SettingsProtectedRouteWrapper } from '@/settings/components/SettingsProtectedRouteWrapper';
@@ -26,6 +28,18 @@ import {
   FeatureFlagKey,
   PermissionFlagType,
 } from '~/generated-metadata/graphql';
+
+const BetterListsPage = lazy(() =>
+  import('@/better-lists/components/BetterListsPage').then((module) => ({
+    default: module.BetterListsPage,
+  })),
+);
+
+const BetterListSettingsPage = lazy(() =>
+  import('@/better-lists/components/BetterListSettingsPage').then((module) => ({
+    default: module.BetterListSettingsPage,
+  })),
+);
 
 const SettingsGraphQLPlayground = lazy(() =>
   import('~/pages/settings/developers/playground/SettingsGraphQLPlayground').then(
@@ -830,6 +844,7 @@ const createSettingsRouteElements = ({
       element={<SettingsTwoFactorAuthenticationMethod />}
     />
     <Route path={SettingsPath.Experience} element={<SettingsExperience />} />
+    <Route path={SettingsPath.AppPreferences} element={<SettingsAccounts />} />
     {/* Reached from both the Applications and Accounts settings; the mutation checks the caller per provider scope */}
     <Route
       path={SettingsPath.ApplicationConnectWithApiKey}
@@ -851,10 +866,6 @@ const createSettingsRouteElements = ({
           />
         ),
       )}
-      <Route
-        path={SettingsPath.AppPreferences}
-        element={<SettingsAccounts />}
-      />
       <Route
         path={SettingsPath.AppPreferencesApp}
         element={<SettingsAppPreferencesApp />}
@@ -1024,6 +1035,19 @@ const createSettingsRouteElements = ({
         />
       }
     >
+      <Route
+        path={SettingsPath.BetterLists}
+        element={<BetterListsPreferencesRedirect />}
+      />
+      <Route
+        path={BETTER_LISTS_PREFERENCES_SETTINGS_PATH}
+        element={<BetterListsPage />}
+        handle={EXPANDABLE_SETTINGS_ROUTE_HANDLE}
+      />
+      <Route
+        path={`${BETTER_LISTS_PREFERENCES_SETTINGS_PATH}/:listId`}
+        element={<BetterListSettingsPage />}
+      />
       <Route
         path={SettingsPath.Objects}
         element={<SettingsObjects />}

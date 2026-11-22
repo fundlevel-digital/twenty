@@ -1,0 +1,10 @@
+export const IDENTIFIERS = {
+  APPLICATION: '5eefcd94-3501-41ca-b3b8-645dc868bcb1',
+  ROLE: 'ed666f59-3dcd-4e0f-bdbe-b291d19b01c2',
+  SETTINGS: '63432f2b-d746-41a6-85b7-70d10aad9c81',
+  CREATE_COMPONENT: '83c4cc35-406d-4547-866a-e1316ee2088b',
+  ADD_COMPONENT: 'e6ef9d23-607f-424c-958e-6d6bf89facbd',
+  CREATE_COMMAND: '168327d9-606d-4a7a-be25-60fbe1c39a6c',
+  MANAGE_COMMAND: '58decb86-a2c7-4e41-9b23-69c34ef59abc',
+  ADD_COMMAND: 'ed71cf58-b46f-4f23-b633-cf8e9ff8031f',
+} as const;
