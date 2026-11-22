@@ -1,5 +1,7 @@
 # Better Lists — 2026-11-22
 
+The merged feature and SDK app are now deployed to the live Fundlevel workspace. The [live release handoff](2026-11-22-better-lists-live-release.md) records the image, installation, backups and verification; the preview findings and remaining limitations below remain applicable.
+
 ## Pull Request Integration
 
 Kareem requested: "Merge the remote branch (main) into your branch and resolve conflicts. Then, commit and push your changes." The integration brings origin/main at `b13a4e000e` into `conductor/better-lists-app` for draft PR #29. Only the documentation indexes conflicted; resolution retains the Better Lists entries and all incoming area and handoff links. No manual code resolution or production deployment is included in this integration.
