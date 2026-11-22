@@ -410,3 +410,49 @@ number collision. Twitter app source merged without conflicts.
 Post-merge verification: 160 app unit tests, two preview proxy tests, direct
 TypeScript checking and oxlint pass. This is repository integration only; no
 preview reinstall, paid API calls or production deployment occurred.
+
+
+## Merged Follow-Up Deployed To Live
+
+On 2026-11-22 Kareem authorized live deployment, requested a rebase first, and
+clarified: "When u merge, u can deploy to the live CRM". See
+[decision 0007](../decisions/twitter-analytics/0007-deploy-merged-refresh-controls.md).
+PR #26 merged as `eb4afbe5b2f19d920a4b8ca60b1ca81ef490d1be`; the continuation
+branch rebased cleanly onto main at `998de330d9` before installation. These
+merged follow-ups are now live, superseding the earlier preview-only status for
+the same changes. This was an app upgrade, not a host image rollout.
+
+The isolated Mac release worktree checked out that exact main commit. Native CLI
+2.59.0 used the existing authenticated Fundlevel remote, with deletion inference
+disabled and no destructive approval. Build content hash:
+`5053dc140b1aba1809d894bbca45a0d08b0634febdeff74810965005094bc9e9`.
+The reviewed plan contained **10 creates, 7 updates, zero deletes, destructive
+actions or cascades**. Apply succeeded and uploaded 86 files. The optional cover
+image generation reported missing `sharp`; the existing app favicon/logo was
+retained, and installation succeeded.
+
+Live verification:
+
+- All 235 profile IDs, enrollment flags, Influencer links and last-calculated
+  timestamps match the pre-install audit. All existing application preferences
+  match. None of the profiles are enrolled; no paid analytics batch or additional
+  relation backfill was triggered for deployment verification.
+- Native metadata exposes the new manual workflow command and renamed refresh
+  command. **Refresh Twitter Profile and Analytics** is ACTIVE with a published
+  core workflow version. The refresh logic function has minute dispatch metadata;
+  saved defaults remain Daily, 05:00 UTC, Monday as the unused weekly default.
+- The saved schedule window became initialized by the automatic dispatcher after
+  installation, without manual function execution. This verifies scheduler
+  activity; it does not claim a fresh profile calculation.
+- Authenticated relation-settings GET returned HTTP 200. Shared-login and public
+  workspace health endpoints returned HTTP 200.
+- Fresh SDK post-install plan reports **zero changes**. Installed frontend and
+  logic-function checksums therefore match the release artifact.
+
+No production browser interaction or live paid profile refresh is claimed. The
+native UI controls and selected-record workflow were exercised on the isolated
+preview before merge; the 160 unit tests, two proxy tests, direct typecheck and
+lint passed before the merge. Private before/after snapshots and CLI logs remain
+in the release worktree's ignored `.context/twitter-follow-up` directory on the
+Mac. Hindsight remains unavailable in the cloud workspace; verified results and
+owner authorization are retained here instead.
