@@ -20,6 +20,7 @@ Where this repo differs from your defaults:
 - No abbreviations in names (`fieldMetadata`, not `fm`); constants in SCREAMING_SNAKE_CASE; component props types suffixed `Props`.
 - Use existing guards and helpers before writing your own: `isDefined`, `isNonEmptyArray`, `isPlainObject`, … from `twenty-shared/utils`; `isNonEmptyString`, `isString`, `isNull`, `isObject`, … from `@sniptt/guards`. Reimplementing an existing util is the most common AI-authored defect here.
 - Lingui for user-facing strings, `doNotTranslate()` from `twenty-shared/i18n` for text that must stay as written (error diagnostics, protocol tokens); Linaria (zero-runtime, styled-components pattern) for twenty-front styling.
+- Model categorical/enum attributes as native Select fields, or Multi-Select when several values can apply. Define stable values with readable Title Case labels; backfill existing records when replacing text fields. Keep free-form content and identifiers in their appropriate types.
 - Owner preference: use Title Case for UI labels and titles, including fields, columns, objects, views and actions; see the Copy section of `DESIGN.md`. Keep API identifiers and customer-entered content unchanged.
 - Before building or changing UI in `twenty-front` or `twenty-ui`, read `DESIGN.md` at the repo root.
 - For Twenty product concepts, consult `packages/twenty-ui/src/icon/icon-dictionary.md` and use the canonical icon.

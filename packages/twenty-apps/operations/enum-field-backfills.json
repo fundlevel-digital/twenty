@@ -1,0 +1,87 @@
+[
+  {
+    "app": "cal-com",
+    "object": "calComBooking",
+    "source": "status",
+    "target": "bookingStatus",
+    "fieldUniversalIdentifier": "6057941f-52cb-5fc1-a9ec-a8587a8c1441",
+    "values": [
+      "ACCEPTED",
+      "PENDING",
+      "CANCELLED",
+      "REJECTED",
+      "RESCHEDULED",
+      "NO_SHOW",
+      "OTHER"
+    ]
+  },
+  {
+    "app": "nano-influencer",
+    "object": "nanoCreator",
+    "source": "platform",
+    "target": "creatorPlatform",
+    "fieldUniversalIdentifier": "eb5b82a0-ed9d-53a3-9d8a-91ee76dbc252",
+    "values": ["YTB", "TWT", "INS", "TIK"]
+  },
+  {
+    "app": "plusvibe",
+    "object": "messageThread",
+    "source": "plusvibeReplyLabel",
+    "target": "plusvibeLatestReplyCategory",
+    "fieldUniversalIdentifier": "1ce3770b-3f6f-5370-8ad4-1880119d5ab9",
+    "values": [
+      "INTERESTED",
+      "NOT_INTERESTED",
+      "UNSUBSCRIBED",
+      "OUT_OF_OFFICE",
+      "OTHER"
+    ]
+  },
+  {
+    "app": "plusvibe",
+    "object": "plusvibeActivity",
+    "source": "eventType",
+    "target": "eventCategory",
+    "fieldUniversalIdentifier": "ff75a3c9-34e9-528b-b4e1-d00961d5aaab",
+    "values": [
+      "EMAIL_REPLY",
+      "EMAIL_SENT",
+      "UNIBOX_EMAIL_SENT",
+      "BOUNCED_EMAIL",
+      "LEAD_LABEL_CHANGED",
+      "OTHER"
+    ]
+  },
+  {
+    "app": "slack-sync",
+    "object": "message",
+    "source": "slackAttachmentStatus",
+    "target": "slackAttachmentState",
+    "fieldUniversalIdentifier": "0ef0a237-15a4-5d8b-a617-b9b6c058a4ed",
+    "values": ["IMPORTED", "UNAVAILABLE", "FAILED", "CHANGED"]
+  },
+  {
+    "app": "fundlevel-linkedin",
+    "object": "linkedinAccount",
+    "source": "proxyProtocol",
+    "target": "proxyProtocolType",
+    "fieldUniversalIdentifier": "b36c000e-c02f-555f-a426-1a50bb10bc86",
+    "values": ["HTTP", "HTTPS", "SOCKS4", "SOCKS5", "OTHER"]
+  },
+  {
+    "app": "fundlevel-linkedin",
+    "object": "linkedinAccount",
+    "source": "connectionMethod",
+    "target": "connectionMethodType",
+    "fieldUniversalIdentifier": "589f9cfa-10eb-5c7c-b752-7281396d21a7",
+    "values": ["COOKIE", "CREDENTIALS", "OAUTH", "OTHER"]
+  },
+  {
+    "app": "fundlevel-linkedin",
+    "object": "linkedinConnection",
+    "source": "memberType",
+    "target": "memberCategory",
+    "fieldUniversalIdentifier": "99a2e36f-284d-516f-a46d-6eb10ac3b357",
+    "values": ["PERSON", "COMPANY", "ORGANIZATION", "OTHER"]
+  }
+]

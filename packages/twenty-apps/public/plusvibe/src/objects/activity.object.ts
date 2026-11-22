@@ -86,7 +86,7 @@ export default defineObject({
     {
       universalIdentifier: ACTIVITY_EVENT_TYPE_UNIVERSAL_IDENTIFIER,
       name: 'eventType',
-      label: 'Event',
+      label: 'Event (Raw)',
       type: FieldType.TEXT,
       icon: 'IconWebhook',
     },

@@ -39,6 +39,14 @@ export default defineView({
       universalIdentifier: '39a57d85-bc23-48ff-9427-6a583a80cf08',
       fieldMetadataUniversalIdentifier:
         ACTIVITY_EVENT_TYPE_UNIVERSAL_IDENTIFIER,
+      position: 100,
+      isVisible: false,
+      size: 180,
+    },
+    {
+      universalIdentifier: 'e1f0bf55-cc1a-5673-a86b-bc1e7be9a2ee',
+      fieldMetadataUniversalIdentifier:
+        'ff75a3c9-34e9-528b-b4e1-d00961d5aaab',
       position: 1,
       isVisible: true,
       size: 180,

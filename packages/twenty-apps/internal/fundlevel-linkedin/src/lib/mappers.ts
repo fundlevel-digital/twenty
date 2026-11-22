@@ -1,3 +1,4 @@
+import { normalizeEnumValue } from '../utils/enum-fields.ts';
 // Pure mapping from Unipile payloads to Twenty records. No I/O, so it is unit-tested.
 
 export const PRODUCT_NAMES: Record<string, string> = {
@@ -78,10 +79,10 @@ export type AccountSnapshot = {
 const accountDetails = (account: any) => {
   const details: Record<string, unknown> = {};
   const proxy = account.proxy ?? {};
-  if (typeof proxy.protocol === 'string') details.proxyProtocol = proxy.protocol;
+  if (typeof proxy.protocol === 'string') { details.proxyProtocol = proxy.protocol; details.proxyProtocolType = normalizeEnumValue('proxyProtocolType', proxy.protocol); }
   if (proxy.country !== undefined) details.proxyCountry = proxy.country ? String(proxy.country) : '';
   if (typeof account.metadata?.allow_country_fallback === 'boolean') details.allowCountryFallback = account.metadata.allow_country_fallback;
-  if (typeof account.metadata?.connection_method === 'string') details.connectionMethod = account.metadata.connection_method;
+  if (typeof account.metadata?.connection_method === 'string') { details.connectionMethod = account.metadata.connection_method; details.connectionMethodType = normalizeEnumValue('connectionMethodType', account.metadata.connection_method); }
   if (typeof account.is_locked === 'boolean') details.isLocked = account.is_locked;
   if (account.created_at) details.unipileCreatedAt = account.created_at;
   return details;
@@ -115,7 +116,7 @@ export const memberDetails = (user: any) => {
   const headline = user?.description || user?.headline;
   if (headline) details.headline = String(headline);
   if (user?.public_picture_url) details.profilePictureUrl = String(user.public_picture_url);
-  if (user?.type) details.memberType = String(user.type);
+  if (user?.type) { details.memberType = String(user.type); details.memberCategory = normalizeEnumValue('memberCategory', String(user.type)); }
   return details;
 };
 

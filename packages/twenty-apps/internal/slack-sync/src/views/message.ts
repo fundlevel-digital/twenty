@@ -85,6 +85,14 @@ export default defineView({
       universalIdentifier: '34f20169-1e47-4668-81f7-2a61607d3f54',
       fieldMetadataUniversalIdentifier:
         identifiers.MESSAGE_ATTACHMENT_STATUS_UNIVERSAL_IDENTIFIER,
+      position: 100,
+      size: 220,
+      isVisible: false,
+    },
+    {
+      universalIdentifier: '9a705063-29bb-5998-b362-ba5bab62ed6f',
+      fieldMetadataUniversalIdentifier:
+        '0ef0a237-15a4-5d8b-a617-b9b6c058a4ed',
       position: 7,
       size: 220,
       isVisible: true,

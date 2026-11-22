@@ -12,6 +12,7 @@ supersession. Operational instructions stay with their package or skill.
 | LinkedIn Sync | [Decisions](decisions/linkedin/DECISIONS.md) | [App README](../packages/twenty-apps/internal/fundlevel-linkedin/README.md), [handoff](../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md) |
 | YouTube Analytics | [Decisions](decisions/youtube-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/youtube-analytics/README.md), [handoff](../packages/twenty-apps/internal/youtube-analytics/HANDOFF.md) |
 | PlusVibe | [Decisions](decisions/packages/twenty-apps/public/plusvibe/DECISIONS.md) | [App README](../packages/twenty-apps/public/plusvibe/README.md) |
+| NanoInfluencer | [Decisions](decisions/nano-influencer/DECISIONS.md) | [App README](../packages/twenty-apps/internal/nano-influencer/README.md) |
 
 This repository uses the centralized layout from
 [fundlevel-digital/mono](https://github.com/fundlevel-digital/mono/blob/main/.agents/skills/decisions/SKILL.md).
@@ -28,5 +29,6 @@ identify scope, decisions, implementation and verification limits.
 | [0004](decisions/0004-defer-production-deployment.md) | 2026-11-21 | Defer production deployment after merging PR #8 | superseded by 0005 |
 | [0005](decisions/0005-roll-out-six-sessions-to-live-crm.md) | 2026-11-21 | Roll out the six merged sessions to the live CRM | accepted |
 | [0006](decisions/0006-connect-linkedin-after-the-rollout.md) | 2026-11-21 | Leave LinkedIn connection and dependent history migration for later | accepted |
+| [0007](decisions/0007-use-native-enum-fields-across-apps.md) | 2026-11-22 | Use native Select/Multi-Select attributes for enums and backfill earlier apps | accepted |
 
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).

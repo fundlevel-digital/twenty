@@ -1,0 +1,181 @@
+import { defineObject, FieldType, RelationType } from 'twenty-sdk/define';
+import { IDENTIFIERS } from '../constants/identifiers';
+
+export default defineObject({
+  universalIdentifier: '6289a262-abf6-5820-b1a1-062fd2da05b3',
+  nameSingular: 'nanoMembership',
+  namePlural: 'nanoMemberships',
+  labelSingular: 'Nano Membership',
+  labelPlural: 'Nano Memberships',
+  icon: 'IconRelationOneToMany',
+  isSearchable: true,
+  labelIdentifierFieldMetadataUniversalIdentifier:
+    '331717b6-f3b7-5a7f-92f8-d7918504a661',
+  fields: [
+    {
+      universalIdentifier: IDENTIFIERS.membershipDecisionMaker,
+      name: 'decisionMaker',
+      label: 'Decision Maker',
+      type: FieldType.RELATION,
+      icon: 'IconUsers',
+      isNullable: true,
+      isUIEditable: false,
+      description:
+        'Nano operator, grouped by their email when available. This is the decision actor, not an inferred list owner.',
+      relationTargetObjectMetadataUniversalIdentifier: IDENTIFIERS.nanoUser,
+      relationTargetFieldMetadataUniversalIdentifier:
+        IDENTIFIERS.userMemberships,
+      universalSettings: {
+        relationType: RelationType.MANY_TO_ONE,
+        joinColumnName: 'decisionMakerId',
+      },
+    },
+    {
+      universalIdentifier: IDENTIFIERS.membershipRawData,
+      name: 'rawNanoMembership',
+      label: 'Raw Nano Membership',
+      type: FieldType.RAW_JSON,
+      isNullable: true,
+      isUIEditable: false,
+    },
+    {
+      universalIdentifier: IDENTIFIERS.membershipOperatorId,
+      name: 'nanoOperatorId',
+      label: 'Nano Operator ID',
+      type: FieldType.TEXT,
+      isNullable: true,
+      isUIEditable: false,
+    },
+    {
+      universalIdentifier: IDENTIFIERS.membershipOperatorName,
+      name: 'nanoOperatorName',
+      description:
+        'Nano operator on the last fetched favourite or hidden decision. Nano does not return deletion attribution.',
+      label: 'Decision By',
+      type: FieldType.TEXT,
+      isNullable: true,
+      isUIEditable: false,
+    },
+    {
+      universalIdentifier: IDENTIFIERS.membershipOperatorEmail,
+      name: 'nanoOperatorEmail',
+      label: 'Decision Maker Email',
+      type: FieldType.EMAILS,
+      isNullable: true,
+      isUIEditable: false,
+    },
+    {
+      universalIdentifier: '331717b6-f3b7-5a7f-92f8-d7918504a661',
+      name: 'name',
+      label: 'Name',
+      type: FieldType.TEXT,
+      icon: 'IconAbc',
+      isNullable: true,
+    },
+    {
+      universalIdentifier: '1e9adbb4-0784-518b-a99f-6e214ce43eba',
+      name: 'externalKey',
+      isUIEditable: false,
+      label: 'Nano Membership ID',
+      type: FieldType.TEXT,
+      icon: 'IconAbc',
+      isNullable: true,
+      isUnique: true,
+    },
+    {
+      universalIdentifier: 'd79897fc-a4d5-5110-b072-4c4c910ba7c2',
+      name: 'flag',
+      label: 'Saved State',
+      type: FieldType.SELECT,
+      isUIEditable: false,
+      options: [
+        {
+          id: 'c865c8da-7749-5aae-8fca-b4834d66990e',
+          value: 'FAVOURITE',
+          label: 'Favourite',
+          position: 0,
+          color: 'yellow',
+        },
+        {
+          id: '90c504da-bd7c-531d-b166-d899e27b77ff',
+          value: 'HIDDEN',
+          label: 'Hidden',
+          position: 1,
+          color: 'gray',
+        },
+        {
+          id: 'b81ce460-f4d9-5b50-a73a-14a460825d3f',
+          value: 'REMOVED',
+          label: 'Removed',
+          position: 2,
+          color: 'red',
+        },
+      ],
+      icon: 'IconAbc',
+      isNullable: true,
+    },
+    {
+      universalIdentifier: '5f08a859-34fa-5c50-941f-40ae02428fbf',
+      name: 'labels',
+      label: 'Labels',
+      type: FieldType.ARRAY,
+      icon: 'IconList',
+      isNullable: true,
+    },
+    {
+      universalIdentifier: '042db8dc-6e11-5bae-bd2d-64fdfbfdd971',
+      name: 'note',
+      label: 'Note',
+      type: FieldType.TEXT,
+      icon: 'IconAbc',
+      isNullable: true,
+    },
+    {
+      universalIdentifier: 'e9c8bf05-dc01-5377-a35e-3abc491f655f',
+      name: 'seenRun',
+      isUIEditable: false,
+      label: 'Sync Run',
+      type: FieldType.TEXT,
+      icon: 'IconAbc',
+      isNullable: true,
+    },
+    {
+      universalIdentifier: '448a1651-9e36-5015-8b74-980d42ad639f',
+      name: 'syncedAt',
+      label: 'Last Synced At',
+      type: FieldType.DATE_TIME,
+      icon: 'IconCalendar',
+      isNullable: true,
+    },
+    {
+      universalIdentifier: '9a00d802-d107-5b55-a6b0-a4b71d51c6a5',
+      name: 'creator',
+      label: 'Creator',
+      type: FieldType.RELATION,
+      isNullable: true,
+      relationTargetObjectMetadataUniversalIdentifier:
+        '60893d01-3a14-5663-a7b2-679ee538a60e',
+      relationTargetFieldMetadataUniversalIdentifier:
+        'dbb617fd-8181-5345-9b3e-d7155f529c5c',
+      universalSettings: {
+        relationType: RelationType.MANY_TO_ONE,
+        joinColumnName: 'creatorId',
+      },
+    },
+    {
+      universalIdentifier: '0bfd398f-ff16-543b-b061-e5d633737344',
+      name: 'list',
+      label: 'List',
+      type: FieldType.RELATION,
+      isNullable: true,
+      relationTargetObjectMetadataUniversalIdentifier:
+        '91309942-26b5-5db3-aa25-fd202c8b5af3',
+      relationTargetFieldMetadataUniversalIdentifier:
+        '609ddba2-205e-5af9-9e75-ed7b758b8e35',
+      universalSettings: {
+        relationType: RelationType.MANY_TO_ONE,
+        joinColumnName: 'listId',
+      },
+    },
+  ],
+});

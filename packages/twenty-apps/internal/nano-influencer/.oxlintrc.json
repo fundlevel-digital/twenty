@@ -1,0 +1,8 @@
+{
+  "plugins": ["typescript"],
+  "ignorePatterns": ["node_modules", "dist", ".twenty"],
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/no-unused-vars": "error"
+  }
+}

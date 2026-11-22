@@ -19,3 +19,5 @@ within the exchange are historical, not current requirements.
 - [App behavior and usage](../../../packages/twenty-apps/internal/youtube-analytics/README.md)
 - [Current handoff and historical notes](../../../packages/twenty-apps/internal/youtube-analytics/HANDOFF.md)
 - [Remote preview skill](../../../.agents/skills/twenty-remote-preview/SKILL.md)
+
+[Repository decision 0007](../0007-use-native-enum-fields-across-apps.md) records the cross-app native enum field rule and backfill request.

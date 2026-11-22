@@ -103,3 +103,32 @@ YouTube Channels table and record page, and the Refresh Analytics action.
 Use the public demo record only with authorized YouTube quota use. Do not run
 the production 90-channel batch as a preview test. Refer to the app README for
 calculation semantics rather than duplicating them in this skill.
+
+## App Commands Returning 401 At The Preview Edge
+
+The renderer deliberately omits page cookies for `/s/...` requests. An app bearer
+can therefore be valid while Conductor rejects the request for lacking its
+preview cookie. A host-mapped VM browser bypasses that gate and cannot rule this
+out. Check the request path and cookie presence without logging cookie values.
+Do not change Nano credentials or weaken the production renderer cookie policy
+in response to an edge 401.
+
+The Nano preview on 2026-11-22 uses an ignored gateway at
+`.context/nano-preview/preview-gateway.cjs`, listening on port 3003 and forwarding
+to Twenty on port 3002. Only the ignored app fixture changes command URLs to
+`/rest/nano-preview/<action>`; the renderer sends page cookies for this native
+API prefix. The gateway permits only the known POST actions, removes cookies,
+the session opt-in and proxy identity headers, then forwards to the original
+`/s/nano-influencer/<action>` route with its bearer intact. Unknown actions and
+non-POST requests return 404. This is a preview transport adapter, not a new
+Twenty REST endpoint or a production app feature.
+
+Keep the public preview on the gateway port, retain `SERVER_INTERNAL_URL` on
+the backend port, and start the gateway as a detached process with private logs.
+The local TLS test proxy must also forward to the gateway. Verify cookie presence
+through a simulated edge, successful authenticated execution, and rejection
+without a bearer even when page cookies are present. A simulated gate does not
+verify the owner's actual Conductor browser session. Preserve the currently
+authorized transport and all existing records/connections during this repair. The later live Nano import retained the same gateway but
+replaced the mock transport with restricted list/membership reads; consult the
+latest preview handoff before reusing that fixture.
