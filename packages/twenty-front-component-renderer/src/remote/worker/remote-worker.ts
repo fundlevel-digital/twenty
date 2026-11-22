@@ -30,6 +30,7 @@ import { installDocumentGetElementById } from '@/polyfills/dom/utils/installDocu
 import { installElementDatasetPolyfill } from '@/polyfills/dom/utils/installElementDatasetPolyfill';
 import { installElementClickMethodPolyfill } from '@/polyfills/dom/utils/installElementClickMethodPolyfill';
 import { installFocusAndBlurMethodsPolyfill } from '@/polyfills/dom/utils/installFocusAndBlurMethodsPolyfill';
+import { installDocumentElementPrototypes } from '@/polyfills/dom/utils/installDocumentElementPrototypes';
 import { installGetComputedStyle } from '@/polyfills/dom/utils/installGetComputedStyle';
 import { installGetElementsByClassName } from '@/polyfills/dom/utils/installGetElementsByClassName';
 import { installGetRootNodePolyfill } from '@/polyfills/dom/utils/installGetRootNodePolyfill';
@@ -76,6 +77,11 @@ import { type FrontComponentHostThread } from '@/types/FrontComponentHostThread'
 import { type FrontComponentHostThreadExports } from '@/types/FrontComponentHostThreadExports';
 import { type WorkerExports } from '@/types/WorkerExports';
 import { createClonableErrorThreadSerialization } from '@/utils/clonable-error/createClonableErrorThreadSerialization';
+
+installDocumentElementPrototypes({
+  documentTarget: document,
+  htmlElementPrototype: HTMLElement.prototype,
+});
 
 installImageObjectUrlPolyfill({
   urlConstructor: URL,
