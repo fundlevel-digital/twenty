@@ -7,6 +7,7 @@ supersession. Operational instructions stay with their package or skill.
 
 | Area | Index | Implementation And Handoff |
 | --- | --- | --- |
+| Better Lists | [Decisions](decisions/better-lists/DECISIONS.md) | [App README](../packages/twenty-apps/internal/better-lists/README.md), [Handoff](handoffs/2026-11-22-better-lists.md) |
 | GitHub Profiles | [Decisions](decisions/github-profiles/DECISIONS.md) | [App README](../packages/twenty-apps/internal/github-profiles/README.md), [preview handoff](handoffs/2026-11-22-github-profiles-preview.md), [live release](handoffs/2026-11-22-github-profiles-live-release.md) |
 | Comments | [Decisions](decisions/comments/DECISIONS.md) | [App README](../packages/twenty-apps/internal/comments/README.md) |
 | Related Columns | [Decisions](decisions/related-columns/DECISIONS.md) | Frontend lookup picker, saved column paths and related-value displays |

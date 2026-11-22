@@ -94,3 +94,12 @@ On 2026-11-22 Kareem requested "Create a PR" with instructions to publish the
 complete workspace diff against `main`. This documentation PR records the
 completed live installation and remaining OAuth setup; it changes no runtime
 code and does not perform another deployment.
+
+## Merge Main Into The Documentation PR
+
+On 2026-11-22 Kareem requested: "Merge the remote branch (main) into your branch and resolve conflicts. Then, commit and push your changes."
+Merged `origin/main` at `ea0a75d756` into the existing PR #30 branch. Both
+documentation-index conflicts retain the new Better Lists entries and GitHub
+Profiles live-release links, with a single GitHub Profiles decision row.
+GitHub Profiles app code is unchanged. Markdown link and staged whitespace
+checks passed; this branch update performs no deployment.

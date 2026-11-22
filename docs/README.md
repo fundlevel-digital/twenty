@@ -2,6 +2,8 @@
 
 - [GitHub Profiles Live Release](handoffs/2026-11-22-github-profiles-live-release.md): installed native app, preserved applications, verified defaults/runtime and remaining production OAuth setup.
 
+- [Better Lists Implementation and Preview](handoffs/2026-11-22-better-lists.md): native lists, membership filters, verification and preview limits.
+
 - [GitHub Profiles Preview](handoffs/2026-11-22-github-profiles-preview.md): native app, influencer and many-to-many People/Company relations, configurable workflows/backfills, pooled authentication and owner-authorized preview population.
 
 - [Comments Live Release](handoffs/2026-11-22-comments-live-release.md): deployed core image and workspace app, preserved services, offsite backups and verification limits.

@@ -83,10 +83,12 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
           Icon: IconColorSwatch,
         },
         {
-          label: t`Apps preferences`,
+          label: t`App Preferences`,
           path: SettingsPath.AppPreferences,
           Icon: IconApps,
-          isHidden: !permissionFlagMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+          isHidden:
+            !permissionFlagMap[PermissionFlagType.CONNECTED_ACCOUNTS] &&
+            !permissionFlagMap[PermissionFlagType.DATA_MODEL],
         },
       ],
     },

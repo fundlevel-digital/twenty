@@ -1,3 +1,6 @@
+import { msg } from '@lingui/core/macro';
+import { doNotTranslate } from 'twenty-shared/i18n';
+import { getBetterListParentName } from 'src/modules/better-lists/utils/assert-better-list-field-change';
 import { Injectable } from '@nestjs/common';
 
 import { fromArrayToUniqueKeyRecord, isDefined } from 'twenty-shared/utils';
@@ -159,6 +162,26 @@ export class ObjectMetadataService {
         ],
       },
     );
+
+    for (const input of updateObjectInputs) {
+      const existing = Object.values(
+        existingFlatObjectMetadataMaps.byUniversalIdentifier,
+      ).find((object) => object?.id === input.id);
+      const parentName = getBetterListParentName(existing?.description);
+      if (
+        isDefined(parentName) &&
+        input.update.description !== undefined &&
+        getBetterListParentName(input.update.description) !== parentName
+      ) {
+        throw new ObjectMetadataException(
+          doNotTranslate('The parent of a Better List cannot be changed.'),
+          ObjectMetadataExceptionCode.INVALID_OBJECT_INPUT,
+          {
+            userFriendlyMessage: msg`The parent of a list is fixed at creation and cannot be changed.`,
+          },
+        );
+      }
+    }
 
     const conversions = updateObjectInputs.map((updateObjectInput) =>
       fromUpdateObjectInputToFlatObjectMetadataAndRelatedFlatEntities({
