@@ -109,8 +109,12 @@ independent controls:
   links preserve previous memberships instead of clearing them.
 - **Existing Records**: choose whether a backfill may create profiles. Save the
   preferences, run **Preview Backfill**, review the counts, then **Run Backfill**.
-  Backfills page through all records, report progress and can stop after the
-  current batch. Automatic creation can stay Off while a manual backfill runs.
+  Backfills query only records with a populated selected field, including
+  secondary links when the primary link is empty. Replacement mode also pages
+  through app-managed relations to find cleared fields that need cleanup; empty
+  records without managed relations are not evaluated. Counts distinguish
+  previewed changes from applied changes. Runs report progress and can stop after
+  the current batch. Automatic creation can stay Off while a manual backfill runs.
 
 Links use native join objects **Twitter Profile Companies** and **Twitter Profile
 People** with unique profile/parent indexes. This permits one profile to relate

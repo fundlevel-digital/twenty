@@ -48,6 +48,7 @@ const SourcePreferences = ({
     null,
   );
   const [result, setResult] = useState<ProfileRelationResult | null>(null);
+  const [resultIsPreview, setResultIsPreview] = useState(true);
   const [previewSignature, setPreviewSignature] = useState('');
   const [message, setMessage] = useState('');
   const cancelled = useRef(false);
@@ -97,6 +98,8 @@ const SourcePreferences = ({
     setRunning(dryRun ? 'preview' : 'apply');
     setMessage('');
     setPreviewSignature('');
+    setResult(null);
+    setResultIsPreview(dryRun);
     let totals = emptyProfileRelationResult();
     let after: string | undefined;
     const cursors = new Set<string>();
@@ -171,6 +174,7 @@ const SourcePreferences = ({
         <label htmlFor={`${inputId}-field`}>{t('X Link Field')}</label>
         <select
           id={`${inputId}-field`}
+          aria-describedby={`${inputId}-field-help`}
           style={selectStyle}
           value={settings.sourceField}
           disabled={running !== null}
@@ -185,11 +189,17 @@ const SourcePreferences = ({
             </option>
           ))}
         </select>
+        <Text id={`${inputId}-field-help`} color="secondary">
+          {t(
+            'Read X handles or profile URLs from this field, including additional links. Detect uses a recognized X field; it does not search every field on each record.',
+          )}
+        </Text>
         <label htmlFor={`${inputId}-auto`}>
           {t('When Records Are Created or Updated')}
         </label>
         <select
           id={`${inputId}-auto`}
+          aria-describedby={`${inputId}-auto-help`}
           style={selectStyle}
           value={settings.autoMode}
           disabled={running !== null}
@@ -208,9 +218,23 @@ const SourcePreferences = ({
             {t('Create Missing Profiles and Relate')}
           </option>
         </select>
+        <Text id={`${inputId}-auto-help`} color="secondary">
+          {settings.autoMode === 'OFF'
+            ? t(
+                'New and updated records will not automatically create profiles or change relations. You can still run a one-time backfill below.',
+              )
+            : settings.autoMode === 'LINK_EXISTING'
+              ? t(
+                  'When a record is saved, relate Twitter Profiles whose handles match its X links. If a matching profile does not exist, skip it without creating one.',
+                )
+              : t(
+                  'When a record is saved, reuse matching Twitter Profiles or create missing profiles from its X links, then relate them to the record. Existing records are only processed when saved or backfilled.',
+                )}
+        </Text>
         <label htmlFor={`${inputId}-changes`}>{t('When X Links Change')}</label>
         <select
           id={`${inputId}-changes`}
+          aria-describedby={`${inputId}-changes-help`}
           style={selectStyle}
           value={settings.linkMode}
           disabled={running !== null}
@@ -226,9 +250,18 @@ const SourcePreferences = ({
             {t('Replace Automatically Managed Relations')}
           </option>
         </select>
+        <Text id={`${inputId}-changes-help`} color="secondary">
+          {settings.linkMode === 'ADD_ONLY'
+            ? t(
+                'If an X link changes from @old to @new, add the @new relation and keep @old. Clearing the X field keeps existing relations.',
+              )
+            : t(
+                'If an X link changes from @old to @new, remove the @old relation only if this app created it automatically, then relate @new. Clearing the X field removes those automatic relations. This also applies during backfills; invalid links do not remove relations.',
+              )}
+        </Text>
         <Text color="secondary">
           {t(
-            'Manual relations and other Companies or People are preserved. Profiles are never deleted. New profiles have scheduled analytics off.',
+            'Manual relations and relations to other Companies or People are preserved. Profiles are never deleted. Creating or relating profiles makes no TwitterAPI.io calls; new profiles have scheduled analytics off.',
           )}
         </Text>
         <div>
@@ -244,6 +277,7 @@ const SourcePreferences = ({
         <label htmlFor={`${inputId}-backfill`}>{t('Existing Records')}</label>
         <select
           id={`${inputId}-backfill`}
+          aria-describedby={`${inputId}-backfill-help ${inputId}-backfill-scope`}
           style={selectStyle}
           value={mode}
           disabled={running !== null}
@@ -260,15 +294,35 @@ const SourcePreferences = ({
             {t('Create Missing Profiles and Relate')}
           </option>
         </select>
-        <Text color="secondary">
+        <Text id={`${inputId}-backfill-help`} color="secondary">
           {t(
-            'Backfills are optional and make no TwitterAPI.io calls. Save preferences, preview the changes, then run the backfill.',
+            'Run once for existing records, independently of the automatic setting above. Save preferences first. Preview shows proposed changes without saving them; Run Backfill applies them.',
           )}
+        </Text>
+        <Text color="secondary">
+          {mode === 'LINK_EXISTING'
+            ? t(
+                'Relate matching Twitter Profiles already in the CRM. Skip handles without a profile.',
+              )
+            : t(
+                'Reuse matching Twitter Profiles and create missing ones from the X links, then relate them. This does not fetch analytics.',
+              )}
+        </Text>
+        <Text id={`${inputId}-backfill-scope`} color="secondary">
+          {settings.linkMode === 'ADD_ONLY'
+            ? t(
+                'Only records with a populated X link field are checked, including records with additional X links only. Empty fields are excluded before processing.',
+              )
+            : t(
+                'Check records with a populated X link field, then check app-managed relations for cleared fields so stale automatic relations can be removed. Empty records without app-managed relations are excluded.',
+              )}
         </Text>
         {result && (
           <Text role="status">
             {t(
-              '{scanned} records · {profiles} profiles · {relations} new relations · {removed} removed · {existing} already related · {skipped} skipped · {invalid} invalid links',
+              resultIsPreview
+                ? 'Preview: {scanned} records checked · {profiles} profiles to create · {relations} relations to add · {removed} relations to remove · {existing} already related · {skipped} skipped · {invalid} invalid links'
+                : 'Results: {scanned} records checked · {profiles} profiles created · {relations} relations added · {removed} relations removed · {existing} already related · {skipped} skipped · {invalid} invalid links',
               {
                 scanned: result.scanned,
                 profiles: result.profilesCreated,

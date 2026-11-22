@@ -5,6 +5,50 @@ at commit c0899348c83d013de78db921d1b82e4183e1544e, installed on the live CRM,
 and backfilled with 235 related Twitter Profiles. The final production audit is below. See the [owner decision](../decisions/twitter-analytics/0001-native-twitter-profiles-and-preview.md)
 and [app README](../../packages/twenty-apps/internal/twitter-analytics/README.md).
 
+## Follow-Up: Preview Only
+
+Kareem corrected the scope on 2026-11-22: the additional workflow scope should
+have remained on preview. See [decision 0004](../decisions/twitter-analytics/0004-preview-scope-and-backfill-explanations.md).
+The following changes are local to the continuation branch and installed only on
+the isolated preview; they are not merged or deployed to production:
+
+- Setting-specific explanations cover automatic modes, relation replacement,
+  manual relation preservation, one-time backfills and analytics spending.
+  Explanations change with the selected mode and are associated with controls
+  through accessible descriptions. Preview counts describe proposed changes;
+  completed-run counts describe applied changes.
+- Source queries exclude null and empty Text values and empty primary/secondary
+  Links values before processing. Secondary-only X links remain eligible.
+- Replacement mode adds a separate paginated managed-membership pass for cleared
+  X fields. It deduplicates sources within and across pages, preserves manual
+  memberships and excludes unrelated empty records. Successful cleanup is not
+  counted as skipped. Single-record workflow events still handle cleared fields.
+- App unit suite: 127 tests across 14 files pass. Direct TypeScript checking,
+  oxlint and SDK preview build/plan/apply pass. Plans contain updates only, with no
+  destructive operations.
+- Native preview verification selected two populated Companies in one request.
+  A secondary-only link and an invalid link were correctly included; unrelated
+  blank records were excluded. Replacement preview and apply each found and
+  removed 103 stale managed memberships across multiple pages, preserving the
+  manual membership and the populated memberships. Temporary test records were
+  removed and original preview preferences restored; no TwitterAPI.io calls ran.
+- Browser checks verified dynamic descriptions, the two-record preview summary,
+  and preview-before-apply gating with no page errors. The browser used the exact
+  preview origin through a local TLS proxy, bypassing Conductor's edge. The public
+  edge returned its expected anonymous sign-in gate; host frontend source was
+  not changed.
+
+Kareem also asked about CRM-wide grouping by the Companies/People relations.
+Current record-view grouping permits Select and Many-to-One fields; the shared
+grouping guard explicitly excludes One-to-Many fields. The app's Companies and
+People relations use join objects. Supporting these groups requires shared
+relation-path queries and consistent multi-group record identity, counts,
+pagination and drag-and-drop semantics. This was assessed but not implemented.
+
+The Hindsight service was unavailable in this workspace (private profile/repo
+metadata missing), so verified findings and the owner correction are retained
+in this handoff and decision 0004 instead.
+
 ## Delivered
 
 - Native TwitterAPI.io SDK app with the provider's favicon as its logo.

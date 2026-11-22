@@ -281,8 +281,7 @@ export const relateSourceRecords = async ({
         continue;
       }
       let removedRelation:
-        | { id: string; automaticallyManaged: boolean }
-        | undefined;
+        { id: string; automaticallyManaged: boolean } | undefined;
       if (profile) {
         const removed = await client.request<{
           [key: string]: {
@@ -334,20 +333,23 @@ export const relateSourceRecords = async ({
         }
       }
     }
-    if (settings.linkMode === 'SYNC_MANAGED' && invalid === 0) {
-      for (const edge of edges.filter(
-        (edge) =>
-          edge.automaticallyManaged && !wanted.has(edge.twitterProfileId),
-      )) {
-        result.relationsRemoved++;
-        if (!dryRun)
-          await client.request(
-            `mutation RemoveRelation($id: UUID!) { delete${join[0].toUpperCase()}${join.slice(1)}(id: $id) { id } }`,
-            { id: edge.id },
-          );
-      }
+    const obsoleteRelations =
+      settings.linkMode === 'SYNC_MANAGED' && invalid === 0
+        ? edges.filter(
+            (edge) =>
+              edge.automaticallyManaged && !wanted.has(edge.twitterProfileId),
+          )
+        : [];
+    for (const edge of obsoleteRelations) {
+      result.relationsRemoved++;
+      if (!dryRun)
+        await client.request(
+          `mutation RemoveRelation($id: UUID!) { delete${join[0].toUpperCase()}${join.slice(1)}(id: $id) { id } }`,
+          { id: edge.id },
+        );
     }
-    if (handles.length === 0) result.skipped++;
+    if (handles.length === 0 && obsoleteRelations.length === 0)
+      result.skipped++;
   }
   result.plannedProfileHandles = [...plannedProfiles];
   return result;

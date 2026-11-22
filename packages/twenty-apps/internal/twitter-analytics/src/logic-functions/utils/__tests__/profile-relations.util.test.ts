@@ -223,7 +223,7 @@ describe('Twitter profile relations', () => {
       dryRun: false,
       records: [{ id: 'company-1', xLink: null }],
     });
-    expect(result.relationsRemoved).toBe(1);
+    expect(result).toMatchObject({ relationsRemoved: 1, skipped: 0 });
     expect(request.mock.calls[1]?.[1]).toEqual({ id: 'edge' });
     expect(request.mock.calls[1]?.[0]).toContain('deleteTwitterProfileCompany');
   });
