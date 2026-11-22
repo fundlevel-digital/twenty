@@ -9,10 +9,12 @@ const LOOKUP_COLUMN_SIZE = 150;
 export const buildRecordTableLookupColumn = ({
   relationFieldMetadataItemId,
   relationTargetFieldMetadataId,
+  relationPathFieldMetadataIds,
   recordFields,
 }: {
   relationFieldMetadataItemId: string;
   relationTargetFieldMetadataId: string;
+  relationPathFieldMetadataIds?: string[];
   recordFields: Pick<RecordField, 'fieldMetadataItemId' | 'position'>[];
 }): RecordField => {
   const positions = recordFields.map(({ position }) => position);
@@ -37,6 +39,9 @@ export const buildRecordTableLookupColumn = ({
     id: v4(),
     fieldMetadataItemId: relationFieldMetadataItemId,
     relationTargetFieldMetadataId,
+    ...(isNonEmptyArray(relationPathFieldMetadataIds)
+      ? { relationPathFieldMetadataIds }
+      : {}),
     position: getPositionBetween(
       previousPosition,
       isNonEmptyArray(followingPositions)

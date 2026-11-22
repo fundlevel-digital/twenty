@@ -8,10 +8,12 @@ supersession. Operational instructions stay with their package or skill.
 | Area | Index | Implementation And Handoff |
 | --- | --- | --- |
 | Comments | [Decisions](decisions/comments/DECISIONS.md) | [App README](../packages/twenty-apps/internal/comments/README.md) |
+| Related Columns | [Decisions](decisions/related-columns/DECISIONS.md) | Frontend lookup picker, saved column paths and related-value displays |
 | Cal.com | [Decisions](decisions/cal-com/DECISIONS.md) | [App README](../packages/twenty-apps/public/cal-com/README.md) |
 | Slack Sync | [Decisions](decisions/slack/DECISIONS.md) | [Implementation](slack-sync.md) |
 | LinkedIn Sync | [Decisions](decisions/linkedin/DECISIONS.md) | [App README](../packages/twenty-apps/internal/fundlevel-linkedin/README.md), [handoff](../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md) |
 | YouTube Analytics | [Decisions](decisions/youtube-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/youtube-analytics/README.md), [handoff](../packages/twenty-apps/internal/youtube-analytics/HANDOFF.md) |
+| Twitter Analytics | [Decisions](decisions/twitter-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/twitter-analytics/README.md), [handoff](handoffs/2026-11-22-twitter-analytics.md) |
 | PlusVibe | [Decisions](decisions/packages/twenty-apps/public/plusvibe/DECISIONS.md) | [App README](../packages/twenty-apps/public/plusvibe/README.md) |
 
 This repository uses the centralized layout from

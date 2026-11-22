@@ -48,7 +48,10 @@ export const RecordTableCellFieldContextWrapper = ({
   const lookupTarget =
     columnDescriptorByRecordFieldId[recordField.id]?.lookupTarget;
 
-  if (lookupTarget?.isMultiLevel === true) {
+  if (
+    lookupTarget?.isMultiLevel === true ||
+    lookupTarget?.isMultiValued === true
+  ) {
     return (
       <RecordTableCellLookupPathFieldContext
         key={instanceId}

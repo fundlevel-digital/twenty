@@ -20,9 +20,11 @@ export const useAddRecordTableLookupColumn = (recordTableId: string) => {
     async ({
       relationFieldMetadataItemId,
       relationTargetFieldMetadataId,
+      relationPathFieldMetadataIds,
     }: {
       relationFieldMetadataItemId: string;
       relationTargetFieldMetadataId: string;
+      relationPathFieldMetadataIds?: string[];
     }) => {
       const currentViewId = store.get(currentViewIdCallbackState);
 
@@ -38,6 +40,7 @@ export const useAddRecordTableLookupColumn = (recordTableId: string) => {
       const lookupColumn = buildRecordTableLookupColumn({
         relationFieldMetadataItemId,
         relationTargetFieldMetadataId,
+        relationPathFieldMetadataIds,
         recordFields: store.get(currentRecordFieldsAtom),
       });
 
@@ -53,6 +56,8 @@ export const useAddRecordTableLookupColumn = (recordTableId: string) => {
             viewId: currentViewId,
             fieldMetadataId: lookupColumn.fieldMetadataItemId,
             relationTargetFieldMetadataId,
+            relationPathFieldMetadataIds:
+              lookupColumn.relationPathFieldMetadataIds,
             isCanonical: false,
             isVisible: lookupColumn.isVisible,
             position: lookupColumn.position,

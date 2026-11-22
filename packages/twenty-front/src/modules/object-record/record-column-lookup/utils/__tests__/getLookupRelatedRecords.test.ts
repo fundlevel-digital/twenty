@@ -5,6 +5,48 @@ const companyLookupTarget = { relationFieldName: 'company' };
 const company = { id: 'company-1', __typename: 'Company', city: 'Paris' };
 
 describe('getLookupRelatedRecords', () => {
+  it.each([
+    {
+      relationValue: [
+        { id: 'channel-1', subscriberCount: 0 },
+        { id: 'channel-2', subscriberCount: 250 },
+      ],
+    },
+    {
+      relationValue: {
+        edges: [
+          { node: { id: 'channel-1', subscriberCount: 0 } },
+          { node: { id: 'channel-2', subscriberCount: 250 } },
+        ],
+      },
+    },
+  ])('stores each leaf of a direct one-to-many lookup', ({ relationValue }) => {
+    expect(
+      getLookupRelatedRecords({
+        records: [
+          {
+            id: 'influencer-1',
+            __typename: 'Influencer',
+            youtubeChannels: relationValue,
+          },
+        ],
+        columnDescriptorByRecordFieldId: {
+          subscribers: {
+            lookupTarget: {
+              relationFieldName: 'youtubeChannels',
+              relationHops: [
+                { relationFieldMetadataItem: { name: 'youtubeChannels' } },
+              ],
+            },
+          },
+        },
+      }),
+    ).toEqual([
+      { id: 'channel-1', subscriberCount: 0 },
+      { id: 'channel-2', subscriberCount: 250 },
+    ]);
+  });
+
   it('returns the records related through a lookup column relation', () => {
     expect(
       getLookupRelatedRecords({

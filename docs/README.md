@@ -1,5 +1,15 @@
 # Twenty Engineering Notes
 
+- [Related Columns Live Release](handoffs/2026-11-22-related-columns-live-release.md): pinned production image, coordinated offsite backups and live verification.
+
+- [Related Value Chips](handoffs/2026-11-22-related-value-chips.md): source avatars, distinct value chips and overflow in related columns.
+
+- [Multi-step Related Column Preview](handoffs/2026-11-22-multistep-related-columns.md): relationship navigation, cutoff rules and synthetic preview cases.
+
+- [Related Attribute Columns Preview](handoffs/2026-11-22-related-columns-preview.md): one-to-many and junction attribute columns, synthetic fixture and isolated VM runtime.
+
+- [Influencer YouTube Channel Migration](handoffs/2026-11-22-influencer-youtube-channels.md): live channel links, migrated details/analytics, preserved pricing and API verification.
+
 - [Cal.com OAuth App And Release](handoffs/2026-11-21-cal-com-preview.md): implementation, isolated preview, live installation and OAuth verification status.
 
 - [Live CRM Rollout](handoffs/2026-11-21-live-crm-rollout.md): deployed core/apps, migration recovery, PlusVibe reconciliation and pending LinkedIn/Slack activation.
@@ -13,3 +23,5 @@
 
 Product and operational documentation that belongs to a package remains with that
 package. Decision records are centralized under this directory.
+
+- [2026-11-22: TwitterAPI.io App And Preview](handoffs/2026-11-22-twitter-analytics.md)
