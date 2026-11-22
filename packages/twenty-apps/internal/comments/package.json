@@ -1,0 +1,41 @@
+{
+  "name": "@fundlevel/comments",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Record comments, replies and Inbox mentions for Twenty",
+  "license": "MIT",
+  "scripts": {
+    "twenty": "twenty",
+    "typecheck": "tsgo --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sniptt/guards": "^0.2.0"
+  },
+  "devDependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
+    "@types/node": "^24.7.2",
+    "@types/react": "^19.0.0",
+    "@typescript/native-preview": "latest",
+    "jsdom": "^31.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "twenty": "2.59.0",
+    "twenty-client-sdk": "2.59.0",
+    "twenty-sdk": "2.59.0",
+    "twenty-ui": "2.59.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.12"
+  },
+  "type": "module",
+  "packageManager": "yarn@4.18.1",
+  "engines": {
+    "twenty": ">=2.59.0",
+    "node": ">=24.5.0"
+  }
+}

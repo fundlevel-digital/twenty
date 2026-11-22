@@ -1,5 +1,11 @@
 # Better Lists — 2026-11-22
 
+## Pull Request Integration
+
+Kareem requested: "Merge the remote branch (main) into your branch and resolve conflicts. Then, commit and push your changes." The integration brings origin/main at `b13a4e000e` into `conductor/better-lists-app` for draft PR #29. Only the documentation indexes conflicted; resolution retains the Better Lists entries and all incoming area and handoff links. No manual code resolution or production deployment is included in this integration.
+
+Integration validation: all three Better Lists service tests passed, both resolved indexes have valid local links, and the staged diff passes whitespace checks with no unresolved conflicts. The earlier full typecheck and browser results below predate this main integration.
+
 ## Current Packaging Requirement
 
 Kareem initially required [app-only implementation and advance disclosure of SDK limits](../decisions/better-lists/0003-app-only-boundary.md), then [accepted retaining this prototype and restoring its earlier Data Model layout](../decisions/better-lists/0006-restore-earlier-data-model-layout.md). The native implementation remains; an app-only conversion is no longer part of this task. The general preference for app-only work and disclosure before adding fork requirements remains in force.

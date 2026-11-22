@@ -10,6 +10,8 @@ Native Twenty app, channel records, calculations, preferences and production rol
 | [0004](0004-native-app-preferences.md)                | 2026-11-21 | Put Analytics controls in App Preferences, retaining workspace-wide calculation values                      | accepted |
 | [0005](0005-production-migration-and-verification.md) | 2026-11-21 | Merge/deploy, migrate 90 enabled channels and verify fresh production calculations                          | accepted |
 | [0006](0006-native-channel-profile-photos.md)         | 2026-11-21 | Use channel profile photos as native avatars and backfill all 90 channels                                   | accepted |
+| [0007](0007-link-all-influencers-to-channels.md) | 2026-11-22 | Link every Influencer to YouTube Channels, move details and analytics, and keep pricing on Influencers | superseded by 0008 |
+| [0008](0008-copy-pricing-to-channels.md) | 2026-11-22 | Copy pricing to YouTube Channels and keep original Influencer pricing | accepted |
 
 These records were written retrospectively on 2026-11-21 from this conversation,
 its supplied handoff and source/deployment evidence. Quotes are the owner's actual

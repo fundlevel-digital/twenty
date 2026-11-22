@@ -1,0 +1,1 @@
+export const ANALYTICS_ENTRIES_PAGE_SIZE = 200;

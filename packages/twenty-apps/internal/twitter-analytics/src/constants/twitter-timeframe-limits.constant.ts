@@ -1,0 +1,3 @@
+export const MIN_TWITTER_TIMEFRAME_DAYS = 1;
+export const MAX_TWITTER_TIMEFRAME_DAYS = 366;
+export const MAX_TWITTER_TIMEFRAMES = 10;

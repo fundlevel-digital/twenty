@@ -50,6 +50,7 @@ SERVER_URL=https://<preview-host>
 FRONTEND_URL=https://<preview-host>
 SERVER_INTERNAL_URL=http://localhost:3000
 LOGIC_FUNCTION_TYPE=LOCAL
+SIGN_IN_PREFILLED=true
 ```
 
 Use the existing development database/Redis settings and a private `APP_SECRET`.
@@ -134,8 +135,15 @@ curl --fail http://localhost:3000/healthz
 curl --fail http://localhost:3001/healthz
 ```
 
-Then check login and the requested page in a browser. In the seeded development
-workspace, use Continue With Email and the prefilled credentials.
+Then check login and the requested page in a fresh browser session without saved
+credentials. Keep `SIGN_IN_PREFILLED=true` in the preview server environment;
+restart server and worker after changing it. Confirm the login email and
+password are both prefilled by the app, rather than by a browser password manager
+or test automation. Advance through the login steps and submit without filling
+either field. Depending on the enabled auth methods, the first action may be
+Continue With Email or Continue, followed by Sign In. Verify this flow before
+sharing the preview, including after recovery or switching to a cached host UI.
+Keep this setting scoped to the isolated demo preview.
 
 | Symptom                                                  | Next check                                                                        |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------- |

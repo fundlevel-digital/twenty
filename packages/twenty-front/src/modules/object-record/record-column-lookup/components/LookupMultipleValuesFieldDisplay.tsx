@@ -1,6 +1,7 @@
-import { LookupLeafRecordIdsContext } from '@/object-record/record-column-lookup/contexts/LookupLeafRecordIdsContext';
+import { LookupValueChip } from '@/object-record/record-column-lookup/components/LookupValueChip';
+import { type LookupRecordEntry } from '@/object-record/record-column-lookup/types/LookupRecordEntry';
+import { LookupValueRecordsContext } from '@/object-record/record-column-lookup/contexts/LookupValueRecordsContext';
 import { FieldContext } from '@/object-record/record-field/ui/contexts/FieldContext';
-import { useFieldFocus } from '@/object-record/record-field/ui/hooks/useFieldFocus';
 import { MAX_RELATION_CHIPS_DISPLAYED_INLINE } from '@/object-record/record-field/ui/meta-types/display/constants/MaxRelationChipsDisplayedInline';
 import { useLingui } from '@lingui/react/macro';
 import { type ReactNode, useContext } from 'react';
@@ -8,36 +9,42 @@ import { isNonEmptyArray } from 'twenty-shared/utils';
 import { OverflowingList } from 'twenty-ui/components/layout';
 
 type LookupMultipleValuesFieldDisplayProps = {
-  leafRecordIds: string[];
+  entries: LookupRecordEntry[];
+  sourceObjectNameSingular: string;
   children: ReactNode;
 };
 
 export const LookupMultipleValuesFieldDisplay = ({
-  leafRecordIds,
+  entries,
+  sourceObjectNameSingular,
   children,
 }: LookupMultipleValuesFieldDisplayProps) => {
   const { t } = useLingui();
   const fieldContext = useContext(FieldContext);
-  const { isFocused } = useFieldFocus();
 
-  if (!isNonEmptyArray(leafRecordIds)) {
+  if (!isNonEmptyArray(entries)) {
     return null;
   }
 
   return (
     <OverflowingList
       overflowLabel={t`Show all items`}
-      showOverflowCount={isFocused}
+      showOverflowCount
       maxInlineCount={MAX_RELATION_CHIPS_DISPLAYED_INLINE}
     >
-      {leafRecordIds.map((leafRecordId) => (
+      {entries.map(({ sourceRecord, leafRecord }) => (
         <FieldContext.Provider
-          key={leafRecordId}
-          value={{ ...fieldContext, recordId: leafRecordId }}
+          key={`${sourceRecord.id}:${leafRecord.id}`}
+          value={{ ...fieldContext, recordId: leafRecord.id }}
         >
-          <LookupLeafRecordIdsContext.Provider value={undefined}>
-            {children}
-          </LookupLeafRecordIdsContext.Provider>
+          <LookupValueRecordsContext.Provider value={undefined}>
+            <LookupValueChip
+              sourceRecord={sourceRecord}
+              sourceObjectNameSingular={sourceObjectNameSingular}
+            >
+              {children}
+            </LookupValueChip>
+          </LookupValueRecordsContext.Provider>
         </FieldContext.Provider>
       ))}
     </OverflowingList>

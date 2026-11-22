@@ -2,7 +2,13 @@
 
 Defines one **YouTube Channels** object. It stores each channel's name, channel
 ID, @handle, URL, uploads playlist ID, subscriber count and calculated metrics.
-It does not depend on the workspace's Influencer or Influencer analytics objects.
+The app itself does not require the workspace's Influencer or Influencer analytics
+objects. Fundlevel's workspace adds an optional Influencer relationship and keeps
+YouTube profile details and analytics on channels. Pricing is available on both
+channels and Influencers after a one-time copy; subsequent edits are independent.
+The channel CPM formulas currently reference Influencer pricing.
+The workspace migration and its verification are documented in the
+[2026-11-22 handoff](../../../../docs/handoffs/2026-11-22-influencer-youtube-channels.md).
 
 ## Using it
 

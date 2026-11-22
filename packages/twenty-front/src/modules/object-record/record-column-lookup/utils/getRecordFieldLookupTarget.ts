@@ -6,7 +6,6 @@ import { isOneToManyRelationField } from '@/object-metadata/utils/isOneToManyRel
 import { type RecordField } from '@/object-record/record-field/types/RecordField';
 import { type FieldDefinition } from '@/object-record/record-field/ui/types/FieldDefinition';
 import { type FieldMetadata } from '@/object-record/record-field/ui/types/FieldMetadata';
-import { isPlainManyToOneRelationField } from '@/object-record/utils/isPlainManyToOneRelationField';
 import { findRelationTargetObjectMetadataItem } from '@/related-record-paths/utils/findRelationTargetObjectMetadataItem';
 import { FieldMetadataType } from 'twenty-shared/types';
 import { findById, isDefined, isNonEmptyArray } from 'twenty-shared/utils';
@@ -60,7 +59,7 @@ const getLookupRelationHop = ({
   return { relationFieldMetadataItem, targetObjectMetadataItem, isOneToMany };
 };
 
-const getLookupRelationHops = ({
+export const getLookupRelationHops = ({
   fieldMetadataItem,
   relationPathFieldMetadataIds,
   objectMetadataItems,
@@ -138,10 +137,6 @@ export const getRecordFieldLookupTarget = ({
     recordField.relationPathFieldMetadataIds ?? [];
   const isMultiLevel = isNonEmptyArray(relationPathFieldMetadataIds);
 
-  if (!isMultiLevel && !isPlainManyToOneRelationField(fieldMetadataItem)) {
-    return undefined;
-  }
-
   const relationHops = getLookupRelationHops({
     fieldMetadataItem,
     relationPathFieldMetadataIds,
@@ -162,10 +157,8 @@ export const getRecordFieldLookupTarget = ({
 
   if (
     !isDefined(lookupTargetFieldMetadataItem) ||
-    (isMultiLevel &&
-      (lookupTargetFieldMetadataItem.type === FieldMetadataType.RELATION ||
-        lookupTargetFieldMetadataItem.type ===
-          FieldMetadataType.MORPH_RELATION))
+    lookupTargetFieldMetadataItem.type === FieldMetadataType.RELATION ||
+    lookupTargetFieldMetadataItem.type === FieldMetadataType.MORPH_RELATION
   ) {
     return undefined;
   }
