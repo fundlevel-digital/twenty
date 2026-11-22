@@ -85,3 +85,50 @@ intended workspace. Production deployment and migration were not performed.
 The Hindsight CLI profile is unavailable in this VM (`Missing/invalid repo
 metadata or private profile`); both recall and retention were unavailable. The
 checked source, decision and this handoff preserve the verified engineering facts.
+
+## Expansion Before Merge And Live Installation
+
+The owner expanded the scope before merge: native Company/Person workflows,
+many-to-many profile relations, configurable auto-creation/backfills, response
+examples and verified multi-key waterfalling. See [decision 0003](../decisions/twitter-analytics/0003-company-and-person-profile-workflows.md).
+
+Live metadata inspection using the owner's saved Mac CLI remote confirmed both
+Companies and People have `pdlTwitterUrl` (Links, X / Twitter) and legacy `twitter`
+(Text). Raw CLI core introspection returned only standard fields, so it was not
+sufficient evidence that custom X fields were absent. Metadata object filters
+support universal identifiers, not names; field filters support object IDs, not
+field names. The app source selector uses the compatible metadata queries.
+
+The preview installed two native workflows, two join objects, unique membership
+indexes, reverse relations, related-record paths and Profile Relations preferences.
+A real native workflow run related the existing public TypeScript profile to two
+demo Companies and two demo People. Automatic creation was restored to Off after
+verification. Company backfill preview/application and repeat membership checks
+use the same settings and make no external API calls. Native creation of join
+records required update permission as well as create permission in this host;
+only the app-owned join objects receive those additional write permissions.
+
+The provided API key was used for two bounded public TypeScript read requests to
+capture raw endpoint examples; its temporary plaintext file was removed. Full
+responses remain ignored under `.context/twitter-api-*-response.json`; abridged
+public examples are documented in the app's API.md. No customer records or keys
+are in those documents.
+
+PR #19 remains the source PR until the expanded version is merged. Live app
+installation and the Influencer relation backfill follow the source merge; preview
+installation alone is not a production rollout.
+
+Additional workflow verification covered clearing and restoring an X field: the
+managed membership is soft-deleted and restored when the same handle returns.
+Unique membership indexes include soft-deleted rows, so creating a replacement
+row would violate uniqueness; the app restores its own deleted membership and
+preserves manually deleted memberships. The host rejects duplicate root resolver
+names in one GraphQL operation even with aliases; active/deleted membership reads
+therefore use separate operations.
+
+The expanded browser verification saved/restored automatic creation preferences
+and completed both preview and application across all 601 preview Companies:
+2 existing memberships, no new profiles, no duplicate memberships, no removals
+and no browser page errors. Unit coverage now totals 122 passing tests, including
+native metadata field discovery, independent many-to-many memberships, managed
+membership restoration/manual-deletion preservation and the multi-key waterfall.

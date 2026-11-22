@@ -164,6 +164,57 @@ describe('TwitterAPI.io', () => {
     await client.listPostPage(profile);
     expect(client.unavailableCredentialIds).toEqual(['connection-1']);
   });
+  it('waterfalls across every invalid or exhausted key without using transient retries', async () => {
+    const fetchImplementation = vi
+      .fn()
+      .mockResolvedValueOnce(json({}, 401))
+      .mockResolvedValueOnce(json({}, 402))
+      .mockResolvedValueOnce(json({ data: { tweets: [] } }));
+    const client = new TwitterClient({
+      credentials: [
+        { id: 'bad', apiKey: 'bad-key' },
+        { id: 'empty', apiKey: 'empty-key' },
+        { id: 'healthy', apiKey: 'healthy-key' },
+      ],
+      fetchImplementation,
+    });
+    await client.listPostPage(profile);
+    expect(client.unavailableCredentialIds).toEqual(['bad', 'empty']);
+    expect(
+      fetchImplementation.mock.calls.map(
+        ([, options]) => options.headers['X-API-Key'],
+      ),
+    ).toEqual(['bad-key', 'empty-key', 'healthy-key']);
+  });
+  it('stops after transient retries rather than consuming another account', async () => {
+    const fetchImplementation = vi
+      .fn()
+      .mockImplementation(async () => json({}, 503));
+    const client = new TwitterClient({
+      credentials: [...credentials, { id: 'other', apiKey: 'other-key' }],
+      fetchImplementation,
+      waitImplementation: vi.fn().mockResolvedValue(undefined),
+    });
+    await expect(client.listPostPage(profile)).rejects.toThrow(
+      'temporarily unavailable',
+    );
+    expect(fetchImplementation).toHaveBeenCalledTimes(4);
+    expect(
+      fetchImplementation.mock.calls.every(
+        ([, options]) => options.headers['X-API-Key'] === 'private-test-key',
+      ),
+    ).toBe(true);
+  });
+  it('fails an exhausted pool without leaking keys', async () => {
+    const client = new TwitterClient({
+      credentials,
+      fetchImplementation: vi.fn().mockResolvedValue(json({}, 402)),
+    });
+    await expect(client.listPostPage(profile)).rejects.toThrow(
+      'No usable TwitterAPI.io connections',
+    );
+    expect(client.unavailableCredentialIds).toEqual(['connection-1']);
+  });
   it('paces consecutive requests for free-tier connections', async () => {
     const waitImplementation = vi.fn().mockResolvedValue(undefined);
     const client = new TwitterClient({

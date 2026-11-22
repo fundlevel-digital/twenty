@@ -1,5 +1,9 @@
+import { INFLUENCER_OBJECT_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import {
+  getSourceFields,
+  extractTwitterHandles,
+} from 'src/logic-functions/utils/profile-relations.util';
 import { type WorkspaceGraphqlClient } from 'src/logic-functions/utils/workspace-graphql-client.util';
-import { resolveTwitterProfileInput } from 'src/logic-functions/utils/resolve-twitter-profile-input.util';
 
 type Influencer = { id: string; name?: string; [key: string]: unknown };
 type Profile = {
@@ -11,34 +15,16 @@ type Profile = {
 export const importInfluencerProfiles = async (
   client: WorkspaceGraphqlClient,
   influencerIds: string[],
+  metadata: WorkspaceGraphqlClient,
 ) => {
   if (influencerIds.length === 0 || influencerIds.length > 100)
     throw new Error('Select 1–100 Influencers to import');
-  const schema = await client.request<{
-    __type: {
-      fields: {
-        name: string;
-        type: {
-          kind: string;
-          name: string | null;
-          ofType?: { name: string | null };
-        };
-      }[];
-    };
-  }>(
-    'query InfluencerFields { __type(name: "Influencer") { fields { name type { kind name ofType { name } } } } }',
-    {},
+  const fields = (
+    await getSourceFields(metadata, INFLUENCER_OBJECT_UNIVERSAL_IDENTIFIER)
+  ).filter(({ name }) => /twitter|^xUrl$|^xHandle$/i.test(name));
+  const selections = fields.map(({ name, type }) =>
+    type === 'LINKS' ? `${name} { primaryLinkUrl secondaryLinks }` : name,
   );
-  const fields = schema.__type.fields.filter(({ name }) =>
-    /twitter|^xUrl$|^xHandle$/i.test(name),
-  );
-  const selections = fields.flatMap(({ name, type }) => {
-    const typeName = type.name ?? type.ofType?.name;
-    if (typeName === 'String') return [name];
-    if (typeName?.includes('Links'))
-      return [`${name} { primaryLinkUrl secondaryLinks }`];
-    return [];
-  });
   if (selections.length === 0)
     throw new Error(
       'Influencers need a Twitter URL or Handle field before importing',
@@ -55,33 +41,9 @@ export const importInfluencerProfiles = async (
   for (const { node: influencer } of result.influencers.edges) {
     const handles = new Set<string>();
     for (const field of fields) {
-      const value = influencer[field.name];
-      const values: string[] = typeof value === 'string' ? [value] : [];
-      if (
-        value &&
-        typeof value === 'object' &&
-        'primaryLinkUrl' in value &&
-        typeof value.primaryLinkUrl === 'string'
-      )
-        values.push(value.primaryLinkUrl);
-      if (
-        value &&
-        typeof value === 'object' &&
-        'secondaryLinks' in value &&
-        Array.isArray(value.secondaryLinks)
-      ) {
-        for (const link of value.secondaryLinks)
-          if (typeof link?.url === 'string') values.push(link.url);
-      }
-      for (const text of values) {
-        const input = resolveTwitterProfileInput({
-          recordId: influencer.id,
-          twitterId: null,
-          twitterHandle: text.startsWith('http') ? null : text,
-          twitterUrl: text.startsWith('http') ? text : null,
-        });
-        if (input) handles.add(input.value.toLowerCase());
-      }
+      for (const handle of extractTwitterHandles(influencer[field.name])
+        .handles)
+        handles.add(handle);
     }
     if (handles.size === 0) skipped++;
     for (const handle of handles) {

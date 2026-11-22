@@ -16,9 +16,11 @@ export default defineLogicFunction({
       !ids.every((id) => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id))
     )
       throw new Error('Select Influencers to import');
-    return importInfluencerProfiles(createWorkspaceGraphqlClient(), [
-      ...new Set(ids),
-    ]);
+    return importInfluencerProfiles(
+      createWorkspaceGraphqlClient(),
+      [...new Set(ids)],
+      createWorkspaceGraphqlClient('/metadata'),
+    );
   },
   httpRouteTriggerSettings: {
     path: '/twitter-analytics/import-influencers',

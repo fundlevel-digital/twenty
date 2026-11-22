@@ -85,3 +85,43 @@ columns, preferences and avatars.
 See the [decision](../../../../docs/decisions/twitter-analytics/0001-native-twitter-profiles-and-preview.md)
 and the [preview handoff](../../../../docs/handoffs/2026-11-22-twitter-analytics.md)
 for implementation and verification limits.
+
+## Company And Person Workflows
+
+The app installs **Relate Company Twitter Profiles** and **Relate Person Twitter
+Profiles** as native workflows. A Company or Person creation/update runs a logic
+step that reads the saved preferences. Both default to Off, so installation alone
+does not create or backfill their profiles.
+
+Open **App Preferences → TwitterAPI.io → Profile Relations**. Each object has
+independent controls:
+
+- **X Link Field**: select an existing Text or Links field, or detect an existing
+  X field. Live Fundlevel already has PDL's `pdlTwitterUrl` (X / Twitter) and the
+  legacy `twitter` text field. The app reuses these rather than installing new X
+  fields. Detection prefers `xLink`, then `pdlTwitterUrl`, then the other common
+  Twitter/X field names; explicitly selecting a field overrides detection.
+- **When Records Are Created or Updated**: Off, Relate Existing Profiles Only,
+  or Create Missing Profiles and Relate.
+- **When X Links Change**: Keep Existing Relations, or Replace Automatically
+  Managed Relations. Replacement removes obsolete app-managed memberships only.
+  It preserves manual relations, other parents and the profile records. Invalid
+  links preserve previous memberships instead of clearing them.
+- **Existing Records**: choose whether a backfill may create profiles. Save the
+  preferences, run **Preview Backfill**, review the counts, then **Run Backfill**.
+  Backfills page through all records, report progress and can stop after the
+  current batch. Automatic creation can stay Off while a manual backfill runs.
+
+Links use native join objects **Twitter Profile Companies** and **Twitter Profile
+People** with unique profile/parent indexes. This permits one profile to relate
+to many Companies and many People, while every Company or Person can relate to
+many profiles. Primary and secondary X URLs are normalized and deduplicated.
+Repeated backfills and workflow runs reuse profiles and existing memberships.
+The Influencer Has Many relation remains independent of these memberships.
+
+Creating or relating profiles makes no external TwitterAPI.io calls. Newly created
+profiles retain disabled scheduled analytics. Refreshing their analytics is a
+separate explicit action or an enabled scheduled calculation.
+
+See [API Requests And Raw Response Examples](API.md) for endpoint parameters,
+actual public response shapes and the multiple-key waterfall behavior.
