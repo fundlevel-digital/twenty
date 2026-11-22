@@ -92,16 +92,31 @@ const EmptyDiscussion = styled(Empty)`
 export const CommentsInbox = () => {
   const { t } = useTranslate();
   const location = useLocation();
-  const notificationId = new URLSearchParams(location?.search).get(
-    'notification',
-  );
+  const parameters = new URLSearchParams(location?.search);
+  const notificationId = parameters.get('notification');
+  const objectName = parameters.get('objectName');
+  const recordId = parameters.get('recordId');
+  const selected = objectName && recordId ? { objectName, recordId } : null;
+  const selectedThreadId = selected ? parameters.get('comment') : null;
   const [discussions, setDiscussions] = useState<CommentDiscussion[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [selected, setSelected] = useState<CommentTarget | null>(null);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   const [notificationError, setNotificationError] = useState('');
+  const selectDiscussion = (
+    target: CommentTarget | null,
+    commentId?: string | null,
+  ) =>
+    navigate(
+      AppPath.AiChatInbox,
+      { threadId: null },
+      {
+        section: 'comments',
+        ...(target ?? {}),
+        ...(commentId ? { comment: commentId } : {}),
+      },
+    );
 
   useEffect(() => {
     let active = true;
@@ -124,7 +139,7 @@ export const CommentsInbox = () => {
   }, [t]);
 
   useEffect(() => {
-    if (!notificationId) return;
+    if (!notificationId || (objectName && recordId)) return;
     let active = true;
     setNotificationError('');
     requestComments<CommentInboxTargetResponse>({
@@ -132,7 +147,16 @@ export const CommentsInbox = () => {
       notificationId,
     })
       .then(({ target }) => {
-        if (active) setSelected(target);
+        if (active)
+          void navigate(
+            AppPath.AiChatInbox,
+            { threadId: null },
+            {
+              section: 'comments',
+              ...target,
+            },
+            { replace: true },
+          );
       })
       .catch(() => {
         if (active)
@@ -143,7 +167,7 @@ export const CommentsInbox = () => {
     return () => {
       active = false;
     };
-  }, [notificationId, t]);
+  }, [notificationId, objectName, recordId, t]);
 
   const load = async (more = false) => {
     setBusy(true);
@@ -235,7 +259,7 @@ export const CommentsInbox = () => {
                 />
               }
               onClick={() =>
-                setSelected({
+                void selectDiscussion({
                   objectName: discussion.objectName,
                   recordId: discussion.recordId,
                 })
@@ -287,7 +311,7 @@ export const CommentsInbox = () => {
         </Records>
       </RecordList>
       <DiscussionPane selected={!!selected} aria-label={t('Discussion')}>
-        {notificationError && (
+        {notificationId && notificationError && (
           <Notice role="alert">
             <Text>{notificationError}</Text>
           </Notice>
@@ -300,7 +324,9 @@ export const CommentsInbox = () => {
                   size="sm"
                   aria-label={t('Back to Discussions')}
                   tooltip={t('Back')}
-                  onClick={() => setSelected(null)}
+                  onClick={() => {
+                    void selectDiscussion(null);
+                  }}
                 >
                   <IconArrowLeft size={16} stroke={1.6} />
                 </LightIconButton>
@@ -310,14 +336,12 @@ export const CommentsInbox = () => {
               </Row>
               <Button
                 size="sm"
-                onClick={() => {
-                  void navigate(AppPath.RecordShowPage, {
-                    objectNameSingular: selected.objectName,
-                    objectRecordId: selected.recordId,
-                  });
-                }}
+                href={`/object/${encodeURIComponent(selected.objectName)}/${encodeURIComponent(selected.recordId)}`}
+                render={<a />}
+                nativeButton={false}
+                role="link"
+                startIcon={<IconExternalLink size={14} stroke={1.6} />}
               >
-                <IconExternalLink size={14} stroke={1.6} />
                 {t('Open Record')}
               </Button>
             </Toolbar>
@@ -325,6 +349,10 @@ export const CommentsInbox = () => {
               <RecordComments
                 key={`${selected.objectName}:${selected.recordId}`}
                 target={selected}
+                selectedThreadId={selectedThreadId}
+                onSelectThread={(commentId) => {
+                  void selectDiscussion(selected, commentId);
+                }}
                 onChange={(data) => {
                   const latestComment = data.comments
                     .filter((comment) => !comment.deleted)

@@ -70,9 +70,16 @@ export const Comments = () => {
 type RecordCommentsProps = {
   target: CommentTarget;
   onChange?: (data: CommentResponse) => void;
+  selectedThreadId?: string | null;
+  onSelectThread?: (threadId: string | null) => void;
 };
 
-export const RecordComments = ({ target, onChange }: RecordCommentsProps) => {
+export const RecordComments = ({
+  target,
+  onChange,
+  selectedThreadId,
+  onSelectThread,
+}: RecordCommentsProps) => {
   const { t } = useTranslate();
   const location = useLocation();
   const linkedId = new URLSearchParams(location?.search).get('comment');
@@ -81,7 +88,13 @@ export const RecordComments = ({ target, onChange }: RecordCommentsProps) => {
   const [busy, setBusy] = useState(false);
   const [showResolved, setShowResolved] = useState(!!linkedId);
   const [onlyMine, setOnlyMine] = useState(false);
-  const [expanded, setExpanded] = useState<string | null>(linkedId);
+  const [localExpanded, setLocalExpanded] = useState<string | null>(linkedId);
+  const expanded =
+    selectedThreadId === undefined ? localExpanded : selectedThreadId;
+  const setExpanded = (threadId: string | null) => {
+    if (onSelectThread) onSelectThread(threadId);
+    else setLocalExpanded(threadId);
+  };
   const [notice, setNotice] = useState('');
   useEffect(() => {
     let active = true;
@@ -139,7 +152,12 @@ export const RecordComments = ({ target, onChange }: RecordCommentsProps) => {
     }
   };
   const threads = data
-    ? filterThreads(data.comments, data.memberId, showResolved, onlyMine)
+    ? filterThreads(
+        data.comments,
+        data.memberId,
+        showResolved || !!selectedThreadId,
+        onlyMine,
+      )
     : [];
   const authorName =
     data?.comments.find((comment) => comment.authorId === data.memberId)
@@ -265,9 +283,18 @@ export const RecordComments = ({ target, onChange }: RecordCommentsProps) => {
               <Text size="sm" color="tertiary">
                 {t('Comments on')}
               </Text>
-              <Text size="sm" weight="medium" truncate>
+              <Button
+                variant="link"
+                color="inherit"
+                size="sm"
+                href={`/object/${encodeURIComponent(target.objectName)}/${encodeURIComponent(target.recordId)}`}
+                render={<a />}
+                nativeButton={false}
+                role="link"
+                title={data.recordLabel}
+              >
                 {data.recordLabel}
-              </Text>
+              </Button>
               {data.objectLabel && (
                 <>
                   <Text size="sm" color="tertiary">

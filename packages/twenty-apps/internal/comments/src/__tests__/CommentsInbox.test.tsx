@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { type CommentInboxResponse } from '../types';
@@ -7,17 +7,32 @@ const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   navigate: vi.fn(),
   search: '',
+  listeners: new Set<() => void>(),
   t: (text: string) => text,
 }));
 vi.mock('../utils/request-comments', () => ({
   requestComments: mocks.request,
 }));
-vi.mock('twenty-sdk/front-component', () => ({
-  useTranslate: () => ({ t: mocks.t }),
-  useLocation: () => ({ origin: 'https://example.test', search: mocks.search }),
-  navigate: mocks.navigate,
-  AppPath: { RecordShowPage: '/object/:objectNameSingular/:objectRecordId' },
-}));
+vi.mock('twenty-sdk/front-component', async () => {
+  const { useSyncExternalStore } = await import('react');
+  return {
+    useTranslate: () => ({ t: mocks.t }),
+    useLocation: () => ({
+      origin: 'https://example.test',
+      search: useSyncExternalStore(
+        (listener) => {
+          mocks.listeners.add(listener);
+          return () => {
+            mocks.listeners.delete(listener);
+          };
+        },
+        () => mocks.search,
+      ),
+    }),
+    navigate: mocks.navigate,
+    AppPath: { AiChatInbox: '/inbox/:threadId' },
+  };
+});
 import { CommentsInbox } from '../front-components/CommentsInbox';
 
 const discussion = (recordId: string, recordLabel: string) => ({
@@ -42,6 +57,10 @@ const inbox: CommentInboxResponse = {
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.search = '';
+  mocks.navigate.mockImplementation(async (_path, _parameters, query) => {
+    mocks.search = `?${new URLSearchParams(query).toString()}`;
+    for (const listener of mocks.listeners) listener();
+  });
   mocks.request.mockImplementation(async (input) => {
     if (input.action === 'inbox') return inbox;
     if (input.action === 'inbox-target')
@@ -83,10 +102,14 @@ it('searches record groups and opens their actual comment composer', async () =>
     }),
   );
   expect(screen.queryByText(/API key|AI provider/)).toBeNull();
-  await user.click(screen.getByRole('button', { name: 'Open Record' }));
-  expect(mocks.navigate).toHaveBeenCalledWith(
-    '/object/:objectNameSingular/:objectRecordId',
-    { objectNameSingular: 'company', objectRecordId: 'acme' },
+  expect(
+    screen.getByRole('link', { name: 'Open Record' }).getAttribute('href'),
+  ).toBe('/object/company/acme');
+  expect(screen.getByRole('link', { name: 'Acme' }).getAttribute('href')).toBe(
+    '/object/company/acme',
+  );
+  expect(mocks.search).toBe(
+    '?section=comments&objectName=company&recordId=acme',
   );
 });
 
@@ -103,6 +126,105 @@ it('opens legacy mention notifications in the record discussion', async () => {
     objectName: 'company',
     recordId: 'acme',
   });
+  expect(mocks.navigate).toHaveBeenCalledWith(
+    '/inbox/:threadId',
+    { threadId: null },
+    { section: 'comments', objectName: 'company', recordId: 'acme' },
+    { replace: true },
+  );
+});
+
+it('restores the selected record after a remount and follows location changes', async () => {
+  mocks.search = '?section=comments&objectName=company&recordId=acme';
+  const first = render(<CommentsInbox />);
+  await screen.findByRole('textbox', { name: 'Comment' });
+  first.unmount();
+  render(<CommentsInbox />);
+  await screen.findByRole('textbox', { name: 'Comment' });
+  expect(mocks.request).toHaveBeenCalledWith({
+    action: 'list',
+    objectName: 'company',
+    recordId: 'acme',
+  });
+  act(() => {
+    mocks.search = '?section=comments&objectName=company&recordId=other';
+    for (const listener of mocks.listeners) listener();
+  });
+  await waitFor(() =>
+    expect(mocks.request).toHaveBeenLastCalledWith({
+      action: 'list',
+      objectName: 'company',
+      recordId: 'other',
+    }),
+  );
+  act(() => {
+    mocks.search = '?section=comments&objectName=company&recordId=acme';
+    for (const listener of mocks.listeners) listener();
+  });
+  await waitFor(() =>
+    expect(mocks.request).toHaveBeenLastCalledWith({
+      action: 'list',
+      objectName: 'company',
+      recordId: 'acme',
+    }),
+  );
+});
+
+it('keeps the expanded thread in the URL and restores it after history changes and reload', async () => {
+  const user = userEvent.setup();
+  const base = '?section=comments&objectName=company&recordId=acme';
+  mocks.search = `${base}&comment=thread`;
+  mocks.request.mockImplementation(async (input) => {
+    if (input.action === 'inbox') return inbox;
+    return {
+      memberId: 'member',
+      recordLabel: 'Acme',
+      comments: [
+        {
+          id: 'thread',
+          body: 'Review this record',
+          authorId: 'member',
+          authorName: 'Alex',
+          parentId: null,
+          resolved: false,
+          deleted: false,
+          mentions: '[]',
+          createdAt: new Date().toISOString(),
+          targetObject: 'company',
+          targetRecordId: 'acme',
+        },
+        {
+          id: 'reply',
+          body: 'A saved reply',
+          authorId: 'member',
+          authorName: 'Alex',
+          parentId: 'thread',
+          resolved: false,
+          deleted: false,
+          mentions: '[]',
+          createdAt: new Date().toISOString(),
+          targetObject: 'company',
+          targetRecordId: 'acme',
+        },
+      ],
+    };
+  });
+  const first = render(<CommentsInbox />);
+  await screen.findByRole('textbox', { name: 'Reply' });
+  await user.click(screen.getByRole('button', { name: 'Replies · 1' }));
+  expect(mocks.search).toBe(base);
+  expect(screen.queryByRole('textbox', { name: 'Reply' })).toBeNull();
+  act(() => {
+    mocks.search = `${base}&comment=thread`;
+    for (const listener of mocks.listeners) listener();
+  });
+  await screen.findByRole('textbox', { name: 'Reply' });
+  first.unmount();
+  render(<CommentsInbox />);
+  await screen.findByRole('textbox', { name: 'Reply' });
+  await user.click(screen.getByRole('button', { name: 'Back to Discussions' }));
+  expect(mocks.search).toBe('?section=comments');
+  expect(screen.queryByRole('textbox', { name: 'Comment' })).toBeNull();
 });
 
 it('merges older pages without repeating a record or replacing its newer excerpt', async () => {
