@@ -10,3 +10,4 @@ TwitterAPI.io native app, Twitter Profiles, Influencer relations and isolated pr
 | [0004](0004-preview-scope-and-backfill-explanations.md) | 2026-11-22 | Keep additional changes on preview, explain relation settings and exclude unrelated empty records from backfills | accepted |
 | [0005](0005-fix-the-protected-preview-path.md) | 2026-11-22 | Fix the public preview access path after CRM sign-in fails to resolve the error | accepted |
 | [0006](0006-configurable-refresh-and-profile-enrollment.md) | 2026-11-22 | Configure scheduled refresh timing, add manual workflow refresh and expose per-profile scheduled enrollment | accepted |
+| [0007](0007-deploy-merged-refresh-controls.md) | 2026-11-22 | Rebase to main, deploy the merged refresh controls, and permit deployment after approved merges in this session | accepted |
