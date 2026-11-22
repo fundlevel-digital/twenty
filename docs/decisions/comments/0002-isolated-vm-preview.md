@@ -33,3 +33,5 @@ Final setup and verification are recorded in the [Comments app README](../../../
 ## Verified Preview Progress
 
 The app was installed into a new development database seeded with the light demo dataset. Backend and frontend proxy health checks passed. Authenticated live checks verified comment persistence, replies, resolve/reopen and notification visibility in the recipient's Inbox. Browser login and the source record loaded; sidebar verification was still in progress when the source snapshot was shared with the OpenBot workspace. No production deployment or CRM data copy occurred.
+
+Subsequent browser verification opened Comments from the record command menu and checked emoji comment creation/persistence, author deletion and user mention selection. The browser tested the same origin through VM-local TLS, bypassing Conductor's sign-in gate. Server, worker and frontend remain supervised while the VM is running; no VM wake mechanism was added.
