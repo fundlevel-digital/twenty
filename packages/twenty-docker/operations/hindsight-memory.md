@@ -1,4 +1,9 @@
-# Twenty CRM engineering memory
+# Retired: Twenty CRM engineering memory
+
+Retired on 2026-11-22 at the owner's request. The agent skill, mandatory-use
+rules and MCP launch entries have been removed. This page records the former
+setup; it is not current operating guidance. See the
+[retirement decision](../../../docs/decisions/0007-retire-hindsight-agent-integration.md).
 
 Coding agents in `kareem717/twenty` use the dedicated `twenty-crm-self-host`
 Hindsight bank. Its separate gateway credential permits recall, reflect, retain,
@@ -23,7 +28,7 @@ python3 scripts/hindsight_memory.py --profile twenty call recall \
   --arguments '{"query":"Twenty self-hosting decisions","budget":"low","max_tokens":512}'
 ```
 
-Use the [memory skill](../../../.agents/skills/hindsight-memory/SKILL.md) to recall
+The former memory skill was used to recall
 before substantial work and retain dated, verified findings. Send long retain
 arguments as JSON on stdin. If a write is interrupted, inspect the bank before
 retrying; its outcome may be unknown.

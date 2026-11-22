@@ -27,13 +27,6 @@
         "@upstash/context7-mcp"
       ],
       "env": {}
-    },
-    "hindsight": {
-      "type": "stdio",
-      "command": "sh",
-      "args": [
-        "scripts/hindsight-with-1password.sh"
-      ]
     }
   }
 }
