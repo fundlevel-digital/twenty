@@ -13,7 +13,7 @@ export default defineCommandMenuItem({
     TWITTER_PROFILE_OBJECT_UNIVERSAL_IDENTIFIER,
   frontComponentUniversalIdentifier:
     REFRESH_ANALYTICS_ENTRIES_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER,
-  label: 'Refresh Twitter Analytics',
+  label: 'Refresh Profile and Analytics',
   availabilityType: 'RECORD_SELECTION',
   conditionalAvailabilityExpression: !isSelectAll,
 });

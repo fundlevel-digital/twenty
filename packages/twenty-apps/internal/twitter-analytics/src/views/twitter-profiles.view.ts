@@ -14,6 +14,14 @@ export default defineView({
   type: 'TABLE',
   fields: [
     {
+      universalIdentifier: 'e1d8a7ee-2cb7-454b-82b6-b90b04879a8e',
+      fieldMetadataUniversalIdentifier:
+        TWITTER_PROFILE_FIELD_UNIVERSAL_IDENTIFIERS.calculationsEnabled,
+      position: 8,
+      isVisible: true,
+      size: 190,
+    },
+    {
       universalIdentifier: '1826821e-8501-4563-9e10-ad700dd640c8',
       fieldMetadataUniversalIdentifier:
         PROFILE_INFLUENCER_FIELD_UNIVERSAL_IDENTIFIER,

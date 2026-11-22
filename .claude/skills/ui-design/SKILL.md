@@ -4,3 +4,6 @@ description: Twenty's product UI rules. Use when building, changing or reviewing
 ---
 
 Read `DESIGN.md` at the repository root before you write or review UI code, and follow it over any older screen that breaks it.
+
+For component selection, including SDK app front components, follow the shared
+[native Twenty UI skill](../../../.agents/skills/twenty-native-ui/SKILL.md).

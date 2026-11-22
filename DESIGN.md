@@ -32,6 +32,8 @@ Twenty should feel like one calm, unified workspace, closer to Notion than to Sa
 
 The bar for any new screen is **native**: it looks like it shipped with the product. Native comes from reuse. Build from existing twenty-ui and twenty-front components, copy the **sibling** (the closest screen already doing the same job), and add a new pattern only when no sibling exists.
 
+This applies to SDK app front components as well as the host CRM. When a Twenty component supports the required behavior, use it instead of a browser-native control, custom lookalike or third-party alternative. Use new/custom UI only when existing components cannot support what is being built, and briefly identify the missing capability. Check the installed package's exports and APIs for SDK apps; the source checkout can be ahead of the published version.
+
 - Dense but quiet. 13px Inter, neutral grays, one blue accent. Hierarchy comes from weight and gray steps before size or color.
 - Keyboard-first. Every action is a command reachable from ⌘K.
 - Four **landmarks** stay recognizable: the record index, the record page, settings and standalone pages.
