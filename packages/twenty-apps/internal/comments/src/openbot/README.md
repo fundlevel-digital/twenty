@@ -145,3 +145,15 @@ answer or report webhook acceptance as completed work.
 
 Kareem will configure webhook routines manually. No connector, automatic routine
 provisioning or live OpenBot configuration is part of this implementation.
+
+
+## Preview Verification
+
+The current build passes 92 app tests and the direct app typecheck. In the
+isolated VM, the installed workflow send/status actions completed a signed
+roundtrip with the local demo bot, and the native Comments sidebar displayed its
+attributed reply. Typed bot autocomplete and caret continuity passed in the
+browser. This verifies installed action execution, not a complete workflow-editor
+run or a live OpenBot connection. Preview login is prefilled; Conductor sign-in
+is still required at the public preview origin. No live OpenBot was accessed or
+changed.

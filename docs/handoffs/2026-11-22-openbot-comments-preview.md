@@ -162,3 +162,35 @@ workspace-member context and reuse source-record access checks. No new app
 object, connector endpoint, connector secret or enrollment UI is included.
 Verification of these actions is local tests, direct typecheck and installable
 app build; this is not a claim of live OpenBot pairing or production deployment.
+
+
+## Current VM Preview After Latest Main Rebase
+
+At Kareem's request, rebased onto `fd762241da` and rebuilt/installed the app into
+w928 without pruning: three metadata entities created and two updated, with no
+metadata deletions. All 92 app tests, direct app typecheck and CLI build pass.
+Existing seed data and the local Preview Bot connection were retained.
+
+Installed Send to OpenBot and Get Request Status actions were executed through
+the metadata API as a seeded member. The send saved a new record comment, the
+worker delivered its signed webhook to the VM-local test endpoint, and the status
+action returned Replied with the local demo answer. The browser displayed that
+specific comment and attributed bot reply. Typing a multiword fragment, selecting
+with Enter and continuing at the caret passed with no browser page errors.
+This checks installed action execution, not a complete workflow-editor run.
+
+Fresh source-Vite login completed with email and password already filled and no
+input filling by automation. Server and proxied health return 200. The published
+preview is still <https://fundlevel-w928.conductor.show/> on port 3001. Browser
+checks use VM-local TLS and hostname mapping; anonymous public-edge access returns
+the expected Conductor 401 gate. Authenticated edge access was not independently
+verified. Current screenshots are in ignored `.context/openbot-final-preview.png`
+and `.context/openbot-final-mentions.png`.
+
+Server and worker now also preload a VM-only fetch guard that rejects non-loopback
+HTTP destinations during OpenBot verification. The source frontend, backend,
+worker, proxy and local test bot run under detached restart supervisors; isolated
+PostgreSQL/Redis and the persistent preview volume were restored after the VM
+restart. Temporary swap is enabled for frontend compilation. This does not claim
+survival of VM shutdown or a wake mechanism. No live OpenBot access, production
+change or paid model call occurred.
