@@ -13,3 +13,5 @@
 
 Product and operational documentation that belongs to a package remains with that
 package. Decision records are centralized under this directory.
+
+- [2026-11-22: TwitterAPI.io App And Preview](handoffs/2026-11-22-twitter-analytics.md)
