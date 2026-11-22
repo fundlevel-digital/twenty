@@ -146,3 +146,19 @@ After conflict resolution, all 87 combined app tests and the direct app typechec
 pass. The working tree contains no new host renderer changes relative to main.
 The preview was not rebuilt or reinstalled during the rebase. OpenBot remains
 paused; the previously unfinished combined browser check remains unverified.
+
+
+## Manual Webhook Scope After Resuming
+
+Kareem resumed CRM work and then directed: "DO NOT touch my live openbot" and
+"I'll just configure the webhookroutines by hand". No live OpenBot access or
+changes occurred. The automatic connector experiment was removed before any
+installation; only ignored local artifacts retain it. See
+[decision 0005](../decisions/openbot/0005-resume-crm-with-manual-webhooks.md).
+
+The additional source exposes Send to OpenBot and Get Request Status as Twenty
+workflow actions using the existing manual webhook integration. Both require a
+workspace-member context and reuse source-record access checks. No new app
+object, connector endpoint, connector secret or enrollment UI is included.
+Verification of these actions is local tests, direct typecheck and installable
+app build; this is not a claim of live OpenBot pairing or production deployment.

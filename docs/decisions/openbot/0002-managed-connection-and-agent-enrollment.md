@@ -1,7 +1,7 @@
 # 0002. Managed Connection And Agent Enrollment
 
 - Date: 2026-11-22
-- Status: accepted
+- Status: superseded by 0005
 - Decided by: Kareem
 - Area: OpenBot
 - Related: [Initial comments integration](0001-bot-participants-and-vm-preview.md)

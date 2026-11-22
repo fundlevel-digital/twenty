@@ -126,5 +126,22 @@ Comment saves survive bot delivery failures. Failed enqueueing shows a warning;
 network delivery failures retry and expose a delivery status on refresh. There is
 no manual Retry action, failure Inbox notification, or accepted-request completion
 deadline yet. Seven-day callback expiry is an authorization limit, not a workflow
-timeout. Send to OpenBot and Get Request Status workflow blocks are approved
-product work and are not exposed by this implementation.
+timeout. The **Send to OpenBot** and **Get Request Status** workflow actions are available.
+
+## Workflow Actions
+
+**Send to OpenBot** takes a configured agent UUID, object name, record UUID and
+prompt. It saves a comment mentioning that bot and returns `requestId`, `status`
+and `commentId`. It uses the same caller record-access and recipient checks as
+Comments. The action requires a workspace-member execution context and fails
+explicitly if no member identity is present or enqueueing fails. A saved comment
+is retained if enqueueing fails, with its request ID in the error.
+
+**Get Request Status** takes that `requestId`, checks access to its source record,
+and returns `pending`, `accepted`, `retrying`, `failed` or `replied`, plus a saved
+answer when available. Expired requests return `failed`. Branch a workflow on
+this status and use a delay before checking again; sending does not wait for an
+answer or report webhook acceptance as completed work.
+
+Kareem will configure webhook routines manually. No connector, automatic routine
+provisioning or live OpenBot configuration is part of this implementation.

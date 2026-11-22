@@ -1,7 +1,7 @@
 # 0004. Pause OpenBot While Finishing Comments
 
 - Date: 2026-11-22
-- Status: accepted
+- Status: superseded by 0005
 - Decided by: Kareem
 - Area: OpenBot
 
