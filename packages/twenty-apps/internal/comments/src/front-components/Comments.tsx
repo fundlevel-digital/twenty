@@ -263,6 +263,16 @@ const RecordComments = ({ target }: { target: CommentTarget }) => {
                 {data.recordLabel}
               </Text>
             </Row>
+            {data.scope?.kind === 'listEntry' && (
+              <Row>
+                <Text size="sm" color="tertiary">
+                  {t('List Entry in')}
+                </Text>
+                <Text size="sm" weight="medium" truncate>
+                  {data.scope.label}
+                </Text>
+              </Row>
+            )}
             <CommentComposer
               target={target}
               authorName={authorName}

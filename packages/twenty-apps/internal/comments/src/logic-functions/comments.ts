@@ -42,7 +42,14 @@ export const commentsHandler = async (
   const { objects } = await new MetadataApiClient().query({
     objects: {
       __args: { filter: {}, paging: { first: 1000 } },
-      edges: { node: { nameSingular: true, namePlural: true } },
+      edges: {
+        node: {
+          nameSingular: true,
+          namePlural: true,
+          labelPlural: true,
+          description: true,
+        },
+      },
     },
   });
   const objectMetadata = objects.edges.find(
@@ -134,7 +141,13 @@ export const commentsHandler = async (
       : undefined;
   } while (cursor);
 
-  const result = { comments, memberId, recordLabel };
+  const scope = {
+    kind: objectMetadata.description?.startsWith('better-lists:v1:')
+      ? ('listEntry' as const)
+      : ('record' as const),
+    label: objectMetadata.labelPlural ?? objectMetadata.namePlural,
+  };
+  const result = { comments, memberId, recordLabel, scope };
   if (input.action === 'list') return result;
   const existing = comments.find(({ id }) => id === input.id);
   if (input.action === 'delete' || input.action === 'resolve') {

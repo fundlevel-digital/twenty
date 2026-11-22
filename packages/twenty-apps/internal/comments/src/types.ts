@@ -31,5 +31,6 @@ export type CommentResponse = {
   comments: RecordComment[];
   memberId: string;
   recordLabel: string;
+  scope?: { kind: 'record' | 'listEntry'; label: string };
   notificationFailed?: boolean;
 };

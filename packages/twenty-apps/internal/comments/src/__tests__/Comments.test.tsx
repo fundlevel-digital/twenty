@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   copy: vi.fn(),
   navigate: vi.fn(),
   t: (text: string) => text,
+  objectName: 'company',
 }));
 vi.mock('../utils/request-comments', () => ({
   requestComments: (input: unknown) => mocks.post('/s/comments', input),
@@ -18,7 +19,7 @@ vi.mock('twenty-sdk/front-component', () => ({
   ) =>
     selector({
       recordId: 'record',
-      selectedObjectMetadata: { nameSingular: 'company' },
+      selectedObjectMetadata: { nameSingular: mocks.objectName },
     }),
   useLocation: () => ({ origin: 'https://example.test', search: '' }),
   copyToClipboard: mocks.copy,
@@ -29,6 +30,7 @@ import { Comments } from '../front-components/Comments';
 let comments: RecordComment[];
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.objectName = 'company';
   comments = [];
   mocks.post.mockImplementation(async (_path, input) => {
     if (input.action === 'search')
@@ -63,6 +65,40 @@ beforeEach(() => {
   });
 });
 afterEach(cleanup);
+
+it('copies the entry thread URL rather than its parent record URL', async () => {
+  const user = userEvent.setup();
+  mocks.objectName = 'betterListaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  mocks.post.mockResolvedValue({
+    comments: [
+      {
+        id: 'entry-thread',
+        body: 'Entry discussion',
+        authorId: 'member',
+        authorName: 'Alex',
+        parentId: null,
+        resolved: false,
+        deleted: false,
+        createdAt: new Date().toISOString(),
+        mentions: '[]',
+        targetObject: mocks.objectName,
+        targetRecordId: 'record',
+      },
+    ],
+    memberId: 'member',
+    recordLabel: 'Acme',
+    scope: { kind: 'listEntry', label: 'Account Ladder' },
+  });
+  render(<Comments />);
+  await screen.findByText('Entry discussion');
+  await user.click(screen.getByRole('button', { name: 'Comment Options' }));
+  await user.click(await screen.findByRole('menuitem', { name: 'Copy Link' }));
+  await waitFor(() =>
+    expect(mocks.copy).toHaveBeenCalledWith(
+      `https://example.test/object/${mocks.objectName}/record?comment=entry-thread`,
+    ),
+  );
+});
 it('creates, replies, resolves and reopens a thread', async () => {
   const user = userEvent.setup();
   render(<Comments />);
@@ -138,4 +174,34 @@ it('offers a clear retry when the initial load fails', async () => {
   await user.click(screen.getByRole('button', { name: 'Try Again' }));
   await screen.findByRole('textbox', { name: 'Comment' });
   expect(screen.queryByRole('alert')).toBeNull();
+});
+
+it('identifies a list-entry feed and posts to that entry object', async () => {
+  const user = userEvent.setup();
+  mocks.objectName = 'betterListaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  mocks.post.mockResolvedValue({
+    comments: [],
+    memberId: 'member',
+    recordLabel: 'Acme',
+    scope: { kind: 'listEntry', label: 'Account Ladder' },
+  });
+  render(<Comments />);
+  await screen.findByText('List Entry in');
+  await screen.findByText('Account Ladder');
+  await user.type(
+    screen.getByRole('textbox', { name: 'Comment' }),
+    'Entry-only discussion',
+  );
+  await user.click(screen.getByRole('button', { name: 'Comment' }));
+  await waitFor(() =>
+    expect(mocks.post).toHaveBeenCalledWith(
+      '/s/comments',
+      expect.objectContaining({
+        action: 'create',
+        objectName: mocks.objectName,
+        recordId: 'record',
+        body: 'Entry-only discussion',
+      }),
+    ),
+  );
 });

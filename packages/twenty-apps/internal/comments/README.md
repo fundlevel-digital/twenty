@@ -1,12 +1,17 @@
 # Comments
 
-An installable Twenty app for record-specific comment threads, inspired by the supplied Attio screenshots. The same Comments command and record widget are available across standard and custom objects.
+An installable Twenty app for comments on records and list entries, inspired by the supplied Attio screenshots. The same Comments command and record widget are available across standard and custom objects. See the [Attio comparison](ATTIO-PARITY.md) for implemented behavior and remaining integration checks.
+
+## Required Merge Order
+
+Merge Comments **after [Better Lists in workspace 932](https://app.conductor.build/fundlevel/w/932)**. Before any requested merge or deployment, remind Kareem of this dependency, confirm Better Lists has merged, and verify list-entry comments against that merged source. Do not message the workspace 932 thread. See [decision 0006](../../../../docs/decisions/comments/0006-list-entry-comments-after-better-lists.md).
 
 ## Behavior
 
 - Write comments and replies, insert emoji, and type `@` to search for users and records to mention. The composer retains the OpenBot group's identities and avatars when integrated with the OpenBot app source.
 - Choose a suggestion with the mouse, arrow keys and Enter/Tab. Selection replaces the typed fragment and restores the caret after the worker sends the new text to the host. Unselected mentions block saving; removed mentions do not notify. Email addresses remain ordinary text, including a selected reference edited into an email. Toolbar insertion adds a space when needed so mentions after text or emoji stay valid. Search failures and no matches have explicit feedback.
 - Open the Comments tab on Company and Person records. The tab and command sidebar share the same saved threads. Other objects can use the command or add its widget to their record layout.
+- Better Lists entries use their own object name and entry ID, keeping discussion separate from the parent record and entries in other lists. The composer identifies the list by name. Reads and writes check access to the entry itself rather than the parent; combined Lists UI and role verification must follow workspace 932's merge.
 - Selected user mentions deliver an application Inbox message containing the comment, author and a reference to the source record. Self mentions do not notify.
 - Resolve and reopen threads. Filter by resolved status or threads you started or replied to.
 - Delete your own comments. Deleted original comments leave a tombstone when replies remain.
@@ -42,6 +47,8 @@ The sidebar menu placement requires the accompanying renderer fixes in this bran
 
 Keyboard selection also requires the host renderer's editable-keyboard guard. An active `aria-autocomplete="list"` control declares its active suggestion and the `Control+Enter Meta+Enter` submission shortcuts. The host reserves these keys synchronously before forwarding them to the worker, preventing newline, focus and outer-page shortcut races. Regular typing, Shift+Enter and IME composition keep their native behavior. Rebuild the renderer library and fully reload the frontend after installing this host change.
 
-Current checks include 34 Comments tests and 22 renderer keyboard/form-control tests; the geometry change was previously verified with 25 renderer tests. The app typecheck and CLI build pass. The source renderer library builds and changed renderer files pass lint. A full renderer typecheck is currently blocked by missing generated declarations in this VM's directly built shared/SDK dependencies; it has not been reported as passing. Live preview checks cover Company record-tab rendering and shared threads, typed suggestions, selection/caret continuity, validation and an incoming native Inbox notification. The notification uses two seeded members; self mentions intentionally do not notify. The preview has no AI provider configured, so Inbox's AI composer remains unavailable and comment replies continue in Comments.
+Current checks include 46 Comments tests and 22 renderer keyboard/form-control tests; the geometry change was previously verified with 25 renderer tests. The app typecheck and CLI build pass. The source renderer library builds and changed renderer files pass lint. A full renderer typecheck is currently blocked by missing generated declarations in this VM's directly built shared/SDK dependencies; it has not been reported as passing. Live preview checks cover Company record-tab rendering and shared threads, typed suggestions, selection/caret continuity, validation and an incoming native Inbox notification. The notification uses two seeded members; self mentions intentionally do not notify. The preview has no AI provider configured, so Inbox's AI composer remains unavailable and comment replies continue in Comments.
 
-The requested connection privacy controls are pending clarification of whether the connection belongs to OpenBot or to a user's comment visibility settings. No privacy behavior has been inferred from the email/calendar comparison.
+The isolated preview also contains two native list-entry fixtures, each related to the same company. API checks verified separate entry/list/parent feeds, replies, cross-list deletion rejection and resolve/reopen. The actual Better Lists application has not been merged into this branch; its list navigation and restricted-recipient behavior remain integration gates rather than verified results.
+
+The requested privacy configuration still needs a final scope. Entry comments already check native entry access; a custom privacy-settings UI and filtering notifications for recipients without list access remain to finalize against Better Lists. OpenBot is paused and is not part of this remaining Comments work.

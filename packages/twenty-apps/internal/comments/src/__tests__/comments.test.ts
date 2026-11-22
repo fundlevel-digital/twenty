@@ -296,3 +296,145 @@ describe('thread filters', () => {
     ).toEqual([root]);
   });
 });
+
+describe('Better Lists entry comments', () => {
+  const entryObjectName = 'betterListaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  const otherEntryObjectName = 'betterListbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const entryTarget = { ...target, objectName: entryObjectName };
+  const otherEntryTarget = { ...target, objectName: otherEntryObjectName };
+  const storedComments = [
+    comment({ id: 'parent-thread' }),
+    comment({ id: 'entry-thread', targetObject: entryObjectName }),
+    comment({ id: 'other-list-thread', targetObject: otherEntryObjectName }),
+  ];
+  beforeEach(() => {
+    mocks.query.mockResolvedValue({
+      objects: {
+        edges: [
+          {
+            node: {
+              nameSingular: 'company',
+              namePlural: 'companies',
+              labelPlural: 'Companies',
+            },
+          },
+          ...[entryObjectName, otherEntryObjectName].map((nameSingular) => ({
+            node: {
+              nameSingular,
+              namePlural: `${nameSingular}Entries`,
+              labelPlural: 'Account Ladder',
+              description: 'better-lists:v1:company|📋|account-ladder',
+            },
+          })),
+        ],
+      },
+    });
+    mocks.get.mockResolvedValue({
+      data: {
+        [entryObjectName]: {
+          id: target.recordId,
+          name: 'Acme',
+          parentRecordId: 'parent-record',
+        },
+        [otherEntryObjectName]: {
+          id: target.recordId,
+          name: 'Acme',
+          parentRecordId: 'parent-record',
+        },
+        company: { id: target.recordId, name: 'Acme' },
+        workspaceMember: { name: { firstName: 'Alex', lastName: 'Smith' } },
+      },
+    });
+    mocks.graphql.mockImplementation(async (_query, { filter }) => ({
+      recordComments: {
+        edges: storedComments
+          .filter(
+            (item) =>
+              item.targetObject === filter.targetObject.eq &&
+              item.targetRecordId === filter.targetRecordId.eq,
+          )
+          .map((node) => ({ node })),
+        pageInfo: { hasNextPage: false },
+      },
+    }));
+  });
+
+  it('keeps the parent record and each list entry in separate feeds', async () => {
+    expect(await call({ ...entryTarget, action: 'list' })).toMatchObject({
+      comments: [{ id: 'entry-thread' }],
+      scope: { kind: 'listEntry', label: 'Account Ladder' },
+    });
+    expect(await call({ ...otherEntryTarget, action: 'list' })).toMatchObject({
+      comments: [{ id: 'other-list-thread' }],
+    });
+    expect(await call({ ...target, action: 'list' })).toMatchObject({
+      comments: [{ id: 'parent-thread' }],
+      scope: { kind: 'record', label: 'Companies' },
+    });
+  });
+
+  it.each(['list', 'create', 'delete', 'resolve', 'search'] as const)(
+    'checks entry access before %s rather than using parent access',
+    async (action) => {
+      mocks.get.mockRejectedValue(new Error('List access denied'));
+      await expect(call({ ...entryTarget, action })).rejects.toThrow(
+        'List access denied',
+      );
+      expect(mocks.get).toHaveBeenCalledWith(
+        `/rest/${entryObjectName}Entries/${target.recordId}`,
+      );
+      expect(mocks.graphql).not.toHaveBeenCalled();
+      expect(mocks.send).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { action: 'delete' as const, id: 'parent-thread' },
+    { action: 'resolve' as const, id: 'other-list-thread', resolved: true },
+    {
+      action: 'create' as const,
+      parentId: 'parent-thread',
+      body: 'Wrong feed',
+    },
+  ])('rejects a cross-feed $action', async (request) => {
+    await expect(call({ ...entryTarget, ...request })).rejects.toThrow();
+    expect(mocks.graphql).toHaveBeenCalledTimes(1);
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+
+  it('saves against the entry and references that entry in its notification', async () => {
+    mocks.graphql
+      .mockResolvedValueOnce({
+        recordComments: { edges: [], pageInfo: { hasNextPage: false } },
+      })
+      .mockResolvedValueOnce({
+        createRecordComment: comment({
+          id: 'new-entry-comment',
+          targetObject: entryObjectName,
+          body: 'Please review @Taylor',
+        }),
+      });
+    await call({
+      ...entryTarget,
+      action: 'create',
+      body: 'Please review @Taylor',
+      mentions: [
+        { id: 'teammate', label: 'Taylor', objectName: 'workspaceMember' },
+      ],
+    });
+    expect(mocks.graphql).toHaveBeenLastCalledWith(
+      expect.any(String),
+      {
+        data: expect.objectContaining({
+          targetObject: entryObjectName,
+          targetRecordId: target.recordId,
+        }),
+      },
+      true,
+    );
+    expect(mocks.reference).toHaveBeenCalledWith({
+      objectNameSingular: entryObjectName,
+      recordId: target.recordId,
+    });
+  });
+});
