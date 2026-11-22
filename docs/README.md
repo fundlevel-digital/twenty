@@ -1,5 +1,7 @@
 # Twenty Engineering Notes
 
+- [Comments Live Release](handoffs/2026-11-22-comments-live-release.md): deployed core image and workspace app, preserved services, offsite backups and verification limits.
+
 - [Related Columns Live Release](handoffs/2026-11-22-related-columns-live-release.md): pinned production image, coordinated offsite backups and live verification.
 
 - [Related Value Chips](handoffs/2026-11-22-related-value-chips.md): source avatars, distinct value chips and overflow in related columns.
