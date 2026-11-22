@@ -46,7 +46,11 @@ remains available.
 
 The separate OpenBot app was installed into the existing seeded VM. Preview
 Task assignments were backed up privately, copied into the new app-owned field,
-and retained with stable bot IDs. Two local demo profiles were configured through
+and retained with stable bot IDs. The initial query was capped at 200 records;
+a final cursor-paginated audit covered all 1,804 Tasks and recovered one missed
+completed demo Task from recorded preview state. The three historical
+bot-assigned Tasks were checked against the saved state and native comment
+history. Two local demo profiles were configured through
 the standalone settings API; their public Bot records were synchronized. The old
 Comments-owned bot settings, credentials, functions, workflow and Task field were
 pruned after reviewing the deletion plan. The Comments object and existing
@@ -61,7 +65,8 @@ paid model calls or production deployment occurred.
 ## Verification
 
 - OpenBot: 38 tests; Comments: 67 tests; native Task picker: 5 tests.
-- Both app builds and direct app typechecks pass. App lint passes.
+- Both app builds and direct app typechecks pass. App lint passes; targeted host
+  type-aware lint passes on nine files with zero errors or warnings.
 - Actual installed Send/Get Status execution and signed callback completed with
   no Comments record created.
 - Generic bot mention lookup, create, signed reply display, and resolving/reopening
