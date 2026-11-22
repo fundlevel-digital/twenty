@@ -5,6 +5,10 @@ responses. It adds **GitHub Profiles**, a **Refresh GitHub Profile** record
 command, the **Fetch GitHub Profile** workflow action, and two configurable
 workflows for existing People and Companies GitHub links.
 
+Installed in the live CRM on 2026-11-22 from merged PR #25. Production OAuth
+client setup remains outstanding; see the [live release handoff](../../../../docs/handoffs/2026-11-22-github-profiles-live-release.md)
+for verified installation state and setup instructions.
+
 ## Data Model
 
 An influencer has many GitHub Profiles; each profile belongs to at most one
