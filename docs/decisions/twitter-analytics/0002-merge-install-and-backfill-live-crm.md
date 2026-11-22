@@ -43,3 +43,5 @@ separately from source merge status.
 - This conversation, 2026-11-22, following preview acceptance.
 - [App source](../../../packages/twenty-apps/internal/twitter-analytics/README.md).
 - [Handoff](../../handoffs/2026-11-22-twitter-analytics.md), including subsequent rollout status.
+
+- [Merged PR #19](https://github.com/fundlevel-digital/twenty/pull/19) and the handoff's final production audit: installed after merge, 479 Influencers processed, 235 profiles related, four duplicate claims preserved, no duplicate profile handles.
