@@ -120,3 +120,13 @@ Screenshots: `.context/related-full-chip-open.png`,
 and `.context/related-picker-rows-dark.png`. Browser origin checks still use the
 VM-local TLS mapping rather than Conductor's authenticated edge. Preview
 supervisors and synthetic data are preserved. No production rollout was done.
+
+## Pull Request Publication
+
+[PR #21](https://github.com/fundlevel-digital/twenty/pull/21) is open against
+`main` from `conductor/influencer-storage-reorganization`, following
+[Decision 0005](../decisions/related-columns/0005-open-the-reviewed-workspace-pull-request.md).
+Commit `4ce492bd32` contains the reviewed UI, operational tools, tests and records.
+Earlier references to local/uncommitted changes describe their implementation
+stages before this publication. The PR has not been merged and the core UI has
+not been deployed to production; the isolated VM preview remains available.

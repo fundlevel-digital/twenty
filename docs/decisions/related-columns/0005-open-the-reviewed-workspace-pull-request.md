@@ -37,3 +37,6 @@ remain outside Git.
 
 - The current conversation and attached PR instructions.
 - [Implementation and verification handoff](../../handoffs/2026-11-22-related-value-chips.md).
+- [PR #21](https://github.com/fundlevel-digital/twenty/pull/21) opened against
+  `main` on 2026-11-22; implementation commit `4ce492bd32` was pushed on the
+  existing branch. Opening the PR did not merge or deploy the core UI.
