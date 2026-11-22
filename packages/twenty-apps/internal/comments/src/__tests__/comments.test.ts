@@ -135,6 +135,33 @@ describe('comment access', () => {
       call({ ...target, action: 'create', body: '   ' }),
     ).rejects.toThrow('Write a comment');
   });
+  it('rejects unresolved typed recipients before saving a comment', async () => {
+    await expect(
+      call({
+        ...target,
+        action: 'create',
+        body: 'Hello @unknown',
+        mentions: [],
+      }),
+    ).rejects.toThrow('Select a user, bot, or record');
+    expect(mocks.graphql).toHaveBeenCalledTimes(1);
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it('rejects an inaccessible selected recipient before saving or notifying', async () => {
+    mocks.mention.mockRejectedValueOnce(new Error('Recipient unavailable'));
+    await expect(
+      call({
+        ...target,
+        action: 'create',
+        body: 'Hello @Taylor',
+        mentions: [
+          { id: 'missing', label: 'Taylor', objectName: 'workspaceMember' },
+        ],
+      }),
+    ).rejects.toThrow('Recipient unavailable');
+    expect(mocks.graphql).toHaveBeenCalledTimes(1);
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
   it('paginates without dropping earlier comments', async () => {
     mocks.graphql
       .mockResolvedValueOnce({

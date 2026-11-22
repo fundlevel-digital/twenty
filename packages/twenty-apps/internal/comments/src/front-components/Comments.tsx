@@ -1,3 +1,5 @@
+import 'twenty-ui/style.css';
+
 import { useEffect, useState } from 'react';
 import {
   copyToClipboard,

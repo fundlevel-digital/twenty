@@ -1,4 +1,9 @@
-export type Mention = { id: string; label: string; objectName: string };
+export type Mention = {
+  id: string;
+  label: string;
+  objectName: string;
+  avatarUrl?: string | null;
+};
 export type RecordComment = {
   id: string;
   body: string;

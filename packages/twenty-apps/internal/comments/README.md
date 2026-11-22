@@ -4,7 +4,9 @@ An installable Twenty app for record-specific comment threads, inspired by the s
 
 ## Behavior
 
-- Write comments and replies, insert emoji, and search for users and records to mention.
+- Write comments and replies, insert emoji, and type `@` to search for users and records to mention. The composer retains the OpenBot group's identities and avatars when integrated with the OpenBot app source.
+- Choose a suggestion with the mouse, arrow keys and Enter/Tab. Selection replaces the typed fragment and restores the caret after the worker sends the new text to the host. Unselected mentions block saving; removed mentions do not notify. Email addresses remain ordinary text. Search failures and no matches have explicit feedback.
+- Open the Comments tab on Company and Person records. The tab and command sidebar share the same saved threads. Other objects can use the command or add its widget to their record layout.
 - Selected user mentions deliver an application Inbox message containing the comment, author and a reference to the source record. Self mentions do not notify.
 - Resolve and reopen threads. Filter by resolved status or threads you started or replied to.
 - Delete your own comments. Deleted original comments leave a tombstone when replies remain.
@@ -36,4 +38,10 @@ The app uses explicit Refresh, without live subscriptions. Emoji insertion is su
 
 The VM preview runs the frontend from this checkout, with server, worker and frontend under a detached restart supervisor. PostgreSQL and Redis use dedicated Docker services and a persistent preview database volume. Processes survive command-tool exits and restart on failure while the VM remains running; no VM wake mechanism is configured. No production deployment, production data copy or paid external API batch was performed. Private preview addresses, session state and supervisor scripts are in ignored `.context/`.
 
-The sidebar menu placement requires the accompanying renderer fixes in this branch: document elements must inherit from HTMLElement, the synthetic body must be a positioned containing block, and document coordinates must use the viewport origin. These changes correct Floating UI positioning without per-menu offsets. Regression coverage includes 19 Comments tests and 25 renderer tests.
+The sidebar menu placement requires the accompanying renderer fixes in this branch: document elements must inherit from HTMLElement, the synthetic body must be a positioned containing block, and document coordinates must use the viewport origin. These changes correct Floating UI positioning without per-menu offsets. The composer imports its SDK version's UI stylesheet so its native dropdown classes, scrolling and selected states match.
+
+Keyboard selection also requires the host renderer's editable-keyboard guard. An active `aria-autocomplete="list"` control declares its active suggestion and the `Control+Enter Meta+Enter` submission shortcuts. The host reserves these keys synchronously before forwarding them to the worker, preventing newline, focus and outer-page shortcut races. Regular typing, Shift+Enter and IME composition keep their native behavior. Rebuild the renderer library and fully reload the frontend after installing this host change.
+
+Current checks include 30 Comments tests and 22 renderer keyboard/form-control tests; the geometry change was previously verified with 25 renderer tests. The app typecheck and CLI build pass. The source renderer library builds and changed renderer files pass lint. A full renderer typecheck is currently blocked by missing generated declarations in this VM's directly built shared/SDK dependencies; it has not been reported as passing. Live preview checks cover Company record-tab rendering and shared threads, typed suggestions, selection/caret continuity, validation and an incoming native Inbox notification. The notification uses two seeded members; self mentions intentionally do not notify. The preview has no AI provider configured, so Inbox's AI composer remains unavailable and comment replies continue in Comments.
+
+The requested connection privacy controls are pending clarification of whether the connection belongs to OpenBot or to a user's comment visibility settings. No privacy behavior has been inferred from the email/calendar comparison.

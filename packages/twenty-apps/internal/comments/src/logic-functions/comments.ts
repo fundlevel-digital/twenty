@@ -15,6 +15,7 @@ import {
   type Mention,
 } from '../types';
 import { graphql } from '../utils/graphql';
+import { getMentionRanges, hasUnselectedMention } from '../utils/mention-draft';
 
 const FIELDS =
   'id body authorId authorName parentId resolved deleted createdAt mentions targetObject targetRecordId';
@@ -165,6 +166,8 @@ export const commentsHandler = async (
   if (input.action !== 'create') throw new Error('Unsupported action');
   if (!isNonEmptyString(input.body?.trim()) || input.body.length > 10000)
     throw new Error('Write a comment of up to 10,000 characters');
+  if (hasUnselectedMention(input.body, input.mentions ?? []))
+    throw new Error('Select a user, bot, or record for each @ mention');
   const parent = comments.find(({ id }) => id === input.parentId);
   if (input.parentId && (!parent || parent.parentId || parent.resolved))
     throw new Error('Reply to an open thread');
@@ -177,9 +180,14 @@ export const commentsHandler = async (
   }>(`/rest/workspaceMembers/${memberId}`);
   const authorName =
     `${member.name.firstName ?? ''} ${member.name.lastName ?? ''}`.trim();
-  const mentions = (input.mentions ?? [])
-    .filter((mention) => input.body?.includes(`@${mention.label}`))
-    .slice(0, 20);
+  const mentions = [
+    ...new Set(
+      getMentionRanges(input.body, input.mentions ?? []).map(
+        ({ mention }) => mention,
+      ),
+    ),
+  ];
+  if (mentions.length > 20) throw new Error('Mention up to 20 recipients');
   // Validate references as the caller before saving or delivering any mention.
   const references = await Promise.all(
     mentions.map(async (mention) => ({

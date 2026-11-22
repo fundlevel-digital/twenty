@@ -95,7 +95,7 @@ it('inserts emoji and a user mention and submits the selected recipient', async 
   await user.click(screen.getByRole('button', { name: 'Add Emoji' }));
   await user.click(screen.getByRole('button', { name: '🎉' }));
   await user.click(
-    screen.getByRole('button', { name: 'Mention a User or Record' }),
+    screen.getByRole('button', { name: 'Mention a User, Bot, or Record' }),
   );
   await user.click(
     await screen.findByRole('button', { name: 'Taylor · User' }),
