@@ -91,3 +91,17 @@ it('filters bot choices using the native assignee search', () => {
   ).toBeInTheDocument();
   expect(screen.queryByRole('checkbox', { name: 'Research Bot' })).toBeNull();
 });
+
+it('renders the human assignee alongside the selected bot in the shared overflow list', () => {
+  render(
+    <I18nProvider i18n={i18n}>
+      <OpenBotTaskAssignees
+        recordId="task"
+        mode="display"
+        leadingAssignee={<span>Tim Apple</span>}
+      />
+    </I18nProvider>,
+  );
+  expect(screen.getByText('Tim Apple')).toBeInTheDocument();
+  expect(screen.getByText('Research Bot')).toBeInTheDocument();
+});

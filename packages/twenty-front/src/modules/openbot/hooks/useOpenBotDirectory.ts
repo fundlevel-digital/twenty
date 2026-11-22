@@ -5,6 +5,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useEffect, useState } from 'react';
 import { EXECUTE_ONE_LOGIC_FUNCTION } from '@/logic-functions/graphql/mutations/executeOneLogicFunction';
 import { isString, isObject } from '@sniptt/guards';
+import { doNotTranslate } from 'twenty-shared/i18n';
 
 type Bot = {
   id: string;
@@ -67,7 +68,7 @@ export const useOpenBotDirectory = () => {
               execution?.status !== 'SUCCESS' ||
               !Array.isArray(execution.data)
             ) {
-              throw new Error('Bot directory unavailable');
+              throw new Error(doNotTranslate('Bot directory unavailable'));
             }
             return execution.data.filter(
               (value): value is Bot =>

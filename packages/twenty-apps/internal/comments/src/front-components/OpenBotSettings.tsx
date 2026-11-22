@@ -139,6 +139,7 @@ export const OpenBotSettings = () => {
       });
       if (decision !== 'confirm') return;
     }
+    if (!skipDirtyCheck) setNotice('');
     const query = Object.fromEntries(parameters.entries());
     if (id) query.openBotId = id;
     else delete query.openBotId;

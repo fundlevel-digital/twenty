@@ -20,32 +20,21 @@ export const RelationToOneFieldDisplay = () => {
   const isOpenBotAssignee = useIsOpenBotTaskAssigneeField(
     fieldDefinition.fieldMetadataId,
   );
-  const botAssignees = isOpenBotAssignee ? (
-    <OpenBotTaskAssignees
-      recordId={recordId}
-      mode="display"
-      emptyLabel={!isDefined(fieldValue) ? fieldDefinition.label : undefined}
-    />
-  ) : null;
 
   if (!isDefined(fieldValue) && isDefined(foreignKeyFieldValue)) {
     return <ForbiddenFieldDisplay />;
   }
 
-  if (
-    !isDefined(fieldValue) ||
-    !isDefined(fieldDefinition?.metadata.relationObjectMetadataNameSingular)
-  ) {
-    return botAssignees;
-  }
-
   const isWorkspaceMemberFieldMetadataRelation =
     fieldDefinition.metadata.relationObjectMetadataNameSingular ===
     StandardObjectNameSingular.WorkspaceMember;
-  const recordChipData = generateRecordChipData(fieldValue);
-
-  return (
-    <>
+  const recordChipData =
+    isDefined(fieldValue) &&
+    isDefined(fieldDefinition.metadata.relationObjectMetadataNameSingular)
+      ? generateRecordChipData(fieldValue)
+      : null;
+  const relationChip =
+    isDefined(fieldValue) && isDefined(recordChipData) ? (
       <RecordChip
         key={recordChipData.recordId}
         objectNameSingular={recordChipData.objectNameSingular}
@@ -55,7 +44,16 @@ export const RelationToOneFieldDisplay = () => {
         }
         triggerEvent={triggerEvent}
       />
-      {botAssignees}
-    </>
-  );
+    ) : undefined;
+  if (isOpenBotAssignee) {
+    return (
+      <OpenBotTaskAssignees
+        recordId={recordId}
+        mode="display"
+        leadingAssignee={relationChip}
+        emptyLabel={!isDefined(fieldValue) ? fieldDefinition.label : undefined}
+      />
+    );
+  }
+  return relationChip ?? null;
 };

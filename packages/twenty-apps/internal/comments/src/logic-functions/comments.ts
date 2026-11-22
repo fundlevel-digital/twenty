@@ -35,7 +35,7 @@ import {
 import { getMentionRanges, hasUnselectedMention } from '../utils/mention-draft';
 
 const FIELDS =
-  'id body authorId authorName authorKind parentId resolved deleted createdAt mentions targetObject targetRecordId';
+  'id body authorId authorName authorKind: authorType parentId resolved deleted createdAt mentions targetObject targetRecordId';
 type CommentEdges = {
   recordComments: {
     edges: { node: RecordComment }[];
@@ -229,6 +229,7 @@ export const commentsHandler = async (
         authorId: memberId,
         authorName,
         authorKind: 'HUMAN',
+        authorType: 'HUMAN',
         mentions: JSON.stringify(mentions),
         resolved: false,
         deleted: false,

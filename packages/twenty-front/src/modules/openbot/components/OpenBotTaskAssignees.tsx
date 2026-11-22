@@ -3,11 +3,14 @@ import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useOpenBotDirectory } from '@/openbot/hooks/useOpenBotDirectory';
 import { getOpenBotAssigneeIds } from '@/openbot/utils/getOpenBotAssigneeIds';
 import { useLingui } from '@lingui/react/macro';
-import { useState } from 'react';
+import { type ReactElement, useState } from 'react';
+import { OverflowingList } from 'twenty-ui/components/layout';
+import { MAX_RELATION_CHIPS_DISPLAYED_INLINE } from '@/object-record/record-field/ui/meta-types/display/constants/MaxRelationChipsDisplayedInline';
 import { ListItemButton } from 'twenty-ui/components/navigation';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSectionLabel } from '@/ui/layout/dropdown/components/DropdownMenuSectionLabel';
 import { Avatar, Chip } from 'twenty-ui/primitives/data-display';
+import { AssistantAvatar } from 'twenty-ui/components/data-display';
 import { Text } from 'twenty-ui/primitives/typography';
 
 type OpenBotTaskAssigneesProps = {
@@ -15,6 +18,7 @@ type OpenBotTaskAssigneesProps = {
   mode: 'picker' | 'display';
   searchFilter?: string;
   emptyLabel?: string;
+  leadingAssignee?: ReactElement;
 };
 
 export const OpenBotTaskAssignees = ({
@@ -22,6 +26,7 @@ export const OpenBotTaskAssignees = ({
   mode,
   searchFilter = '',
   emptyLabel,
+  leadingAssignee,
 }: OpenBotTaskAssigneesProps) => {
   const { t } = useLingui();
   const { bots, loading, error: directoryError } = useOpenBotDirectory();
@@ -63,34 +68,46 @@ export const OpenBotTaskAssignees = ({
   };
   if (mode === 'display') {
     if (recordError || directoryError) {
-      return null;
+      return leadingAssignee ?? null;
+    }
+    const chips = selected.map((id) => {
+      const bot = bots.find((item) => item.id === id);
+      return (
+        <Chip
+          key={id}
+          variant="plain"
+          startElement={
+            bot?.avatarUrl ? (
+              <Avatar
+                size="sm"
+                name={bot.name}
+                src={bot.avatarUrl}
+                colorSeed={id}
+              />
+            ) : (
+              <AssistantAvatar size={16} />
+            )
+          }
+        >
+          {bot?.name ?? t`Unavailable Bot`}
+        </Chip>
+      );
+    });
+    const assignees = [...(leadingAssignee ? [leadingAssignee] : []), ...chips];
+    if (!assignees.length) {
+      return emptyLabel ? <Text color="light">{emptyLabel}</Text> : null;
     }
     return (
-      <>
-        {!selected.length && emptyLabel && (
-          <Text color="light">{emptyLabel}</Text>
-        )}
-        {selected.map((id) => {
-          const bot = bots.find((item) => item.id === id);
-          return (
-            <Chip
-              key={id}
-              startElement={
-                <Avatar
-                  size="sm"
-                  name={bot?.name ?? t`Bot`}
-                  src={bot?.avatarUrl ?? undefined}
-                  colorSeed={id}
-                />
-              }
-            >
-              {bot?.name ?? t`Unavailable Bot`}
-            </Chip>
-          );
-        })}
-      </>
+      <OverflowingList
+        showOverflowCount
+        overflowLabel={t`Show All Assignees`}
+        maxInlineCount={MAX_RELATION_CHIPS_DISPLAYED_INLINE}
+      >
+        {assignees}
+      </OverflowingList>
     );
   }
+
   return (
     <DropdownMenuItemsContainer hasMaxHeight>
       <DropdownMenuSectionLabel label={t`Bots`} />
@@ -121,12 +138,16 @@ export const OpenBotTaskAssignees = ({
                   void chooseBot(bot.id);
                 }}
                 startIcon={
-                  <Avatar
-                    size="md"
-                    name={bot.name}
-                    src={bot.avatarUrl ?? undefined}
-                    colorSeed={bot.id}
-                  />
+                  bot.avatarUrl ? (
+                    <Avatar
+                      size="md"
+                      name={bot.name}
+                      src={bot.avatarUrl}
+                      colorSeed={bot.id}
+                    />
+                  ) : (
+                    <AssistantAvatar size={20} />
+                  )
                 }
               >
                 {bot.name}

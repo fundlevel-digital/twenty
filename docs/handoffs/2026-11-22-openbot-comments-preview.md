@@ -194,3 +194,87 @@ PostgreSQL/Redis and the persistent preview volume were restored after the VM
 restart. Temporary swap is enabled for frontend compilation. This does not claim
 survival of VM shutdown or a wake mechanism. No live OpenBot access, production
 change or paid model call occurred.
+
+## Bot Settings, Task Assignments And Reminders
+
+The current branch is rebased onto main `35c1561ae0`. Open **Settings → Apps →
+Comments → OpenBot** for the directory and separate, reloadable bot configuration
+pages. The app remains bundled with Comments. Settings use native Twenty
+controls and confirmation dialogs. Apps permission is checked on the server;
+secret reads return only a configured flag, and a blank secret preserves the
+existing encrypted value. Bot creation, renaming, enable/disable and removal
+change CRM configuration only. OpenBot routines remain manually configured.
+
+Saved Tasks now show a Bots group in the native Assignee picker. Multiple bots
+can coexist with the human assignee; `assigneeId` keeps its original human
+meaning. The app owns the `openBotAssignees` UUID-array storage and hides its raw
+column in standard views. A focused host picker/display adapter recognizes the
+app field's universal identifier. The native overflow list handles long names,
+and bot avatars use the native assistant avatar. Generic human assignments and
+native Task permissions remain in place. New-record forms do not add bots before
+the Task is saved; API callers can supply bot IDs at creation.
+
+Opted-in policies send assignment, advance warning, due and repeating overdue
+events using the existing signed webhook and callback protocol. Database events
+schedule delayed jobs for the next due-time boundary; a paginated minute scan
+reconciles settings and assignments. Every send/reply rechecks task eligibility.
+Completed/deleted tasks, removed assignments, changed due dates and disabled bots
+stop stale work. Bot replies remain comments and do not mark Tasks complete.
+
+The native workflow **Overdue Bot Reminders (Enable Sending to Start)** includes
+the **Send Overdue Task Reminders to Bots** action, a minute timer and a
+60-minute overdue interval. Its sending input is false. Duplicate the managed
+starter, set the interval and enable sending in the copy. Existing Send to
+OpenBot/Get Request Status actions remain available. See the maintained
+[setup and protocol](../../packages/twenty-apps/internal/comments/src/openbot/README.md)
+and [owner decision](../decisions/openbot/0006-bot-settings-and-task-assignment.md).
+
+Main's native enum requirement is also included. Since installed field types
+cannot change in place, `authorType` is a new Select with Human/Bot/System
+options. Legacy `authorKind` remains compatible, and new writes maintain both.
+The post-install hook backfills older classifications without altering IDs,
+text or authors. In this development preview the explicit backfill preserved
+24 existing comments, then updated zero on repetition. Development `app apply`
+requires explicitly running/verifying that hook; release installs/upgrades have
+the post-install hook registered.
+
+Verification on the rebased source:
+
+- All 108 app tests, direct app typecheck and CLI build pass. Five host tests and
+  targeted type-aware lint pass; host formatting passes. Shared runtime and
+  declarations were rebuilt after rebasing, using direct Vite/declaration builds
+  after Nx stalled. Full CRM typecheck is not reported passing: the first run
+  exposed incomplete SDK declarations/type mismatches, and its retry exceeded
+  VM memory.
+- Installed settings reads masked secrets. Browser configuration edits persisted
+  with the secret blank; the native Add Bot form created Review Bot, and its
+  separate URL reopened with an empty password input. Stale async form loads and
+  navigation during save were corrected. The directory shows both demo bots.
+- Actual native Task UI showed a bot-only assignee. Keyboard Space selected a
+  second bot, and both assignments survived a full reload. A temporary long bot
+  name verified the overflow count/popover; the demo name was then restored.
+  No browser page errors or browser-local API requests occurred.
+- Signed local roundtrips verified assignment, due-soon, due and overdue events.
+  Repeated scans/workflow dispatch queued no duplicates within the same cycle.
+  Completion stopped reminders and rejected a signed late callback with 409.
+  A created Task scheduled and received its due reply without a manual tick.
+- The supplied native workflow completed through its logic-function node with
+  sending disabled. Installed Send/Get Status actions also returned a local
+  demo answer after the author-kind upgrade.
+- A fresh source-Vite session verified that email and password were already
+  filled and login needed no typing. The source frontend, backend, worker and
+  local bot run under detached restart supervisors, with isolated persistent
+  PostgreSQL/Redis data. This does not claim survival of VM shutdown.
+
+The preview is <https://fundlevel-w928.conductor.show/>; Conductor sign-in still
+applies. Browser verification maps that hostname to VM-local TLS and bypasses
+the Conductor edge. Anonymous edge access returns its expected sign-in gate;
+an authenticated edge session was not independently verified. Current ignored
+screenshots are `.context/openbot-settings-directory.png`,
+`.context/openbot-settings-bot.png` and `.context/openbot-task-assignees.png`.
+
+Both seeded bot profiles point only at the VM demo endpoint. The server/worker
+fetch guard still rejects non-loopback destinations. No live OpenBot access,
+routine changes, paid model calls or production deployment occurred. Preview
+schema updates removed an obsolete generated field widget; comment records were
+preserved.

@@ -33,7 +33,28 @@ Preserve existing human assignees and native task access checks. Verification
 uses the isolated CRM and its local demo endpoint, without production changes or
 paid agent calls.
 
-## State
+## Implementation And Evidence
 
-Implementation and preview verification are in progress. This record does not
-claim completed delivery, a live OpenBot connection or a production deployment.
+The Comments app now owns the bot directory and per-bot configuration, encrypted
+credentials, task notification policies, task-assignment UUID field, signed
+delivery jobs, and a recurring native workflow whose sending input defaults to
+false. A focused frontend adapter adds bot selection/display to Task Assignee;
+existing human assignment and native Task permissions remain in place.
+
+Rebased onto main `35c1561ae0`, including the native enum requirement. Installed
+field types are immutable, so comment author classification uses a new native
+`authorType` Select and an idempotent post-install backfill. The legacy text
+field is retained for compatibility. The isolated backfill preserved 24 comments;
+a second pass updated zero. No production data was migrated.
+
+App tests and direct typecheck pass. Installed assignment, due-soon, due and
+overdue delivery, signed local callbacks, duplicate suppression, task completion
+and stale callback rejection have been checked. A delayed due job ran without
+a manual scan. The native recurring workflow completed with sending disabled.
+Browser checks passed for directory/configuration pages, secret preservation,
+native multi-bot selection with keyboard input, reload persistence and the native
+overflow popover. All 108 app tests, five host tests, direct app typecheck/build
+and targeted type-aware host lint pass. The full CRM typecheck remains unverified
+because of incomplete SDK declarations and the VM memory limit. No live OpenBot
+connection, routine modification, paid model call or production deployment is
+claimed. See the [preview handoff](../../handoffs/2026-11-22-openbot-comments-preview.md).

@@ -32,7 +32,7 @@ corresponding routine manually in OpenBot.
 
 ## Assign Tasks And Set Reminders
 
-A Task's native **Assignee** picker includes a **Bots** section. Select multiple
+A saved Task's native **Assignee** picker includes a **Bots** section. Select multiple
 bots alongside its existing human assignee. Bot profiles are read without
 returning webhook URLs or secrets, and native Task permissions govern assignment
 writes.
@@ -65,6 +65,7 @@ cancels stale events before delivery or reply. A request already accepted by
 OpenBot cannot be recalled by this app. Automatic notifications create a Task
 Comments thread, with the task title, description and due time. Replies appear
 under that thread and notify the saved human assignee/creator when available.
+A bot reply does not change Task status; completing the Task stops reminders.
 
 ## Workflow Actions
 
@@ -146,6 +147,17 @@ retry up to ten times with the same delivery ID. A closed/deleted source thread
 is skipped. Saving a comment is retained if enqueueing fails, with a visible
 warning. Task notification enqueue failures can be retried by reconciliation
 using the same comment and job IDs.
+
+## Existing Comment Upgrades
+
+Author classifications use the native `recordComment.authorType` Select with
+Human, Bot and System options. Twenty does not allow changing an installed field
+from Text to Select in place, so the legacy `authorKind` field is retained for
+compatibility. New writes maintain both fields; internal reads use the Select.
+The idempotent `comments-post-install` hook backfills legacy classifications on
+installation/version upgrades without changing comment IDs, text or authors.
+For development `app apply`, explicitly execute this hook after the schema is
+installed and verify that a repeated pass updates zero rows.
 
 ## Preview Boundary
 

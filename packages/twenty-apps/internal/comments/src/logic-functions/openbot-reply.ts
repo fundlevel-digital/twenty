@@ -83,7 +83,7 @@ export const openBotReplyHandler = async (
     return response(409, 'The task is no longer eligible for this event');
   const replyId = getOpenBotReplyId(delivery.id);
   const fields =
-    'id body authorId authorName authorKind parentId targetObject targetRecordId resolved deleted';
+    'id body authorId authorName authorKind: authorType parentId targetObject targetRecordId resolved deleted';
   const loadComments = async () => {
     const result = await graphql<{
       recordComments: { edges: { node: RecordComment }[] };
@@ -131,6 +131,7 @@ export const openBotReplyHandler = async (
             authorId: connection.id,
             authorName: connection.name,
             authorKind: 'BOT',
+            authorType: 'BOT',
             parentId: task.threadId,
             targetObject: task.objectName,
             targetRecordId: task.recordId,

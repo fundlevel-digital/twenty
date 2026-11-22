@@ -132,6 +132,7 @@ const queueTaskEvent = async (
             authorId: IDENTIFIERS.application,
             authorName: 'Task Automation',
             authorKind: 'SYSTEM',
+            authorType: 'SYSTEM',
             targetObject: 'task',
             targetRecordId: task.id,
             parentId: null,

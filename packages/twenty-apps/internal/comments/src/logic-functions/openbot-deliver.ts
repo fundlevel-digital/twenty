@@ -55,7 +55,7 @@ export const deliverOpenBotTask = async (
       }[];
     };
   }>(
-    'query($filter: RecordCommentFilterInput!) { recordComments(filter: $filter, first: 2) { edges { node { id deleted resolved authorKind } } } }',
+    'query($filter: RecordCommentFilterInput!) { recordComments(filter: $filter, first: 2) { edges { node { id deleted resolved authorKind: authorType } } } }',
     {
       filter: { id: { in: [delivery.task.commentId, delivery.task.threadId] } },
     },
