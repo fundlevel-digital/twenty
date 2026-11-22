@@ -19,6 +19,7 @@ export enum SettingsPath {
   Partner = 'partner',
   Enterprise = 'enterprise',
   Objects = 'objects',
+  BetterLists = 'better-lists',
   ObjectOverview = 'objects/overview',
   ObjectDetail = 'objects/:objectNamePlural',
   ObjectNewFieldSelect = 'objects/:objectNamePlural/new-field/select',

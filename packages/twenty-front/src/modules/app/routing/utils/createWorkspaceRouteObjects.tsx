@@ -11,6 +11,7 @@ import {
 import { type WorkspaceRouteObject } from '@/app/routing/types/WorkspaceRouteObject';
 import { StandardObjectNamePlural } from '@/object-metadata/types/StandardObjectNamePlural';
 import { RecordIndexSkeletonLoader } from '@/object-record/record-index/components/RecordIndexSkeletonLoader';
+import { BetterListsPreferencesRedirect } from '@/better-lists/components/BetterListsPreferencesRedirect';
 
 const GettingStartedPage = lazy(() =>
   import('~/pages/getting-started/GettingStartedPage').then((module) => ({
@@ -157,6 +158,14 @@ export const createWorkspaceRouteObjects = ({
           <AgentCoreShowPage />
         </LazyRoute>
       ),
+    },
+    {
+      path: '/better-lists',
+      element: <BetterListsPreferencesRedirect />,
+    },
+    {
+      path: '/better-lists/:listId',
+      element: <BetterListsPreferencesRedirect />,
     },
     {
       path: AppPath.Index,

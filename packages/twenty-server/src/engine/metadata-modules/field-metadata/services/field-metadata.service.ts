@@ -1,3 +1,4 @@
+import { assertBetterListFieldChange } from 'src/modules/better-lists/utils/assert-better-list-field-change';
 import { Injectable } from '@nestjs/common';
 
 import { FieldMetadataType } from 'twenty-shared/types';
@@ -186,6 +187,19 @@ export class FieldMetadataService {
       },
     );
 
+    for (const field of flatFieldMetadatasToDelete) {
+      assertBetterListFieldChange({
+        field,
+        operation: 'delete',
+        objects: Object.values(
+          existingFlatObjectMetadataMaps.byUniversalIdentifier,
+        ),
+        existingFields: Object.values(
+          existingFlatFieldMetadataMaps.byUniversalIdentifier,
+        ),
+      });
+    }
+
     const deletedFieldIds = new Set(
       flatFieldMetadatasToDelete
         .map((f) => {
@@ -365,6 +379,30 @@ export class FieldMetadataService {
       flatViewsToDelete,
     } = inputTranspilationResult.result;
 
+    for (const field of transpiledFlatFieldMetadatasToUpdate) {
+      assertBetterListFieldChange({
+        field,
+        operation: 'update',
+        objects: Object.values(
+          existingFlatObjectMetadataMaps.byUniversalIdentifier,
+        ),
+        existingFields: Object.values(
+          existingFlatFieldMetadataMaps.byUniversalIdentifier,
+        ),
+      });
+    }
+    for (const field of flatFieldMetadatasToCreate) {
+      assertBetterListFieldChange({
+        field,
+        operation: 'create',
+        objects: Object.values(
+          existingFlatObjectMetadataMaps.byUniversalIdentifier,
+        ),
+        existingFields: Object.values(
+          existingFlatFieldMetadataMaps.byUniversalIdentifier,
+        ),
+      });
+    }
     const flatFieldMetadatasToUpdate = fillComputedFieldsBindings({
       flatFieldMetadatas: transpiledFlatFieldMetadatasToUpdate,
       flatObjectMetadataMaps: existingFlatObjectMetadataMaps,
@@ -530,6 +568,19 @@ export class FieldMetadataService {
       }),
       { flatFieldMetadatas: [], indexMetadatas: [] },
     );
+
+    for (const field of transpiledFlatFieldMetadatasToCreate) {
+      assertBetterListFieldChange({
+        field,
+        operation: 'create',
+        objects: Object.values(
+          existingFlatObjectMetadataMaps.byUniversalIdentifier,
+        ),
+        existingFields: Object.values(
+          existingFlatFieldMetadataMaps.byUniversalIdentifier,
+        ),
+      });
+    }
 
     // After every input is transpiled: a computed field may read a field created by the same call
     const flatFieldMetadatasToCreate = fillComputedFieldsBindings({

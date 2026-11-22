@@ -1,3 +1,4 @@
+import { BetterListsModule } from 'src/modules/better-lists/better-lists.module';
 import { Module } from '@nestjs/common';
 
 import { MessagingQueryHookModule } from 'src/modules/messaging/common/query-hooks/messaging-query-hook.module';
@@ -26,6 +27,7 @@ import { WorkspaceMemberModule } from 'src/modules/workspace-member/workspace-me
 
 @Module({
   imports: [
+    BetterListsModule,
     MessagingModule,
     CalendarModule,
     ConnectedAccountModule,
