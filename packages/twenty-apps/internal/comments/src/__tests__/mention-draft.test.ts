@@ -32,14 +32,10 @@ it('validates repeated mentions and an unfinished @', () => {
   expect(hasUnselectedMention('Hello @', [])).toBe(true);
 });
 
-it('does not retain a selected reference inside an email address', () => {
-  const reference = {
-    id: 'record',
-    label: 'example.test',
-    objectName: 'company',
-  };
-  expect(getMentionRanges('alex@example.test', [reference])).toEqual([]);
-  expect(hasUnselectedMention('alex@example.test', [reference])).toBe(false);
-  expect(getMentionQuery('alex+@example.test', 18, [reference])).toBeNull();
-  expect(getMentionRanges('(@example.test)', [reference])).toHaveLength(1);
+it('drops a selected recipient when its text is edited into an email address', () => {
+  const recipient = { ...taylor, label: 'example.test' };
+  expect(getMentionRanges('alex@example.test', [recipient])).toEqual([]);
+  expect(hasUnselectedMention('alex@example.test', [recipient])).toBe(false);
+  expect(getMentionQuery('alex+@example.test', 18, [recipient])).toBeNull();
+  expect(getMentionRanges('(@example.test)', [recipient])).toHaveLength(1);
 });

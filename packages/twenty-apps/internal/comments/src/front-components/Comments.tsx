@@ -119,6 +119,12 @@ export const RecordComments = ({
       const result = await requestComments({ ...target, ...input });
       setData(result);
       onChange?.(result);
+      if (result.openBotDeliveryFailed)
+        setNotice(
+          t(
+            'Comment saved, but the bot could not be queued. Refresh to check delivery.',
+          ),
+        );
       if (result.notificationFailed)
         setNotice(
           t(
@@ -165,7 +171,11 @@ export const RecordComments = ({
   const message = (comment: RecordComment, root = false) => (
     <CommentMessage
       comment={comment}
-      isOwn={comment.authorId === data?.memberId}
+      isOwn={
+        comment.authorId === data?.memberId && comment.authorKind !== 'BOT'
+      }
+      openBotAgents={data?.openBotAgents}
+      openBotDeliveries={data?.openBotDeliveries}
       busy={busy}
       onReply={
         root && !comment.resolved

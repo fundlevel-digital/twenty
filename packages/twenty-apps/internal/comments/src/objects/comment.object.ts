@@ -10,6 +10,13 @@ export default defineObject({
   icon: 'IconMessageCircle',
   labelIdentifierFieldMetadataUniversalIdentifier: IDENTIFIERS.name,
   fields: [
+    {
+      universalIdentifier: '4a507093-6271-47c8-a5a9-7640673010f0',
+      name: 'authorKind',
+      label: 'Author Kind',
+      type: FieldType.TEXT,
+      isNullable: true,
+    },
     ...(
       ['name', 'targetObject', 'body', 'authorName', 'mentions'] as const
     ).map((name) => ({

@@ -44,6 +44,7 @@
 - [Related Attribute Columns Preview](handoffs/2026-11-22-related-columns-preview.md): one-to-many and junction attribute columns, synthetic fixture and isolated VM runtime.
 
 - [Influencer YouTube Channel Migration](handoffs/2026-11-22-influencer-youtube-channels.md): live channel links, migrated details/analytics, preserved pricing and API verification.
+- [OpenBot Comments Preview](handoffs/2026-11-22-openbot-comments-preview.md): bot mentions, signed delivery and replies, local preview verification and setup.
 
 - [NanoInfluencer Live Release](handoffs/2026-11-22-nano-influencer-live-release.md): pinned core rollout, native app installation, enum backfills and live verification.
 - [NanoInfluencer App And VM Preview](handoffs/2026-11-22-nano-influencer-preview.md): native list/creator sync, search-history imports, enrichment, grouped views and isolated VM verification.

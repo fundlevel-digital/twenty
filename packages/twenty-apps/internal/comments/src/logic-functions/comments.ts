@@ -8,6 +8,13 @@ import {
   type LogicFunctionExecutionContext,
 } from 'twenty-sdk/logic-function';
 import { IDENTIFIERS } from '../constants/identifiers';
+import { getOpenBotDeliveryStatuses } from '../openbot/delivery-status';
+import {
+  getPublicOpenBotAgents,
+  searchOpenBotMentions,
+  validateOpenBotMention,
+} from '../openbot/mentions';
+import { queueOpenBotMentions } from '../openbot/queue-comment';
 import {
   type CommentRequest,
   type CommentResponse,
@@ -28,7 +35,7 @@ import {
 import { getMentionRanges, hasUnselectedMention } from '../utils/mention-draft';
 
 const FIELDS =
-  'id body authorId authorName parentId resolved deleted createdAt mentions targetObject targetRecordId';
+  'id body authorId authorName authorKind parentId resolved deleted createdAt mentions targetObject targetRecordId';
 type CommentEdges = {
   recordComments: {
     edges: { node: RecordComment }[];
@@ -85,6 +92,7 @@ export const commentsHandler = async (
       ),
     ]);
     return [
+      ...searchOpenBotMentions(query),
       ...members.workspaceMembers.edges
         .map(({ node }) => ({
           id: node.id,
@@ -129,6 +137,8 @@ export const commentsHandler = async (
     memberId,
     recordLabel,
     objectLabel,
+    openBotAgents: getPublicOpenBotAgents(),
+    openBotDeliveries: await getOpenBotDeliveryStatuses(comments),
   };
   if (input.action === 'list') return result;
   const existing = comments.find(({ id }) => id === input.id);
@@ -183,18 +193,29 @@ export const commentsHandler = async (
     ),
   ];
   if (mentions.length > 20) throw new Error('Mention up to 20 recipients');
+  if (
+    mentions.some(
+      (mention) =>
+        mention.objectName === 'openbotAgent' &&
+        !validateOpenBotMention(mention, input.body ?? ''),
+    )
+  ) {
+    throw new Error('Select a connected OpenBot agent from the mention picker');
+  }
   // Validate references as the caller before saving or delivering any mention.
   const references = await Promise.all(
-    mentions.map(async (mention) => ({
-      mention,
-      text:
-        mention.objectName === 'workspaceMember'
-          ? await inboxMention({ workspaceMemberId: mention.id })
-          : await inboxReferenceRecord({
-              objectNameSingular: mention.objectName,
-              recordId: mention.id,
-            }),
-    })),
+    mentions
+      .filter(({ objectName }) => objectName !== 'openbotAgent')
+      .map(async (mention) => ({
+        mention,
+        text:
+          mention.objectName === 'workspaceMember'
+            ? await inboxMention({ workspaceMemberId: mention.id })
+            : await inboxReferenceRecord({
+                objectNameSingular: mention.objectName,
+                recordId: mention.id,
+              }),
+      })),
   );
   const created = await graphql<{ createRecordComment: RecordComment }>(
     `mutation($data: RecordCommentCreateInput!) { createRecordComment(data: $data) { ${FIELDS} } }`,
@@ -207,6 +228,7 @@ export const commentsHandler = async (
         targetRecordId: input.recordId,
         authorId: memberId,
         authorName,
+        authorKind: 'HUMAN',
         mentions: JSON.stringify(mentions),
         resolved: false,
         deleted: false,
@@ -215,6 +237,12 @@ export const commentsHandler = async (
     true,
   );
   const comment = created.createRecordComment;
+  let openBotDeliveryFailed = false;
+  try {
+    await queueOpenBotMentions(comment, mentions, recordLabel);
+  } catch {
+    openBotDeliveryFailed = true;
+  }
   let notificationFailed = false;
   const recipients = [
     ...new Set(
@@ -253,7 +281,13 @@ export const commentsHandler = async (
       notificationFailed = true;
     }
   }
-  return { ...result, comments: [...comments, comment], notificationFailed };
+  return {
+    ...result,
+    comments: [...comments, comment],
+    notificationFailed,
+    openBotDeliveryFailed,
+    openBotDeliveries: await getOpenBotDeliveryStatuses([...comments, comment]),
+  };
 };
 
 export default defineLogicFunction({

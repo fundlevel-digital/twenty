@@ -12,6 +12,8 @@ Comments works directly with Twenty's standard and custom records. A list entry 
 
 There is no Better Lists installation or merge-order dependency. The earlier workspace 932 prerequisite and reminder were canceled by [decision 0007](../../../../docs/decisions/comments/0007-independent-comments-for-any-object.md). Keep the instruction not to message that thread.
 
+OpenBot participants support selected bot mentions and attributed replies. See [OpenBot setup](src/openbot/README.md).
+
 ## Behavior
 
 - Write comments and replies, insert emoji, and type `@` to search for users and records to mention. The composer retains the OpenBot group's identities and avatars when integrated with the OpenBot app source.

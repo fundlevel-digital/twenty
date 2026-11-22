@@ -204,3 +204,84 @@ it('identifies any custom object and posts to its own record', async () => {
     ),
   );
 });
+
+it('mentions an OpenBot agent by typing @ and replaces the partial name', async () => {
+  const user = userEvent.setup();
+  const original = mocks.post.getMockImplementation();
+  mocks.post.mockImplementation(async (path, input) =>
+    input.action === 'search'
+      ? [
+          {
+            id: 'research-bot',
+            label: 'Research Bot',
+            objectName: 'openbotAgent',
+          },
+        ]
+      : original?.(path, input),
+  );
+  render(<Comments />);
+  const composer = await screen.findByRole('textbox', { name: 'Comment' });
+  await user.type(composer, '@Res');
+  await user.click(
+    await screen.findByRole('button', { name: /Research Bot · Bot/ }),
+  );
+  expect((composer as HTMLTextAreaElement).value).toBe('@Research Bot ');
+  await user.type(composer, 'check this account');
+  await user.click(screen.getByRole('button', { name: 'Comment' }));
+  await waitFor(() =>
+    expect(mocks.post).toHaveBeenCalledWith(
+      '/s/comments',
+      expect.objectContaining({
+        action: 'create',
+        body: '@Research Bot check this account',
+        mentions: [
+          {
+            id: 'research-bot',
+            label: 'Research Bot',
+            objectName: 'openbotAgent',
+          },
+        ],
+      }),
+    ),
+  );
+});
+
+it('shows a bot reply with its own identity and Bot badge', async () => {
+  const user = userEvent.setup();
+  const root: RecordComment = {
+    id: 'root',
+    body: 'Research this account',
+    authorId: 'member',
+    authorName: 'Alex',
+    parentId: null,
+    resolved: false,
+    deleted: false,
+    createdAt: new Date().toISOString(),
+    mentions: '[]',
+    targetObject: 'company',
+    targetRecordId: 'record',
+  };
+  comments = [
+    root,
+    {
+      ...root,
+      id: 'bot-reply',
+      parentId: root.id,
+      authorId: 'research-bot',
+      authorName: 'Research Bot',
+      authorKind: 'BOT',
+      body: 'Research complete',
+    },
+  ];
+  render(<Comments />);
+  await user.click(
+    await screen.findByRole('button', { name: 'Reply to Thread' }),
+  );
+  expect(await screen.findByText('Research Bot')).toBeDefined();
+  expect(screen.getByText('Bot')).toBeDefined();
+  expect(screen.getByText('Research complete')).toBeDefined();
+  await user.click(
+    screen.getAllByRole('button', { name: 'Comment Options' }).at(-1)!,
+  );
+  expect(screen.queryByRole('button', { name: 'Delete Comment' })).toBeNull();
+});
