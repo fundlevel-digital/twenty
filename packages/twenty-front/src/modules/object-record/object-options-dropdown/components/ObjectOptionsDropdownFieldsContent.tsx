@@ -1,3 +1,4 @@
+import { RelatedFieldsDropdown } from '@/object-record/record-column-lookup/components/RelatedFieldsDropdown';
 import { ListItemButton } from 'twenty-ui/components/navigation';
 import { useObjectOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsDropdown';
 import { LegacyDropdownContent } from '@/ui/layout/dropdown/components/LegacyDropdownContent';
@@ -38,6 +39,7 @@ export const ObjectOptionsDropdownFieldsContent = () => {
         onChange={(event) => setSearchInput(event.target.value)}
       />
       <DropdownMenuSeparator />
+      <RelatedFieldsDropdown />
       {isNonEmptyString(searchInput) ? (
         <ViewFieldsSearchDropdownSection searchInput={searchInput} />
       ) : (

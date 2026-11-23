@@ -44,4 +44,9 @@ export type FieldMetadataItem = Omit<
     | null;
   isLabelSyncedWithName?: boolean | null;
   morphId?: string | null;
+  relatedGroupBy?: {
+    fields: FieldMetadataItem[];
+    timeZone?: string;
+    subFieldName?: string;
+  };
 };

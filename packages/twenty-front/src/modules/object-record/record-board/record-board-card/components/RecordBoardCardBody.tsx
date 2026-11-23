@@ -1,3 +1,4 @@
+import { RelatedRecordFieldDisplay } from '@/object-record/record-column-lookup/components/RelatedRecordFieldDisplay';
 import { isRecordFieldReadOnly } from '@/object-record/read-only/utils/isRecordFieldReadOnly';
 import { useRecordRestrictedFieldNames } from '@/object-record/record-store/hooks/useRecordRestrictedFieldNames';
 import { RecordBoardContext } from '@/object-record/record-board/contexts/RecordBoardContext';
@@ -69,6 +70,16 @@ export const RecordBoardCardBody = () => {
   return (
     <RecordCardBodyContainer>
       {visibleRecordFieldsExceptLabelIdentifier.map((recordField, index) => {
+        if (recordField.relationTargetFieldMetadataId) {
+          return (
+            <StopPropagationContainer key={recordField.id}>
+              <RelatedRecordFieldDisplay
+                recordId={recordId}
+                recordField={recordField}
+              />
+            </StopPropagationContainer>
+          );
+        }
         const correspondingFieldDefinition =
           fieldDefinitionByFieldMetadataItemId[recordField.fieldMetadataItemId];
         const fieldMetadataItem =

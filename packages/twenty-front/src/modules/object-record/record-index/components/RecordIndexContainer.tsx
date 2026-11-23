@@ -1,3 +1,5 @@
+import { RecordTableLookupSSESubscribeEffects } from '@/object-record/record-column-lookup/components/RecordTableLookupSSESubscribeEffects';
+import { RelatedRecordGroupsLoader } from '@/object-record/record-group/components/RelatedRecordGroupsLoader';
 import { styled } from '@linaria/react';
 
 import { RecordBoardContainer } from '@/object-record/record-board/components/RecordBoardContainer';
@@ -50,6 +52,8 @@ export const RecordIndexContainer = () => {
         />
       ) : (
         <>
+          <RelatedRecordGroupsLoader />
+          <RecordTableLookupSSESubscribeEffects />
           <RecordIndexFiltersToContextStoreEffect />
           {recordIndexViewType === ViewType.TABLE && (
             <RecordGroupTabsPortalProvider>

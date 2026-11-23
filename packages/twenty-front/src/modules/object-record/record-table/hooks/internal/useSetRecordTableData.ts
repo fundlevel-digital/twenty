@@ -9,7 +9,7 @@ import {
   recordIndexAllRecordIdsComponentSelector,
 } from '@/object-record/record-index/states/selectors/recordIndexAllRecordIdsComponentSelector';
 
-import { useUpsertRecordTableRecordsInStore } from '@/object-record/record-table/hooks/internal/useUpsertRecordTableRecordsInStore';
+import { useUpsertRecordIndexRecordsInStore } from '@/object-record/record-index/hooks/useUpsertRecordIndexRecordsInStore';
 import { useFocusedRecordTableRow } from '@/object-record/record-table/hooks/useFocusedRecordTableRow';
 import { useUnfocusRecordTableCell } from '@/object-record/record-table/record-table-cell/hooks/useUnfocusRecordTableCell';
 import { hasUserSelectedAllRecordsComponentState } from '@/object-record/record-selection/states/hasUserSelectedAllRecordsComponentState';
@@ -68,8 +68,8 @@ export const useSetRecordTableData = ({
   const { unfocusRecordTableCell } = useUnfocusRecordTableCell(recordTableId);
   const { unfocusRecordTableRow } = useFocusedRecordTableRow(recordTableId);
   const store = useStore();
-  const { upsertRecordTableRecordsInStore } =
-    useUpsertRecordTableRecordsInStore();
+  const { upsertRecordIndexRecordsInStore } =
+    useUpsertRecordIndexRecordsInStore();
 
   return useCallback(
     <T extends ObjectRecord>({
@@ -79,7 +79,7 @@ export const useSetRecordTableData = ({
       records: T[];
       currentRecordGroupId?: string;
     }) => {
-      upsertRecordTableRecordsInStore(records);
+      upsertRecordIndexRecordsInStore(records);
 
       const currentRowIds = currentRecordGroupId
         ? store.get(
@@ -132,7 +132,7 @@ export const useSetRecordTableData = ({
       setRecordTableHoverPosition,
       isRowSelectedFamilyState,
       store,
-      upsertRecordTableRecordsInStore,
+      upsertRecordIndexRecordsInStore,
     ],
   );
 };

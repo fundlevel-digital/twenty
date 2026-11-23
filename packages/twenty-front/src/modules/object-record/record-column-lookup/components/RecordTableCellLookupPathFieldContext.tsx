@@ -1,114 +1,24 @@
-import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
-import { LookupValueRecordsContext } from '@/object-record/record-column-lookup/contexts/LookupValueRecordsContext';
-import { canReadLookupRelationPath } from '@/object-record/record-column-lookup/utils/canReadLookupRelationPath';
-import { getLookupRecordEntries } from '@/object-record/record-column-lookup/utils/getLookupRecordEntries';
-import { getLookupSourceHopIndex } from '@/object-record/record-column-lookup/utils/getLookupSourceHopIndex';
-import { type RecordFieldLookupTarget } from '@/object-record/record-column-lookup/utils/getRecordFieldLookupTarget';
-import { FieldContext } from '@/object-record/record-field/ui/contexts/FieldContext';
-import { RecordFieldComponentInstanceContext } from '@/object-record/record-field/ui/states/contexts/RecordFieldComponentInstanceContext';
-import { isFieldValueEmpty } from '@/object-record/record-field/ui/utils/isFieldValueEmpty';
-import { useRecordIndexContextOrThrow } from '@/object-record/record-index/contexts/RecordIndexContext';
-import { useRecordFieldValue } from '@/object-record/record-store/hooks/useRecordFieldValue';
+import { RelatedRecordFieldContext } from '@/object-record/record-column-lookup/components/RelatedRecordFieldContext';
 import { useRecordTableRowContextOrThrow } from '@/object-record/record-table/contexts/RecordTableRowContext';
-import { getRecordTableCellInputIdPrefix } from '@/object-record/record-table/utils/getRecordTableCellInputIdPrefix';
-import { getRecordFieldInputInstanceId } from '@/object-record/utils/getRecordFieldInputId';
-import { type ReactNode, useMemo } from 'react';
+import { type ComponentProps } from 'react';
 
-type RecordTableCellLookupPathFieldContextProps = {
-  recordFieldId: string;
-  fieldMetadataItem: FieldMetadataItem;
-  lookupTarget: RecordFieldLookupTarget;
-  children: ReactNode;
-};
+type RecordTableCellLookupPathFieldContextProps = Omit<
+  ComponentProps<typeof RelatedRecordFieldContext>,
+  'recordId'
+>;
 
-// Multi-level lookups are read-only: the leaf records are reached through rows of other objects
-export const RecordTableCellLookupPathFieldContext = ({
-  recordFieldId,
-  fieldMetadataItem,
-  lookupTarget,
-  children,
-}: RecordTableCellLookupPathFieldContextProps) => {
+export const RecordTableCellLookupPathFieldContext = (
+  props: RecordTableCellLookupPathFieldContextProps,
+) => {
   const { recordId } = useRecordTableRowContextOrThrow();
-  const {
-    objectPermissionsByObjectMetadataId,
-    fieldDefinitionByFieldMetadataItemId,
-  } = useRecordIndexContextOrThrow();
-
-  const {
-    relationHops,
-    lookupTargetFieldMetadataItem,
-    lookupTargetFieldDefinition: fieldDefinition,
-    isMultiValued,
-  } = lookupTarget;
-
-  const relationValue = useRecordFieldValue<unknown>(
-    recordId,
-    fieldMetadataItem.name,
-    fieldDefinitionByFieldMetadataItemId[fieldMetadataItem.id],
-  );
-
-  const sourceHopIndex = getLookupSourceHopIndex(relationHops);
-  const entries = useMemo(
-    () =>
-      getLookupRecordEntries({
-        relationValue,
-        relationHops,
-        sourceHopIndex,
-      }).filter(
-        ({ leafRecord }) =>
-          !isFieldValueEmpty({
-            fieldDefinition,
-            fieldValue: leafRecord[lookupTargetFieldMetadataItem.name],
-          }),
-      ),
-    [
-      relationValue,
-      relationHops,
-      sourceHopIndex,
-      fieldDefinition,
-      lookupTargetFieldMetadataItem,
-    ],
-  );
-
-  const isForbidden = !canReadLookupRelationPath({
-    relationHops,
-    lookupTargetFieldMetadataItem,
-    objectPermissionsByObjectMetadataId,
-  });
-
-  const singleLeafRecordId = entries[0]?.leafRecord.id ?? '';
-  const sourceObjectNameSingular =
-    relationHops[sourceHopIndex].targetObjectMetadataItem.nameSingular;
-
   return (
-    <RecordFieldComponentInstanceContext.Provider
-      value={{
-        instanceId: getRecordFieldInputInstanceId({
-          recordId,
-          fieldName: lookupTargetFieldMetadataItem.name,
-          prefix: getRecordTableCellInputIdPrefix(recordFieldId),
-        }),
-      }}
+    <RelatedRecordFieldContext
+      recordId={recordId}
+      recordFieldId={props.recordFieldId}
+      fieldMetadataItem={props.fieldMetadataItem}
+      lookupTarget={props.lookupTarget}
     >
-      <FieldContext.Provider
-        value={{
-          fieldMetadataItemId: lookupTargetFieldMetadataItem.id,
-          recordId: isMultiValued ? '' : singleLeafRecordId,
-          fieldDefinition,
-          isLabelIdentifier: false,
-          displayedMaxRows: 1,
-          isRecordFieldReadOnly: true,
-          isForbidden,
-        }}
-      >
-        <LookupValueRecordsContext.Provider
-          value={
-            isMultiValued ? { entries, sourceObjectNameSingular } : undefined
-          }
-        >
-          {children}
-        </LookupValueRecordsContext.Provider>
-      </FieldContext.Provider>
-    </RecordFieldComponentInstanceContext.Provider>
+      {props.children}
+    </RelatedRecordFieldContext>
   );
 };

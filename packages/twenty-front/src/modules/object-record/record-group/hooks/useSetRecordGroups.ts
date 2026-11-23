@@ -1,3 +1,5 @@
+import { useUserTimezone } from '@/ui/input/components/internal/date/hooks/useUserTimezone';
+import { resolveRelatedGroupField } from '@/object-record/record-group/utils/resolveRelatedGroupField';
 import { useStore } from 'jotai';
 
 import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMetadataItemsSelector';
@@ -15,15 +17,18 @@ import { isDeeplyEqual } from '~/utils/isDeeplyEqual';
 
 export const useSetRecordGroups = () => {
   const store = useStore();
+  const { userTimezone } = useUserTimezone();
 
   const setRecordGroups = useCallback(
     ({
       mainGroupByFieldMetadataId,
+      mainGroupBySubFieldName,
       recordGroups,
       recordIndexId,
       objectMetadataItemId,
     }: {
       mainGroupByFieldMetadataId: string;
+      mainGroupBySubFieldName?: string | null;
       recordGroups: RecordGroupDefinition[];
       recordIndexId: string;
       objectMetadataItemId: string;
@@ -45,10 +50,18 @@ export const useSetRecordGroups = () => {
       );
 
       const fieldMetadataId = mainGroupByFieldMetadataId;
-      const fieldMetadata = fieldMetadataId
+      const rootFieldMetadata = fieldMetadataId
         ? objectMetadataItem.fields.find(
             (field) => field.id === fieldMetadataId,
           )
+        : undefined;
+      const fieldMetadata = rootFieldMetadata
+        ? resolveRelatedGroupField({
+            field: rootFieldMetadata,
+            subFieldName: mainGroupBySubFieldName,
+            objects: objectMetadataItems,
+            timeZone: userTimezone,
+          })
         : undefined;
       const recordIndexGroupFieldMetadata =
         recordIndexGroupFieldMetadataItemComponentState.atomFamily({
@@ -96,19 +109,21 @@ export const useSetRecordGroups = () => {
         recordGroupIds,
       );
     },
-    [store],
+    [store, userTimezone],
   );
 
   const setRecordGroupsFromViewGroups = useCallback(
     ({
       viewId,
       mainGroupByFieldMetadataId,
+      mainGroupBySubFieldName,
       viewGroups,
       objectMetadataItem,
       recordIndexId: recordIndexIdFromOptions,
     }: {
       viewId: string;
       mainGroupByFieldMetadataId: string;
+      mainGroupBySubFieldName?: string | null;
       viewGroups: ViewGroup[];
       objectMetadataItem: EnrichedObjectMetadataItem;
       recordIndexId?: string;
@@ -128,6 +143,7 @@ export const useSetRecordGroups = () => {
 
       setRecordGroups({
         mainGroupByFieldMetadataId,
+        mainGroupBySubFieldName,
         recordGroups: newGroupDefinitions,
         recordIndexId,
         objectMetadataItemId: objectMetadataItem.id,

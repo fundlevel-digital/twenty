@@ -14,7 +14,7 @@ import { useRecordIndexGroupCommonQueryVariables } from '@/object-record/record-
 import { useRecordIndexGroupsRecordsLazyGroupBy } from '@/object-record/record-index/hooks/useRecordIndexGroupsRecordsLazyGroupBy';
 import { recordIndexGroupFieldMetadataItemComponentState } from '@/object-record/record-index/states/recordIndexGroupFieldMetadataComponentState';
 import { recordIndexRecordIdsByGroupComponentFamilyState } from '@/object-record/record-index/states/recordIndexRecordIdsByGroupComponentFamilyState';
-import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useUpsertRecordsInStore';
+import { useUpsertRecordIndexRecordsInStore } from '@/object-record/record-index/hooks/useUpsertRecordIndexRecordsInStore';
 import { getGroupByQueryResultGqlFieldName } from '@/page-layout/utils/getGroupByQueryResultGqlFieldName';
 import { useAtomComponentFamilyStateCallbackState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentFamilyStateCallbackState';
 import { useAtomComponentSelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentSelectorValue';
@@ -45,7 +45,8 @@ export const useTriggerRecordBoardFetchMore = () => {
 
   const { combinedFilters } = useRecordIndexGroupCommonQueryVariables();
 
-  const { upsertRecordsInStore } = useUpsertRecordsInStore();
+  const { upsertRecordIndexRecordsInStore } =
+    useUpsertRecordIndexRecordsInStore();
 
   const recordBoardCurrentGroupByQueryOffsetCallbackState =
     useAtomComponentStateCallbackState(
@@ -145,7 +146,10 @@ export const useTriggerRecordBoardFetchMore = () => {
     for (const recordGroupDefinition of sortedRecordGroupDefinitions) {
       const foundGroupInResult = groups.find(
         (recordGroup) =>
-          recordGroup.groupByDimensionValues[0] === recordGroupDefinition.value,
+          (recordGroup.groupByDimensionValues[0] === null
+            ? null
+            : String(recordGroup.groupByDimensionValues[0])) ===
+          recordGroupDefinition.value,
       );
 
       if (!isDefined(foundGroupInResult)) {
@@ -185,7 +189,7 @@ export const useTriggerRecordBoardFetchMore = () => {
         newRecordIds,
       );
 
-      upsertRecordsInStore({ partialRecords: newRecords });
+      upsertRecordIndexRecordsInStore(newRecords);
 
       if (newRecords.length < RECORD_BOARD_QUERY_PAGE_SIZE) {
         store.set(
@@ -213,7 +217,7 @@ export const useTriggerRecordBoardFetchMore = () => {
     store,
     objectMetadataItem,
     recordGroupDefinitions,
-    upsertRecordsInStore,
+    upsertRecordIndexRecordsInStore,
     executeRecordIndexGroupsRecordsLazyGroupBy,
     recordIndexRecordIdsByGroupCallbackState,
     recordBoardIsFetchingMore,

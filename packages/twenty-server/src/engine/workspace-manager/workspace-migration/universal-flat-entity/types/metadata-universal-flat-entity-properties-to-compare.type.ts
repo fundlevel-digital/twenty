@@ -66,6 +66,7 @@ type Assertions = [
       | 'calendarFieldMetadataUniversalIdentifier'
       | 'calendarEndFieldMetadataUniversalIdentifier'
       | 'mainGroupByFieldMetadataUniversalIdentifier'
+      | 'mainGroupBySubFieldName'
       | 'shouldHideEmptyGroups'
       | 'shouldDisplayGroupsAsTabs'
       | 'kanbanColumnWidth'

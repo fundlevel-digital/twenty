@@ -2,7 +2,7 @@ import { isRecordFieldSupportedByViewType } from '@/object-record/record-field/u
 import { ViewType } from '@/views/types/ViewType';
 
 describe('isRecordFieldSupportedByViewType', () => {
-  it('should keep extra columns in tables only', () => {
+  it('should retain related fields when changing record layouts', () => {
     expect(
       isRecordFieldSupportedByViewType({
         recordField: { isCanonical: false },
@@ -20,7 +20,7 @@ describe('isRecordFieldSupportedByViewType', () => {
         recordField: { isCanonical: false },
         viewType: ViewType.KANBAN,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('should keep canonical fields in every layout', () => {

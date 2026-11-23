@@ -19,10 +19,9 @@ import { doNotTranslate } from 'twenty-shared/i18n';
 
 const GRAPH_DEFAULT_DATE_GRANULARITY = ObjectRecordGroupByDateGranularity.DAY;
 
-export type GroupByFieldObject = Record<
-  string,
-  boolean | Record<string, boolean | string | Record<string, boolean | string>>
->;
+export type GroupByFieldObject = {
+  [key: string]: boolean | string | GroupByFieldObject;
+};
 
 type BuildGroupByFieldObjectParams = {
   field: FieldMetadataItem;
@@ -41,6 +40,26 @@ export const buildGroupByFieldObject = ({
   isNestedDateField,
   timeZone,
 }: BuildGroupByFieldObjectParams): GroupByFieldObject => {
+  if (field.relatedGroupBy) {
+    const { fields, subFieldName: nestedSubFieldName } = field.relatedGroupBy;
+    const leaf = fields[fields.length - 1];
+    const nested = isFieldRelation(leaf)
+      ? { [leaf.name]: { id: true } }
+      : buildGroupByFieldObject({
+          field: leaf,
+          subFieldName: nestedSubFieldName,
+          dateGranularity,
+          firstDayOfTheWeek,
+          timeZone: timeZone ?? field.relatedGroupBy.timeZone ?? 'UTC',
+        });
+    return fields
+      .slice(0, -1)
+      .reduceRight<GroupByFieldObject>(
+        (inner, relation) => ({ [relation.name]: inner }),
+        nested,
+      );
+  }
+
   const isRelation = isFieldRelation(field) || isFieldMorphRelation(field);
   const isComposite = isCompositeFieldType(field.type);
   const isDateField = isFieldMetadataDateKind(field.type);
@@ -51,61 +70,23 @@ export const buildGroupByFieldObject = ({
     }
 
     const parts = subFieldName.split('.');
-    const nestedFieldName = parts[0];
-    const nestedSubFieldName = parts[1];
-
-    if (isNestedDateField === true) {
-      const usedDateGranularity =
-        dateGranularity ?? GRAPH_DEFAULT_DATE_GRANULARITY;
-
-      const shouldHaveTimeZone =
-        GROUP_BY_DATE_GRANULARITY_THAT_REQUIRE_TIME_ZONE.includes(
-          usedDateGranularity,
-        );
-
-      const timeZoneIsNotProvided = !isDefined(timeZone);
-
-      if (shouldHaveTimeZone) {
-        if (timeZoneIsNotProvided) {
-          throw new Error(
-            doNotTranslate(`Date order by should have a time zone.`),
-          );
-        } else {
-          return {
-            [field.name]: {
-              [nestedFieldName]: {
-                granularity: usedDateGranularity,
-                timeZone,
-              },
-            },
-          };
+    const usedDateGranularity =
+      dateGranularity ?? GRAPH_DEFAULT_DATE_GRANULARITY;
+    const leaf: boolean | GroupByFieldObject = isNestedDateField
+      ? {
+          granularity: usedDateGranularity,
+          ...(GROUP_BY_DATE_GRANULARITY_THAT_REQUIRE_TIME_ZONE.includes(
+            usedDateGranularity,
+          )
+            ? { timeZone: timeZone ?? 'UTC' }
+            : {}),
         }
-      }
-
-      return {
-        [field.name]: {
-          [nestedFieldName]: {
-            granularity: usedDateGranularity,
-          },
-        },
-      };
-    }
-
-    if (isDefined(nestedSubFieldName)) {
-      return {
-        [field.name]: {
-          [nestedFieldName]: {
-            [nestedSubFieldName]: true,
-          },
-        },
-      };
-    }
-
-    return {
-      [field.name]: {
-        [nestedFieldName]: true,
-      },
-    };
+      : true;
+    const nested = parts.reduceRight<boolean | GroupByFieldObject>(
+      (inner, name) => ({ [name]: inner }),
+      leaf,
+    );
+    return { [field.name]: nested };
   }
 
   if (isComposite) {

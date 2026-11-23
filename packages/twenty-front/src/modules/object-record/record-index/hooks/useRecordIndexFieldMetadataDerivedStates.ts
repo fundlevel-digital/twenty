@@ -9,9 +9,7 @@ import { currentRecordFieldsComponentState } from '@/object-record/record-field/
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { getRecordFieldColumnDescriptor } from '@/object-record/record-field/utils/getRecordFieldColumnDescriptor';
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
-import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { useMemo } from 'react';
-import { FeatureFlagKey } from 'twenty-shared/types';
 import { findById, isDefined } from 'twenty-shared/utils';
 
 export const useRecordIndexFieldMetadataDerivedStates = (
@@ -56,9 +54,6 @@ export const useRecordIndexFieldMetadataDerivedStates = (
       )
     : {};
 
-  const isLookupColumnsEnabled = useIsFeatureEnabled(
-    FeatureFlagKey.IS_LOOKUP_COLUMNS_ENABLED,
-  );
   const { objectMetadataItems } = useObjectMetadataItems();
   const filterableFieldMetadataItems = useAtomFamilySelectorValue(
     availableFieldMetadataItemsForFilterFamilySelector,
@@ -87,14 +82,11 @@ export const useRecordIndexFieldMetadataDerivedStates = (
               recordField.id,
               getRecordFieldColumnDescriptor({
                 fieldMetadataItem,
-                // With the flag off a lookup column renders, loads and aggregates as its plain relation
-                lookupTarget: isLookupColumnsEnabled
-                  ? getRecordFieldLookupTarget({
-                      recordField,
-                      fieldMetadataItem,
-                      objectMetadataItems,
-                    })
-                  : undefined,
+                lookupTarget: getRecordFieldLookupTarget({
+                  recordField,
+                  fieldMetadataItem,
+                  objectMetadataItems,
+                }),
                 isFilterable: filterableFieldMetadataItems.some(
                   findById(fieldMetadataItem.id),
                 ),
@@ -109,7 +101,6 @@ export const useRecordIndexFieldMetadataDerivedStates = (
     [
       currentRecordFields,
       objectMetadataItem,
-      isLookupColumnsEnabled,
       objectMetadataItems,
       filterableFieldMetadataItems,
       sortableFieldMetadataItems,

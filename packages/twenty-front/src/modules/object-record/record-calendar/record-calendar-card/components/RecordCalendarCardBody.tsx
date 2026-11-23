@@ -1,3 +1,4 @@
+import { RelatedRecordFieldDisplay } from '@/object-record/record-column-lookup/components/RelatedRecordFieldDisplay';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { isRecordFieldReadOnly } from '@/object-record/read-only/utils/isRecordFieldReadOnly';
 import { useRecordRestrictedFieldNames } from '@/object-record/record-store/hooks/useRecordRestrictedFieldNames';
@@ -82,6 +83,16 @@ export const RecordCalendarCardBody = ({
       padding={`0 ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1]}`}
     >
       {visibleRecordFieldsExceptLabelIdentifier.map((recordField, index) => {
+        if (recordField.relationTargetFieldMetadataId) {
+          return (
+            <StopPropagationContainer key={recordField.id}>
+              <RelatedRecordFieldDisplay
+                recordId={recordId}
+                recordField={recordField}
+              />
+            </StopPropagationContainer>
+          );
+        }
         const correspondingFieldDefinition =
           fieldDefinitionByFieldMetadataItemId[recordField.fieldMetadataItemId];
         const fieldMetadataItem =

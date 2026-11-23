@@ -101,6 +101,7 @@ export const useRecordIndexGroupCommonQueryVariables = () => {
 
   return {
     combinedFilters,
+    baseFilter: combineFilters([anyFieldFilter, requestFilters]),
     recordGqlFields,
     orderBy,
     recordGroupsLimit,

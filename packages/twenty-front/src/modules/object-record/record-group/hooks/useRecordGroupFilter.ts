@@ -1,3 +1,4 @@
+import { buildRelatedGroupFilter } from '@/object-record/record-group/utils/buildRelatedGroupFilter';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { useCurrentRecordGroupDefinition } from '@/object-record/record-group/hooks/useCurrentRecordGroupDefinition';
 import { hiddenRecordGroupIdsComponentSelector } from '@/object-record/record-group/states/selectors/hiddenRecordGroupIdsComponentSelector';
@@ -47,6 +48,12 @@ export const useRecordGroupFilter = (fields: FieldMetadataItem[]) => {
     }
 
     if (isDefined(currentRecordGroupDefinition)) {
+      if (recordIndexGroupFieldMetadataItem?.relatedGroupBy) {
+        return buildRelatedGroupFilter(
+          recordIndexGroupFieldMetadataItem,
+          currentRecordGroupDefinition.value,
+        );
+      }
       const fieldMetadataItem = fields.find(
         (fieldMetadataItem) =>
           fieldMetadataItem.id === recordIndexGroupFieldMetadataItem?.id,

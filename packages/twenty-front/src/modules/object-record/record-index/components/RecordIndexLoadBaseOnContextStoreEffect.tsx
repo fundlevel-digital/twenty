@@ -25,7 +25,7 @@ export const RecordIndexLoadBaseOnContextStoreEffect = () => {
     .join(',');
 
   const currentViewLoadKey = isDefined(contextStoreCurrentViewId)
-    ? `${contextStoreCurrentViewId}-${viewGroupsSignature}`
+    ? `${contextStoreCurrentViewId}-${view?.mainGroupByFieldMetadataId ?? ''}-${view?.mainGroupBySubFieldName ?? ''}-${viewGroupsSignature}`
     : undefined;
 
   const { objectMetadataItem } = useContextStoreObjectMetadataItemOrThrow();

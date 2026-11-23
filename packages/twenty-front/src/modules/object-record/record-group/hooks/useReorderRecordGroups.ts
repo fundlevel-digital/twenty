@@ -95,6 +95,17 @@ export const useReorderRecordGroups = ({
 
       setRecordGroups({
         mainGroupByFieldMetadataId: recordIndexGroupFieldMetadataItem?.id,
+        mainGroupBySubFieldName:
+          recordIndexGroupFieldMetadataItem.relatedGroupBy
+            ? [
+                ...recordIndexGroupFieldMetadataItem.relatedGroupBy.fields
+                  .slice(1)
+                  .map((field) => field.name),
+                recordIndexGroupFieldMetadataItem.relatedGroupBy.subFieldName,
+              ]
+                .filter(Boolean)
+                .join('.')
+            : null,
         recordGroups: updatedRecordGroups,
         recordIndexId,
         objectMetadataItemId: objectMetadataItem.id,
@@ -105,7 +116,7 @@ export const useReorderRecordGroups = ({
     },
     [
       objectMetadataItem.id,
-      recordIndexGroupFieldMetadataItem?.id,
+      recordIndexGroupFieldMetadataItem,
       recordIndexId,
       saveViewGroups,
       setRecordGroups,

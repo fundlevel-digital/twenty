@@ -2148,6 +2148,7 @@ export type CreateViewInput = {
   kanbanColumnWidth?: InputMaybe<Scalars['Int']['input']>;
   key?: InputMaybe<ViewKey>;
   mainGroupByFieldMetadataId?: InputMaybe<Scalars['UUID']['input']>;
+  mainGroupBySubFieldName?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   objectMetadataId: Scalars['UUID']['input'];
   /** Deprecated: Superseded by objectMetadata.openRecordIn and the workspace member preference; kept one release for API compatibility, no longer read by the frontend. */
@@ -7063,6 +7064,8 @@ export type RecordSharingRoleDto = {
 export type RecordTableConfiguration = {
   __typename?: 'RecordTableConfiguration';
   configurationType: WidgetConfigurationType;
+  groupByFieldMetadataIds?: Maybe<Array<Scalars['String']['output']>>;
+  groupBySubFieldName?: Maybe<Scalars['String']['output']>;
   isUIEditable?: Maybe<Scalars['Boolean']['output']>;
   recordLimit?: Maybe<Scalars['Int']['output']>;
   viewId?: Maybe<Scalars['String']['output']>;
@@ -8359,6 +8362,7 @@ export type UpdateViewInput = {
   kanbanAggregateOperationFieldMetadataId?: InputMaybe<Scalars['UUID']['input']>;
   kanbanColumnWidth?: InputMaybe<Scalars['Int']['input']>;
   mainGroupByFieldMetadataId?: InputMaybe<Scalars['UUID']['input']>;
+  mainGroupBySubFieldName?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   /** Deprecated: Superseded by objectMetadata.openRecordIn and the workspace member preference; kept one release for API compatibility, no longer read by the frontend. */
   openRecordIn?: InputMaybe<ViewOpenRecordIn>;
@@ -8560,6 +8564,7 @@ export type UpsertViewWidgetViewSettingsInput = {
   kanbanAggregateOperationFieldMetadataId?: InputMaybe<Scalars['UUID']['input']>;
   kanbanColumnWidth?: InputMaybe<Scalars['Int']['input']>;
   mainGroupByFieldMetadataId?: InputMaybe<Scalars['UUID']['input']>;
+  mainGroupBySubFieldName?: InputMaybe<Scalars['String']['input']>;
   /** Deprecated: Superseded by objectMetadata.openRecordIn and the workspace member preference; kept one release for API compatibility, no longer read by the frontend. */
   openRecordIn?: InputMaybe<ViewOpenRecordIn>;
   shouldHideEmptyGroups?: InputMaybe<Scalars['Boolean']['input']>;
@@ -8906,6 +8911,7 @@ export type View = {
   kanbanColumnWidth?: Maybe<Scalars['Int']['output']>;
   key?: Maybe<ViewKey>;
   mainGroupByFieldMetadataId?: Maybe<Scalars['UUID']['output']>;
+  mainGroupBySubFieldName?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   objectMetadataId: Scalars['UUID']['output'];
   /** @deprecated Superseded by objectMetadata.openRecordIn and the workspace member preference; kept one release for API compatibility, no longer read by the frontend. */

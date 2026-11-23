@@ -92,6 +92,8 @@ export type ViewConfiguration = {
 
 export type RecordTableConfiguration = {
   configurationType: 'RECORD_TABLE';
+  groupByFieldMetadataIds?: string[] | null;
+  groupBySubFieldName?: string | null;
   viewId?: SerializedRelation | null;
   recordLimit?: number;
   isUIEditable?: boolean;

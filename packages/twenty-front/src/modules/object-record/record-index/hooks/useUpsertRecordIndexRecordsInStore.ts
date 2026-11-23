@@ -4,11 +4,11 @@ import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useU
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { useCallback } from 'react';
 
-export const useUpsertRecordTableRecordsInStore = () => {
+export const useUpsertRecordIndexRecordsInStore = () => {
   const { upsertRecordsInStore } = useUpsertRecordsInStore();
   const { columnDescriptorByRecordFieldId } = useRecordIndexContextOrThrow();
 
-  const upsertRecordTableRecordsInStore = useCallback(
+  const upsertRecordIndexRecordsInStore = useCallback(
     (records: ObjectRecord[]) => {
       upsertRecordsInStore({
         partialRecords: [
@@ -23,5 +23,5 @@ export const useUpsertRecordTableRecordsInStore = () => {
     [upsertRecordsInStore, columnDescriptorByRecordFieldId],
   );
 
-  return { upsertRecordTableRecordsInStore };
+  return { upsertRecordIndexRecordsInStore };
 };

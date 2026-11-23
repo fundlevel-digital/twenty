@@ -62,6 +62,7 @@ const VIEW_MANIFEST: Required<
   visibility: ViewVisibility.UNLISTED,
   openRecordIn: ViewOpenRecordIn.RECORD_PAGE,
   mainGroupByFieldMetadataUniversalIdentifier: STAGE_FIELD_UID,
+  mainGroupBySubFieldName: 'name',
   shouldHideEmptyGroups: true,
   shouldDisplayGroupsAsTabs: false,
   groupLoadLimit: 25,
@@ -120,6 +121,7 @@ const VIEW_SORT_MANIFEST: ViewSortManifest = {
 
 const NULLABLE_VIEW_MANIFEST_PROPERTIES: (keyof ViewManifest)[] = [
   'mainGroupByFieldMetadataUniversalIdentifier',
+  'mainGroupBySubFieldName',
   'anyFieldFilterValue',
   'kanbanColumnWidth',
   'kanbanAggregateOperation',
@@ -172,6 +174,7 @@ describe('fromFlatViewToViewManifest', () => {
       calendarFieldMetadataUniversalIdentifier: START_DATE_FIELD_UID,
       calendarEndFieldMetadataUniversalIdentifier: null,
       mainGroupByFieldMetadataUniversalIdentifier: null,
+      mainGroupBySubFieldName: null,
       shouldHideEmptyGroups: false,
       shouldDisplayGroupsAsTabs: false,
       groupLoadLimit: DEFAULT_VIEW_GROUP_LOAD_LIMIT,

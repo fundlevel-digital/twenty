@@ -1,3 +1,7 @@
+import { RecordTableGroupByPathPicker } from '@/side-panel/pages/page-layout/components/record-table-settings/RecordTableGroupByPathPicker';
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
+import { resolveRecordTableGroupByPath } from '@/page-layout/widgets/record-table/utils/resolveRecordTableGroupByPath';
+import { isManyToOneRelationField } from '@/object-metadata/utils/isManyToOneRelationField';
 import { isHiddenSystemField } from '@/object-metadata/utils/isHiddenSystemField';
 import { isCompositeFieldType } from '@/object-record/object-filter-dropdown/utils/isCompositeFieldType';
 import { isFieldMorphRelation } from '@/object-record/record-field/ui/types/guards/isFieldMorphRelation';
@@ -32,13 +36,14 @@ export const ChartGroupByFieldSelectionDropdownContentBase = ({
 }: ChartGroupByFieldSelectionDropdownContentBaseProps) => {
   const { t } = useLingui();
   const [searchQuery, setSearchQuery] = useState('');
+  const { objectMetadataItems } = useObjectMetadataItems();
   const selection = useChartGroupByFieldSelection({ axis });
   const { getIcon } = useIcons();
   const sourceObjectMetadataItem = selection?.sourceObjectMetadataItem;
 
   const groupableFields = useMemo(
     () =>
-      (sourceObjectMetadataItem?.fields ?? []).filter((field) => {
+      (sourceObjectMetadataItem?.readableFields ?? []).filter((field) => {
         if (isHiddenSystemField(field)) {
           return false;
         }
@@ -54,7 +59,7 @@ export const ChartGroupByFieldSelectionDropdownContentBase = ({
           relationType: field.settings?.relationType ?? null,
         });
       }),
-    [sourceObjectMetadataItem?.fields],
+    [sourceObjectMetadataItem?.readableFields],
   );
 
   const availableFields = filterBySearchQuery({
@@ -131,7 +136,37 @@ export const ChartGroupByFieldSelectionDropdownContentBase = ({
             <Dropdown.Empty>{t`No fields available`}</Dropdown.Empty>
           )}
         </ChartSettingsDropdownSection>
+        <Dropdown.Section>
+          <Dropdown.ActionItem page="group-by-path-">{t`Related Fields`}</Dropdown.ActionItem>
+        </Dropdown.Section>
       </Dropdown.Page>
+      <RecordTableGroupByPathPicker
+        object={selection.sourceObjectMetadataItem}
+        objects={objectMetadataItems}
+        onSelect={(path, subFieldName) => {
+          const resolved = resolveRecordTableGroupByPath({
+            objectMetadataId: selection.sourceObjectMetadataItem.id,
+            objectMetadataItems,
+            fieldMetadataIds: path,
+            subFieldName,
+          });
+          if (!resolved) {
+            return;
+          }
+          const leaf = resolved.fields[resolved.fields.length - 1];
+          const parts = [
+            ...resolved.fields.slice(1).map((field) => field.name),
+            subFieldName,
+            ...(isManyToOneRelationField(leaf) && path.length > 1
+              ? ['id']
+              : []),
+          ].filter(Boolean);
+          selection.selectField({
+            fieldId: path[0],
+            subFieldName: parts.join('.') || null,
+          });
+        }}
+      />
       {groupableFields.map((fieldMetadataItem) => {
         if (isFieldMorphRelation(fieldMetadataItem)) {
           return (

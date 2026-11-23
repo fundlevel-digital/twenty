@@ -327,6 +327,7 @@ import { DropConnectedAccountVisibilityFastInstanceCommand } from 'src/database/
 import { AddAcceptedBillingPricesToApplicationFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-61/2-61-instance-command-fast-1795183195168-add-accepted-billing-prices-to-application';
 import { AddCrossConnectionDeduplicationFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-61/2-61-instance-command-fast-1795281277521-add-cross-connection-deduplication';
 import { AddAppConversationBindingsFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-61/2-61-instance-command-fast-1795281277523-add-app-conversation-bindings';
+import { AddViewRelatedGroupingFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-61/2-61-instance-command-fast-1795452245250-add-view-related-grouping';
 
 export const INSTANCE_COMMANDS = [
   AddViewFieldGroupIdIndexOnViewFieldFastInstanceCommand,
@@ -656,4 +657,5 @@ export const INSTANCE_COMMANDS = [
   AddAcceptedBillingPricesToApplicationFastInstanceCommand,
   AddCrossConnectionDeduplicationFastInstanceCommand,
   AddAppConversationBindingsFastInstanceCommand,
+  AddViewRelatedGroupingFastInstanceCommand,
 ];

@@ -86,6 +86,7 @@ export type ViewManifest = SyncableEntityOptions & {
   visibility?: ViewVisibility;
   openRecordIn?: ViewOpenRecordIn;
   mainGroupByFieldMetadataUniversalIdentifier?: string;
+  mainGroupBySubFieldName?: string | null;
   shouldHideEmptyGroups?: boolean;
   shouldDisplayGroupsAsTabs?: boolean;
   groupLoadLimit?: number;

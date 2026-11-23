@@ -284,6 +284,37 @@ describe('AdvancedFilterSidePanelValueFormInput', () => {
     ).toHaveValue(RELATED_RECORD_IDS);
   });
 
+  it('selects records of a related relation and preserves the selection on reopen', async () => {
+    const user = userEvent.setup();
+    const company = getMockObjectMetadataItemOrThrow('company');
+    const sourceRelation = opportunity.fields.find(
+      (field) =>
+        isManyToOneRelationField(field) &&
+        field.relation.targetObjectMetadata.id === company.id,
+    );
+    const targetRelation = company.fields.find((field) =>
+      isManyToOneRelationField(field),
+    );
+    if (!sourceRelation || !targetRelation) {
+      throw new Error('Missing related relation fixture');
+    }
+    const { findByRole, getByRole } = renderValueInput({
+      recordFilter: {
+        ...nonWorkspaceMemberRelationFilter,
+        fieldMetadataId: sourceRelation.id,
+        relationTargetFieldMetadataId: targetRelation.id,
+        value: JSON.stringify(RELATED_RECORD_IDS),
+      },
+      dropdownFieldMetadataId: sourceRelation.id,
+    });
+    const picker = await findByRole('listbox', { name: 'Related Records' });
+    expect(picker).toHaveValue(RELATED_RECORD_IDS);
+    await user.deselectOptions(picker, RELATED_RECORD_IDS[0]);
+    expect(getByRole('status', { name: 'Saved Filter' }).textContent).toBe(
+      JSON.stringify([RELATED_RECORD_IDS[1]]),
+    );
+  });
+
   it('saves added and removed relation selections as an ID array', async () => {
     const user = userEvent.setup();
     const { findByRole, getByRole } = renderValueInput({
