@@ -1,5 +1,6 @@
 import { isNonEmptyString } from '@sniptt/guards';
-import { RestApiClient } from 'twenty-client-sdk/rest';
+import { RestApiClient, RestApiClientError } from 'twenty-client-sdk/rest';
+import { setTimeout } from 'node:timers/promises';
 import {
   createMessageChannel,
   ingestMessages,
@@ -40,6 +41,11 @@ import {
 import { syncWorkspace } from 'src/logic-functions/utils/sync-workspace';
 import { type PlusvibeLead } from 'src/logic-functions/utils/normalize-event';
 import { syncSourceThread } from 'src/logic-functions/utils/sync-source-thread';
+import {
+  getOwnedInboxesKey,
+  verifyOwnedInbox,
+} from 'src/logic-functions/utils/verify-owned-inbox';
+import { UnresolvedOwnedInboxError } from 'src/logic-functions/errors/unresolved-owned-inbox.error';
 
 const MAX_NATIVE_EMAIL_TEXT_LENGTH = 262_144;
 const MAX_NATIVE_EMAIL_SUBJECT_LENGTH = 998;
@@ -49,7 +55,12 @@ export type NativeEmail = {
   externalId: string;
   workspaceId: string;
   workspaceName: string;
-  sender: string;
+  sender?: string;
+  senderEvidence?:
+    | 'PROVIDER_ACCOUNT'
+    | 'OUTBOUND_HEADER'
+    | 'RECIPIENT_HEADER'
+    | 'KNOWN_CONVERSATION';
   leadEmail: string;
   leadId?: string;
   lead?: PlusvibeLead;
@@ -91,7 +102,7 @@ export const findMailConnection = async (
 
 const ensureChannel = async (
   connectedAccountId: string,
-  email: NativeEmail,
+  email: NativeEmail & { sender: string },
   messagingProviderUniversalIdentifier: string,
 ): Promise<AppMessageChannel> => {
   const preferences = await getWorkspacePreferences(email.workspaceId);
@@ -179,14 +190,17 @@ export const mergeThreadState = (
   };
 };
 
-const getConversationId = (email: NativeEmail) =>
-  recordId(
+const getConversationId = (email: NativeEmail) => {
+  if (!email.sender)
+    throw new UnresolvedOwnedInboxError('PlusVibe owned inbox is missing');
+  return recordId(
     'conversation',
     email.workspaceId,
     email.sender,
     email.leadEmail,
     email.campaignId ?? '',
   );
+};
 
 export const getCanonicalThreadId = async (email: NativeEmail) => {
   const logicalId = getConversationId(email);
@@ -222,20 +236,15 @@ export const updateThreadMetadata = async (
       `/rest/messageThreads/${threadId}`,
     );
     const current = THREAD_SCHEMA.parse(response.data.messageThread);
-    const result = await client.post<{
+    const filter = encodeURIComponent(
+      `and(id[eq]:${threadId},updatedAt[eq]:"${current.updatedAt}")`,
+    );
+    const result = await client.patch<{
       data?: { updateMessageThreads: { id: string }[] };
-      errors?: unknown[];
-    }>('/graphql', {
-      query:
-        'mutation($id:UUID!,$updatedAt:DateTime!,$data:MessageThreadUpdateInput!){updateMessageThreads(filter:{id:{eq:$id},updatedAt:{eq:$updatedAt}},data:$data){id}}',
-      variables: {
-        id: threadId,
-        updatedAt: current.updatedAt,
-        data: { ...fields, ...mergeThreadState(current, email) },
-      },
+    }>(`/rest/messageThreads?filter=${filter}&fields=id`, {
+      ...fields,
+      ...mergeThreadState(current, email),
     });
-    if (result.errors?.length)
-      throw new Error('Could not update PlusVibe thread metadata');
     if (result.data?.updateMessageThreads.length) return;
   }
   throw new Error(
@@ -271,11 +280,21 @@ export const updateThreadLabel = async (
     );
 };
 
-export const syncNativeEmail = async (email: NativeEmail) => {
+export const prepareNativeEmailChannel = async (candidate: NativeEmail) => {
+  if (!candidate.sender)
+    throw new UnresolvedOwnedInboxError('PlusVibe owned inbox is missing');
+  const email = { ...candidate, sender: candidate.sender };
   z.email().parse(email.sender);
   z.email().parse(email.leadEmail);
+  if (
+    email.sender.trim().toLowerCase() === email.leadEmail.trim().toLowerCase()
+  )
+    throw new UnresolvedOwnedInboxError(
+      'PlusVibe owned inbox cannot be the lead email address',
+    );
   if (!Number.isFinite(Date.parse(email.receivedAt)))
     throw new Error('Invalid PlusVibe email timestamp');
+  await verifyOwnedInbox(email);
   const connection = await findMailConnection(email.workspaceId);
   if (!connection)
     throw new Error(
@@ -289,6 +308,78 @@ export const syncNativeEmail = async (email: NativeEmail) => {
       : connection.providerName === ACCOUNT_PROVIDER_NAME
         ? API_KEY_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER
         : MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
+  );
+  return channel;
+};
+
+export const prepareUnresolvedHistoryChannel = async (workspaceId: string) => {
+  const connection = await findMailConnection(workspaceId);
+  if (!connection) throw new Error('PlusVibe mail connection is missing');
+  const handle = `plusvibe:unibox:unresolved:${workspaceId}`;
+  const existing = (
+    await listMessageChannels({ connectedAccountId: connection.id })
+  ).find((channel) => channel.handle === handle);
+  if (existing) return existing;
+  const preferences = await getWorkspacePreferences(workspaceId);
+  return createMessageChannel({
+    connectedAccountId: connection.id,
+    handle,
+    displayName: 'Unresolved Historical Inbox',
+    visibility: preferences.uniboxVisibility,
+    messagingProvider: {
+      universalIdentifier:
+        connection.providerName === USER_ACCOUNT_PROVIDER_NAME
+          ? USER_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER
+          : connection.providerName === ACCOUNT_PROVIDER_NAME
+            ? API_KEY_MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER
+            : MESSAGING_PROVIDER_UNIVERSAL_IDENTIFIER,
+    },
+  });
+};
+
+const findReplayChannel = async (
+  email: NativeEmail,
+  fallback: AppMessageChannel,
+) => {
+  const result = await new RestApiClient({ runAs: 'application' }).post<{
+    data?: {
+      messageChannelMessageAssociations: {
+        edges: { node: { messageChannelId: string } }[];
+      };
+    };
+    errors?: unknown[];
+  }>('/graphql', {
+    query:
+      'query($external:String!){messageChannelMessageAssociations(first:20,filter:{messageExternalId:{eq:$external}}){edges{node{messageChannelId}}}}',
+    variables: { external: `${email.workspaceId}:${email.externalId}` },
+  });
+  if (result.errors?.length || !result.data)
+    throw new Error('Could not verify existing PlusVibe message identity');
+  const identifiers = new Set(
+    result.data.messageChannelMessageAssociations.edges.map(
+      ({ node }) => node.messageChannelId,
+    ),
+  );
+  if (identifiers.size === 0) return fallback;
+  const channels = (
+    await listMessageChannels({
+      connectedAccountId: fallback.connectedAccountId,
+    })
+  ).filter((channel) => identifiers.has(channel.id));
+  if (channels.length > 1)
+    throw new Error(
+      'Multiple PlusVibe messages share the same provider identity',
+    );
+  return channels[0] ?? fallback;
+};
+
+const syncVerifiedNativeEmail = async (candidate: NativeEmail) => {
+  if (!candidate.sender)
+    throw new UnresolvedOwnedInboxError('PlusVibe owned inbox is missing');
+  const email = { ...candidate, sender: candidate.sender };
+  const channel = await findReplayChannel(
+    email,
+    await prepareNativeEmailChannel(email),
   );
   const personId = await syncPerson(
     {
@@ -361,6 +452,7 @@ export const syncNativeEmail = async (email: NativeEmail) => {
     ...common,
     text: extractEmailReply(email.text).slice(0, MAX_NATIVE_EMAIL_TEXT_LENGTH),
     plusvibeSenderRecordId: senderId,
+    plusvibeInboxResolution: 'Verified',
     ...(sourceThreadId ? { plusvibeThreadRecordId: sourceThreadId } : {}),
   });
   await updateThreadMetadata(message.messageThreadId, common, email);
@@ -372,4 +464,153 @@ export const syncNativeEmail = async (email: NativeEmail) => {
     sourceThreadId,
   );
   return message;
+};
+
+const syncUnresolvedHistoryEmail = async (email: NativeEmail) => {
+  z.email().parse(email.leadEmail);
+  if (!Number.isFinite(Date.parse(email.receivedAt)))
+    throw new Error('Invalid PlusVibe email timestamp');
+  const channel = await findReplayChannel(
+    email,
+    await prepareUnresolvedHistoryChannel(email.workspaceId),
+  );
+  const previousInbox = channel.handle.match(
+    /^plusvibe:(?:unibox|outreach):([^:]+@[^:]+)$/,
+  )?.[1];
+  if (previousInbox && previousInbox !== email.leadEmail) {
+    const key = getOwnedInboxesKey(email.workspaceId);
+    if (
+      ((await kv.get<string[]>(key)) ?? []).includes(previousInbox) ||
+      (await kv.get<boolean>(`${key}:${previousInbox}`))
+    )
+      return syncVerifiedNativeEmail({
+        ...email,
+        sender: previousInbox,
+        senderEvidence: 'KNOWN_CONVERSATION',
+      });
+  }
+  const personId = await syncPerson(
+    {
+      ...email.lead,
+      email: email.leadEmail,
+      lead_id: email.leadId ?? email.lead?.lead_id,
+    },
+    email.workspaceId,
+    { direction: email.direction },
+  );
+  const [message] = await ingestMessages({
+    messageChannelId: channel.id,
+    messages: [
+      {
+        externalId: `${email.workspaceId}:${email.externalId}`,
+        threadExternalId: `${email.workspaceId}:${email.threadId ?? recordId('unresolved-thread', email.workspaceId, email.leadEmail, email.campaignId ?? '')}`,
+        subject: email.subject.slice(0, MAX_NATIVE_EMAIL_SUBJECT_LENGTH),
+        text: extractEmailReply(email.text).slice(
+          0,
+          MAX_NATIVE_EMAIL_TEXT_LENGTH,
+        ),
+        receivedAt: new Date(email.receivedAt),
+        participants:
+          email.direction === 'OUT'
+            ? [
+                {
+                  role: 'FROM',
+                  handle: channel.handle,
+                  displayName: 'Unresolved Historical Inbox',
+                },
+                {
+                  role: 'TO',
+                  handle: email.leadEmail,
+                  displayName: email.leadEmail,
+                  ...(personId ? { personId } : {}),
+                },
+              ]
+            : [
+                {
+                  role: 'FROM',
+                  handle: email.leadEmail,
+                  displayName: email.leadEmail,
+                  ...(personId ? { personId } : {}),
+                },
+              ],
+      },
+    ],
+  });
+  if (!message)
+    throw new Error(
+      'Twenty did not acknowledge the unresolved historical email',
+    );
+  const workspaceId = await syncWorkspace(
+    { _id: email.workspaceId, name: email.workspaceName },
+    true,
+  );
+  const common = { source: 'PLUSVIBE', plusvibeWorkspaceRecordId: workspaceId };
+  await new RestApiClient({ runAs: 'application' }).patch(
+    `/rest/messages/${message.messageId}`,
+    {
+      ...common,
+      plusvibeSenderRecordId: null,
+      plusvibeInboxResolution: 'Unresolved',
+      ...(email.threadId
+        ? {
+            plusvibeThreadRecordId: await syncSourceThread(
+              email.workspaceId,
+              email.threadId,
+            ),
+          }
+        : {}),
+    },
+  );
+  await updateThreadMetadata(message.messageThreadId, common, email);
+  return message;
+};
+
+export const resolveOwnedEmail = async (candidate: NativeEmail) => {
+  if (candidate.direction !== 'IN' || !candidate.sender) return candidate;
+  const key = getOwnedInboxesKey(candidate.workspaceId);
+  const owned = (await kv.get<string[]>(key)) ?? [];
+  const [leadIsOwned, senderIsOwned] = await Promise.all([
+    owned.includes(candidate.leadEmail) ||
+      kv.get<boolean>(`${key}:${candidate.leadEmail}`),
+    owned.includes(candidate.sender) ||
+      kv.get<boolean>(`${key}:${candidate.sender}`),
+  ]);
+  if (leadIsOwned && !senderIsOwned) {
+    // Some historical Unibox rows mark our sent mail as incoming.
+    return {
+      ...candidate,
+      direction: 'OUT' as const,
+      sender: candidate.leadEmail,
+      leadEmail: candidate.sender,
+      lead: { ...candidate.lead, email: candidate.sender },
+      senderEvidence: 'KNOWN_CONVERSATION' as const,
+    };
+  }
+  return candidate;
+};
+
+const syncNativeEmailOnce = async (candidate: NativeEmail) => {
+  const email = await resolveOwnedEmail(candidate);
+  try {
+    return await syncVerifiedNativeEmail(email);
+  } catch (error) {
+    if (!(error instanceof UnresolvedOwnedInboxError)) throw error;
+    return syncUnresolvedHistoryEmail(email);
+  }
+};
+
+export const syncNativeEmail = async (candidate: NativeEmail) => {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await syncNativeEmailOnce(candidate);
+    } catch (error) {
+      if (
+        !(error instanceof RestApiClientError) ||
+        error.status !== 429 ||
+        attempt >= 5
+      )
+        throw error;
+      await setTimeout(Math.min(60_000, 5000 * 2 ** attempt));
+    }
+  }
 };

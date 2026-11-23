@@ -84,6 +84,8 @@ export const syncEmailRelations = async (
   leadIds: string[],
   sourceThreadId?: string,
 ) => {
+  if (!email.sender)
+    throw new Error('PlusVibe sender relations require a verified inbox');
   await linkRecords(
     'plusvibeConversationSenders',
     'conversation',

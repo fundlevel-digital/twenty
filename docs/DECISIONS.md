@@ -7,6 +7,7 @@ supersession. Operational instructions stay with their package or skill.
 
 | Area | Index | Implementation And Handoff |
 | --- | --- | --- |
+| Influencer Outreach | [Decisions](decisions/influencer-outreach/DECISIONS.md) | Stage definitions and dashboard requirements under discussion |
 | Better Lists | [Decisions](decisions/better-lists/DECISIONS.md) | [App README](../packages/twenty-apps/internal/better-lists/README.md), [Handoff](handoffs/2026-11-22-better-lists.md), [Live release](handoffs/2026-11-22-better-lists-live-release.md) |
 | GitHub Profiles | [Decisions](decisions/github-profiles/DECISIONS.md) | [App README](../packages/twenty-apps/internal/github-profiles/README.md), [preview handoff](handoffs/2026-11-22-github-profiles-preview.md), [live release](handoffs/2026-11-22-github-profiles-live-release.md) |
 | Comments | [Decisions](decisions/comments/DECISIONS.md) | [App README](../packages/twenty-apps/internal/comments/README.md) |
@@ -35,5 +36,6 @@ identify scope, decisions, implementation and verification limits.
 | [0006](decisions/0006-connect-linkedin-after-the-rollout.md) | 2026-11-21 | Leave LinkedIn connection and dependent history migration for later | accepted |
 | [0007](decisions/0007-require-autofilled-preview-login.md) | 2026-11-22 | Require autofilled demo email and password in every isolated preview | accepted |
 | [0008](decisions/0008-reuse-native-twenty-ui-components.md) | 2026-11-22 | Reuse native Twenty components across host UI and SDK apps, with custom UI only for unsupported capabilities | accepted |
+| [0009](decisions/0009-install-matt-pocock-grilling-skill.md) | 2026-11-23 | Install Matt Pocock's Grilling Skill | accepted |
 
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).

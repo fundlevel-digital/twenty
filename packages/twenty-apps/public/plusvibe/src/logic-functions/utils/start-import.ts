@@ -37,7 +37,7 @@ export const startImport = async (workspaceId: string, force = false) => {
   if (
     current &&
     !force &&
-    current.version === 3 &&
+    current.version === 4 &&
     ['campaigns', 'leads', 'emails', 'archivedEmails'].includes(
       current.phase,
     ) &&
@@ -49,7 +49,7 @@ export const startImport = async (workspaceId: string, force = false) => {
     if (job && !['COMPLETED', 'FAILED'].includes(job.state)) return;
   }
   const state: PlusvibeImportState = {
-    version: 3,
+    version: 4,
     runId: randomUUID(),
     phase: 'campaigns',
     processed: 0,

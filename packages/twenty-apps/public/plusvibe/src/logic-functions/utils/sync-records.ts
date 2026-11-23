@@ -1,3 +1,4 @@
+import { getLeadOutreachFields } from 'src/logic-functions/utils/lead-outreach';
 import { isNonEmptyString } from '@sniptt/guards';
 import { CoreApiClient } from 'twenty-client-sdk/core';
 import { RestApiClient, RestApiClientError } from 'twenty-client-sdk/rest';
@@ -42,12 +43,14 @@ export const createRecordIfMissing = async (
   id: string,
   fields: Record<string, unknown>,
 ) => {
-  if (await findRecord(plural, id)) return;
+  if (await findRecord(plural, id)) return false;
   try {
     await restClient().post(`/rest/${plural}`, { id, ...fields });
+    return true;
   } catch (error) {
     // A concurrent delivery or a lost response may have already committed the same ID.
     if (!(await findRecord(plural, id))) throw error;
+    return false;
   }
 };
 
@@ -211,6 +214,7 @@ export const syncLead = async (
   const sourceStatus = lead.status?.trim().toUpperCase();
   const sourceFields = {
     externalId,
+    ...(isFullLeadRecord ? getLeadOutreachFields(lead) : {}),
     name:
       [lead.first_name, lead.last_name].filter(isNonEmptyString).join(' ') ||
       email,
@@ -252,10 +256,11 @@ export const syncLead = async (
     if (await findRecord('plusvibeCampaigns', campaignRecordId))
       links.campaignRecordId = campaignRecordId;
   }
-  await createRecordIfMissing('plusvibeLeads', id, {
+  const created = await createRecordIfMissing('plusvibeLeads', id, {
     ...sourceFields,
     ...links,
   });
+  if (created) return id;
   await restClient().patch(`/rest/plusvibeLeads/${id}`, {
     ...(isFullLeadRecord
       ? sourceFields

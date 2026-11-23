@@ -50,17 +50,29 @@ export default defineApplicationRole({
 
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageThread.universalIdentifier,
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageChannelMessageAssociation
+        .universalIdentifier,
     ].map((objectUniversalIdentifier) => ({
       objectUniversalIdentifier,
       canReadAllRecords: true,
-      canCreateAllRecords:
-        objectUniversalIdentifier !==
+      canCreateAllRecords: ![
         STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember
           .universalIdentifier,
-      canUpdateAllRecords:
-        objectUniversalIdentifier !==
+        STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageChannelMessageAssociation
+          .universalIdentifier,
+      ].some(
+        (readOnlyObjectIdentifier) =>
+          readOnlyObjectIdentifier === objectUniversalIdentifier,
+      ),
+      canUpdateAllRecords: ![
         STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember
           .universalIdentifier,
+        STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.messageChannelMessageAssociation
+          .universalIdentifier,
+      ].some(
+        (readOnlyObjectIdentifier) =>
+          readOnlyObjectIdentifier === objectUniversalIdentifier,
+      ),
       canSoftDeleteAllRecords: false,
       canDestroyAllRecords: false,
     })),

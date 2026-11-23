@@ -60,7 +60,7 @@ export const webhookHandler = async (event: RoutePayload<unknown>) => {
         normalized.eventType,
       )
     ) {
-      if (!normalized.sender || !normalized.messageId)
+      if (!normalized.messageId)
         throw new Error(
           'PlusVibe webhook is missing sender or message identity',
         );
@@ -70,6 +70,7 @@ export const webhookHandler = async (event: RoutePayload<unknown>) => {
         workspaceId: normalized.workspaceId,
         workspaceName: registration.workspaceName,
         sender: normalized.sender,
+        senderEvidence: normalized.senderEvidence,
         leadEmail: normalized.email,
         leadId: normalized.lead.lead_id ?? undefined,
         lead: normalized.lead,

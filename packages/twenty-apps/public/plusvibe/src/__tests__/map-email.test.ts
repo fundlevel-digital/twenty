@@ -19,6 +19,98 @@ const CAMPAIGN_EMAIL = {
 };
 
 describe('PlusVibe email API formats', () => {
+  it('keeps distinct provider emails separate when their RFC message ID is reused', () => {
+    const first = mapEmail(
+      { ...CAMPAIGN_EMAIL, id: 'first-message' },
+      'workspace-1',
+      'Sales',
+      undefined,
+      true,
+    );
+    const second = mapEmail(
+      {
+        ...CAMPAIGN_EMAIL,
+        id: 'second-message',
+        sent_on: '2026-11-21T10:00:00Z',
+      },
+      'workspace-1',
+      'Sales',
+      undefined,
+      true,
+    );
+    expect(first.externalId).toBe('first-message');
+    expect(second.externalId).toBe('second-message');
+  });
+  it('preserves an alternate reply address instead of replacing it with the original lead email', () => {
+    expect(
+      mapEmail(
+        {
+          ...CAMPAIGN_EMAIL,
+          direction: 'IN',
+          from_address_email: 'alternate@example.net',
+        },
+        'workspace-1',
+        'Sales',
+      ),
+    ).toMatchObject({
+      leadEmail: 'alternate@example.net',
+      leadId: undefined,
+      sender: 'sender@example.com',
+    });
+  });
+  it('does not trust an inbound account field that identifies the external From address', () => {
+    expect(
+      mapEmail(
+        {
+          ...CAMPAIGN_EMAIL,
+          direction: 'IN',
+          eaccount: 'alternate@example.net',
+          from_address_email: 'alternate@example.net',
+          to_address_json: [{ address: 'ours@example.org' }],
+        },
+        'workspace-1',
+        'Sales',
+      ),
+    ).toMatchObject({
+      sender: 'ours@example.org',
+      senderEvidence: 'RECIPIENT_HEADER',
+    });
+  });
+  it('uses the receiving inbox rather than an incoming message sender as the owned account', () => {
+    expect(
+      mapEmail(
+        {
+          ...CAMPAIGN_EMAIL,
+          direction: 'IN',
+          eaccount: '',
+          sender_email: 'lead@example.com',
+          from_address_email: 'lead@example.com',
+          to_address_json: [{ address: 'historical-inbox@example.com' }],
+        },
+        'workspace-1',
+        'Sales',
+      ),
+    ).toMatchObject({
+      sender: 'historical-inbox@example.com',
+      leadEmail: 'lead@example.com',
+      direction: 'IN',
+    });
+  });
+
+  it('still accepts a generic sender header on explicitly outgoing email', () => {
+    expect(
+      mapEmail(
+        {
+          ...CAMPAIGN_EMAIL,
+          direction: 'OUT',
+          eaccount: '',
+          sender_email: 'sender@example.com',
+        },
+        'workspace-1',
+        'Sales',
+      ).sender,
+    ).toBe('sender@example.com');
+  });
   it('recovers incoming participants from headers when source account and lead are blank', () => {
     expect(
       mapEmail(
@@ -94,7 +186,7 @@ describe('PlusVibe email API formats', () => {
     expect(
       mapEmail(CAMPAIGN_EMAIL, 'workspace-1', 'Sales', undefined, true),
     ).toMatchObject({
-      externalId: '<rfc-message@example.com>',
+      externalId: 'provider-message',
       direction: 'OUT',
       sender: 'sender@example.com',
       leadEmail: 'lead@example.com',

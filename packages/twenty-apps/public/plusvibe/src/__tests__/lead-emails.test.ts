@@ -210,7 +210,7 @@ describe('Campaign sent-email history', () => {
     expect(await leadEmailsHandler(INPUT, CONTEXT)).toEqual({ imported: 1 });
     expect(syncNativeEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        externalId: EMAIL.message_id,
+        externalId: EMAIL.id,
         direction: 'OUT',
         leadEmail: INPUT.leadEmail,
       }),

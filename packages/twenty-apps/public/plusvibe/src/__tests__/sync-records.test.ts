@@ -393,7 +393,7 @@ describe('Twenty record synchronization', () => {
     );
     await expect(
       createRecordIfMissing('people', recordId('person'), { name: 'Test' }),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
   });
 
   it('propagates database failures when the record was not committed', async () => {

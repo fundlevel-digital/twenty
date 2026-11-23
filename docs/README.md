@@ -1,5 +1,19 @@
 # Twenty Engineering Notes
 
+- [PlusVibe Sync Repair](handoffs/2026-11-23-plusvibe-sync-repair.md): complete lead recovery, owned-inbox safeguards and native message repair.
+
+- [PlusVibe Sync Diagnosis](handoffs/2026-11-23-plusvibe-sync-diagnosis.md): failed lead import, incomplete message history and verified historical sender/participant corruption.
+
+- [Native Cold And Ghosted Dashboards](handoffs/2026-11-23-native-cold-and-ghosted-dashboards.md): actual Twenty dashboard tabs with real CRM records, inbox history, follow-up counts and source-data limits.
+
+- [Cold And Ghosted Dashboard Previews](handoffs/2026-11-23-influencer-dashboard-previews.md): interactive native UI concepts with fictional records, inbox history and outreach coverage.
+
+- [PlusVibe Outreach Repair](handoffs/2026-11-22-plusvibe-outreach-repair.md): app-only source coverage repair, targeted recovery checkpoints, tested history fix and remaining live verification.
+
+- [Attio Backup And Outreach Audit](handoffs/2026-11-22-attio-outreach-backup-audit.md): latest located Drive export and 265 influencers with missing historical send evidence despite retained POC emails.
+
+- [Influencer Outreach Dashboard](handoffs/2026-11-22-influencer-outreach-dashboard.md): live native influencer/POC coverage, email usage, verified counts and source-history limits.
+
 - [Better Lists Live Release](handoffs/2026-11-22-better-lists-live-release.md): pinned core deployment, SDK app installation, preserved workspace data and offsite backups.
 
 - [GitHub Profiles Live Release](handoffs/2026-11-22-github-profiles-live-release.md): installed native app, preserved applications, verified defaults/runtime and remaining production OAuth setup.

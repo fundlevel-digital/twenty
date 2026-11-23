@@ -168,11 +168,11 @@ export const backfillHandler = async (
       phase: page.has_more
         ? state.phase
         : state.phase === 'campaigns'
-          ? 'emails'
-          : state.phase === 'emails'
-            ? 'archivedEmails'
-            : state.phase === 'archivedEmails'
-              ? 'leads'
+          ? 'leads'
+          : state.phase === 'leads'
+            ? 'emails'
+            : state.phase === 'emails'
+              ? 'archivedEmails'
               : 'complete',
       cursor: page.has_more
         ? (page.next_starting_after ?? undefined)
@@ -191,6 +191,9 @@ export const backfillHandler = async (
       await kv.set(key, {
         ...state,
         phase: 'failed',
+        failedPhase: state.phase,
+        error:
+          error instanceof Error ? error.message : 'PlusVibe import failed',
         updatedAt: new Date().toISOString(),
       });
     if (

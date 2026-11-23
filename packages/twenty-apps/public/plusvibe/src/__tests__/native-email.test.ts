@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
+  wait,
   values,
   ingestMessages,
   createMessageChannel,
@@ -14,6 +15,7 @@ const {
   syncCampaign,
   syncWorkspace,
 } = vi.hoisted(() => ({
+  wait: vi.fn(async () => undefined),
   values: new Map<string, unknown>(),
   ingestMessages: vi.fn(),
   createMessageChannel: vi.fn(),
@@ -27,6 +29,7 @@ const {
   syncCampaign: vi.fn(),
   syncWorkspace: vi.fn(),
 }));
+vi.mock('node:timers/promises', () => ({ setTimeout: wait }));
 vi.mock('twenty-sdk/logic-function', () => ({
   ingestMessages,
   createMessageChannel,
@@ -40,7 +43,8 @@ vi.mock('twenty-sdk/logic-function', () => ({
     }),
   },
 }));
-vi.mock('twenty-client-sdk/rest', () => ({
+vi.mock('twenty-client-sdk/rest', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('twenty-client-sdk/rest')>()),
   RestApiClient: class {
     get = get;
     post = post;
@@ -66,6 +70,8 @@ vi.mock('src/logic-functions/utils/plusvibe-api', () => ({
   getApiKeyFingerprint: () => 'fingerprint',
 }));
 
+import { RestApiClientError } from 'twenty-client-sdk/rest';
+
 import {
   getCanonicalThreadId,
   mergeThreadState,
@@ -78,6 +84,7 @@ const EMAIL: NativeEmail = {
   workspaceId: 'workspace-1',
   workspaceName: 'Sales',
   sender: 'sender@example.com',
+  senderEvidence: 'PROVIDER_ACCOUNT',
   leadEmail: 'lead@example.com',
   campaignId: 'campaign-1',
   threadId: 'provider-thread-1',
@@ -126,11 +133,79 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({ data: { messageThread: CURRENT_THREAD } });
   post.mockReset().mockResolvedValue({
+    data: { messageChannelMessageAssociations: { edges: [] } },
+  });
+  patch.mockReset().mockResolvedValue({
     data: { updateMessageThreads: [{ id: 'native-thread-1' }] },
   });
 });
 
 describe('Native PlusVibe emails', () => {
+  it('reuses an existing message channel when history is replayed through another import path', async () => {
+    const existing = {
+      id: 'original-channel',
+      connectedAccountId: 'connection-1',
+      handle: 'plusvibe:unibox:sender@example.com',
+      visibility: 'METADATA',
+    };
+    post.mockResolvedValue({
+      data: {
+        messageChannelMessageAssociations: {
+          edges: [{ node: { messageChannelId: existing.id } }],
+        },
+      },
+    });
+    listMessageChannels.mockResolvedValue([existing]);
+    await syncNativeEmail(EMAIL);
+    expect(ingestMessages).toHaveBeenCalledWith(
+      expect.objectContaining({ messageChannelId: existing.id }),
+    );
+    expect(updateMessageChannel).not.toHaveBeenCalled();
+  });
+  it('preserves a reply with no resolvable inbox without inventing a recipient or sender record', async () => {
+    await syncNativeEmail({
+      ...EMAIL,
+      direction: 'IN',
+      sender: EMAIL.leadEmail,
+    });
+    expect(createMessageChannel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        handle: 'plusvibe:unibox:unresolved:workspace-1',
+      }),
+    );
+    expect(ingestMessages.mock.calls[0][0].messages[0].participants).toEqual([
+      expect.objectContaining({ role: 'FROM', handle: EMAIL.leadEmail }),
+    ]);
+    expect(patch).toHaveBeenCalledWith(
+      '/rest/messages/native-message-1',
+      expect.objectContaining({
+        plusvibeSenderRecordId: null,
+        plusvibeInboxResolution: 'Unresolved',
+      }),
+    );
+  });
+  it('preserves outbound history with an unresolved inbox instead of treating the lead as its sender', async () => {
+    await expect(
+      syncNativeEmail({
+        ...EMAIL,
+        sender: EMAIL.leadEmail.toUpperCase(),
+        direction: 'OUT',
+      }),
+    ).resolves.toBeDefined();
+    expect(
+      ingestMessages.mock.calls[0][0].messages[0].participants[0],
+    ).toMatchObject({
+      role: 'FROM',
+      handle: 'plusvibe:unibox:unresolved:workspace-1',
+    });
+    expect(patch).toHaveBeenCalledWith(
+      '/rest/messages/native-message-1',
+      expect.objectContaining({
+        plusvibeSenderRecordId: null,
+        plusvibeInboxResolution: 'Unresolved',
+      }),
+    );
+  });
   it('groups campaign history with a previously identified provider thread', async () => {
     await syncNativeEmail(EMAIL);
     await syncNativeEmail({
@@ -138,7 +213,7 @@ describe('Native PlusVibe emails', () => {
       externalId: 'older-send',
       threadId: undefined,
     });
-    expect(patch).toHaveBeenLastCalledWith(
+    expect(patch).toHaveBeenCalledWith(
       '/rest/messages/native-message-1',
       expect.objectContaining({
         plusvibeThreadRecordId: 'source-thread-record',
@@ -220,16 +295,12 @@ describe('Native PlusVibe emails', () => {
         ],
       }),
     );
-    expect(post).toHaveBeenCalledWith(
-      '/graphql',
+    expect(patch).toHaveBeenCalledWith(
+      expect.stringContaining('/rest/messageThreads?filter='),
       expect.objectContaining({
-        variables: expect.objectContaining({
-          data: expect.objectContaining({
-            plusvibeHasReplies: true,
-            plusvibeReplyLabels: ['INTERESTED'],
-            plusvibeReplyLabel: 'INTERESTED',
-          }),
-        }),
+        plusvibeHasReplies: true,
+        plusvibeReplyLabels: ['INTERESTED'],
+        plusvibeReplyLabel: 'INTERESTED',
       }),
     );
   });
@@ -332,9 +403,26 @@ describe('Native PlusVibe emails', () => {
   });
 
   it('retries metadata updates after a concurrent thread change', async () => {
-    post.mockResolvedValueOnce({ data: { updateMessageThreads: [] } });
+    patch.mockImplementation(async (path: string) =>
+      path.startsWith('/rest/messageThreads?')
+        ? {
+            data: {
+              updateMessageThreads:
+                patch.mock.calls.filter(([url]) =>
+                  String(url).startsWith('/rest/messageThreads?'),
+                ).length === 1
+                  ? []
+                  : [{ id: 'native-thread-1' }],
+            },
+          }
+        : {},
+    );
     await syncNativeEmail(EMAIL);
-    expect(post).toHaveBeenCalledTimes(2);
+    expect(
+      patch.mock.calls.filter(([url]) =>
+        String(url).startsWith('/rest/messageThreads?'),
+      ),
+    ).toHaveLength(2);
   });
 
   it('propagates ingestion failures instead of producing activity copies', async () => {
@@ -344,4 +432,39 @@ describe('Native PlusVibe emails', () => {
     );
     expect(patch).not.toHaveBeenCalled();
   });
+});
+
+it('uses owned From evidence to correct a mislabeled incoming provider record', async () => {
+  values.set('plusvibe:owned-inboxes:workspace-1', ['sender@example.com']);
+  await syncNativeEmail({
+    ...EMAIL,
+    sender: 'lead@example.com',
+    leadEmail: 'sender@example.com',
+    direction: 'IN',
+    senderEvidence: 'RECIPIENT_HEADER',
+  });
+  expect(ingestMessages.mock.calls[0][0].messages[0].participants).toEqual([
+    expect.objectContaining({
+      role: 'FROM',
+      displayName: 'sender@example.com',
+    }),
+    expect.objectContaining({ role: 'TO', handle: 'lead@example.com' }),
+  ]);
+});
+
+it('retries a native API rate limit without losing the source message', async () => {
+  syncPerson.mockRejectedValueOnce(
+    new RestApiClientError('Rate limited', { status: 429 }),
+  );
+  await syncNativeEmail(EMAIL);
+  expect(wait).toHaveBeenCalledWith(5000);
+  expect(ingestMessages).toHaveBeenCalledOnce();
+});
+
+it('stops retrying a persistent native API rate limit', async () => {
+  const error = new RestApiClientError('Rate limited', { status: 429 });
+  syncPerson.mockRejectedValue(error);
+  await expect(syncNativeEmail(EMAIL)).rejects.toBe(error);
+  expect(wait).toHaveBeenCalledTimes(5);
+  expect(ingestMessages).not.toHaveBeenCalled();
 });

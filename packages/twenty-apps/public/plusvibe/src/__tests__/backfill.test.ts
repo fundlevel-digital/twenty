@@ -97,7 +97,7 @@ describe('PlusVibe paginated import', () => {
     syncPerson.mockRejectedValueOnce(new AmbiguousPersonMatchError());
     expect(await backfillHandler(PAYLOAD, CONTEXT)).toEqual({ success: true });
     expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'complete',
+      phase: 'emails',
       processed: 1,
     });
     expect(enqueueLeadEmails).not.toHaveBeenCalled();
@@ -143,7 +143,7 @@ describe('PlusVibe paginated import', () => {
     expect(enqueueImportPage).toHaveBeenCalledOnce();
   });
 
-  it('imports conversations before scanning the full lead directory', async () => {
+  it('imports the lead directory before conversation history', async () => {
     findMailConnection.mockResolvedValue({ id: 'connection' });
     values.set(getImportKey(WORKSPACE_ID), {
       runId: 'run-1',
@@ -159,33 +159,23 @@ describe('PlusVibe paginated import', () => {
       expect.objectContaining({ name: 'Outreach' }),
     );
     expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'emails',
+      phase: 'leads',
     });
-    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
-    await backfillHandler({ ...PAYLOAD, phase: 'emails' }, CONTEXT);
-    expect(plusvibeRequest).toHaveBeenLastCalledWith(
-      '/unibox/emails',
-      expect.anything(),
-      {
-        query: {
-          workspace_id: WORKSPACE_ID,
-          starting_after: '',
-          email_type: 'all',
-          preview_only: 'false',
-        },
-        retryRateLimits: true,
-      },
-    );
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'archivedEmails',
-    });
-    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
-    await backfillHandler({ ...PAYLOAD, phase: 'archivedEmails' }, CONTEXT);
     expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
       phase: 'leads',
     });
     plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
     await backfillHandler(PAYLOAD, CONTEXT);
+    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
+      phase: 'emails',
+    });
+    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
+    await backfillHandler({ ...PAYLOAD, phase: 'emails' }, CONTEXT);
+    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
+      phase: 'archivedEmails',
+    });
+    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
+    await backfillHandler({ ...PAYLOAD, phase: 'archivedEmails' }, CONTEXT);
     expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
       phase: 'complete',
     });

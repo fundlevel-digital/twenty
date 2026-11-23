@@ -20,6 +20,14 @@ Lead/history refresh and final pruning remain pending. See the
 | [0007](0007-put-owned-sharing-preferences-in-apps-preferences.md)   | 2026-11-21 | Use Apps Preferences for Owned Import and Sharing Controls   | accepted |
 | [0008](0008-use-native-controls-and-truthful-loading-states.md)     | 2026-11-21 | Use Native Controls and Truthful Loading States              | accepted |
 | [0009](0009-apply-email-creation-policies-and-exclude-employees.md) | 2026-11-21 | Apply Email Creation Policies and Exclude Internal Employees | accepted |
+| [0010](0010-influencer-outreach-waterfall-dashboard.md) | 2026-11-22 | Track Influencer Outreach And POC Waterfalls | accepted |
+| [0011](0011-defer-poc-ranking.md) | 2026-11-22 | Defer POC Ranking | accepted |
+| [0012](0012-audit-outreach-coverage-against-attio.md) | 2026-11-22 | Audit Outreach Coverage Against Attio | accepted |
+| [0013](0013-repair-source-outreach-sync.md) | 2026-11-22 | Repair Source Outreach Sync | accepted |
+| [0014](0014-preserve-selected-person-and-flag-identity-review.md) | 2026-11-23 | Preserve The Selected Person And Flag Identity Review | superseded by 0015 |
+| [0015](0015-merge-confirmed-duplicate-into-existing-poc.md) | 2026-11-23 | Merge The Confirmed Duplicate Into The Existing POC | accepted |
+| [0016](0016-senders-are-owned-historical-inboxes.md) | 2026-11-23 | PlusVibe Senders Contains Only Owned Current And Historical Inboxes | accepted |
+| [0017](0017-complete-the-live-sync-repair.md) | 2026-11-23 | Complete The Live Sync And Sender-Data Repair | accepted |
 
 Current setup and implementation: [PlusVibe README](../../../../../../packages/twenty-apps/public/plusvibe/README.md).
 
