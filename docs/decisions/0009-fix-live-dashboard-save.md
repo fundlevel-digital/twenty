@@ -40,3 +40,7 @@ migration or app reinstall is required for this frontend save fix.
 See the linked handoff for observed errors, source changes, checks, release
 identity and actual deployment state. Authorization alone does not establish a
 successful deployment.
+
+The source fix merged in [PR #34](https://github.com/fundlevel-digital/twenty/pull/34)
+and was deployed and verified on 2026-11-23. The linked handoff records the exact
+image, backup checks, preservation evidence and browser verification limit.
