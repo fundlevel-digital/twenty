@@ -1,3 +1,4 @@
+import { getGroupByRelationAlias } from 'src/engine/api/common/common-query-runners/utils/get-group-by-relation-alias.util';
 import { Injectable } from '@nestjs/common';
 
 import {
@@ -110,6 +111,34 @@ export class CommonGroupByQueryRunnerService extends CommonBaseQueryRunnerServic
         flatFieldMetadataMaps,
       });
 
+    const unreadableFieldsByObject = new Map<string, Set<string>>();
+    for (const group of groupByFields) {
+      const fields = isGroupByRelationField(group)
+        ? [
+            ...(group.relationPathFieldMetadata ?? [group.fieldMetadata]),
+            group.nestedFieldMetadata,
+          ]
+        : [group.fieldMetadata];
+      for (const field of fields) {
+        let unreadable = unreadableFieldsByObject.get(field.objectMetadataId);
+        if (!unreadable) {
+          unreadable =
+            await this.recordFieldPermissionsReadService.findUnreadableFields({
+              principals: permissionsPrincipals,
+              objectMetadataId: field.objectMetadataId,
+            });
+          unreadableFieldsByObject.set(field.objectMetadataId, unreadable);
+        }
+        if (unreadable.has(field.id)) {
+          throw new CommonQueryRunnerException(
+            'Grouping field is not readable',
+            CommonQueryRunnerExceptionCode.INVALID_QUERY_INPUT,
+            { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
+          );
+        }
+      }
+    }
+
     this.addJoinForGroupByOnRelationFields({
       queryBuilder,
       groupByFields,
@@ -162,6 +191,12 @@ export class CommonGroupByQueryRunnerService extends CommonBaseQueryRunnerServic
       orderBy: args.orderBy ?? [],
       groupByFields,
     });
+
+    if (!args.orderBy?.length) {
+      for (const definition of groupByDefinitions) {
+        queryBuilder.addOrderBy(definition.expression, 'ASC', 'NULLS FIRST');
+      }
+    }
 
     const shouldIncludeRecords = args.includeRecords ?? false;
 
@@ -424,31 +459,35 @@ export class CommonGroupByQueryRunnerService extends CommonBaseQueryRunnerServic
 
     for (const groupByField of groupByFields) {
       if (isGroupByRelationField(groupByField)) {
-        const joinAlias = groupByField.fieldMetadata.name;
-
-        if (
-          !groupByField.fieldMetadata.settings ||
-          !isMorphOrRelationFlatFieldMetadata(groupByField.fieldMetadata)
-        ) {
-          throw new CommonQueryRunnerException(
-            `Field metadata settings are missing or invalid for field ${groupByField.fieldMetadata.name}`,
-            CommonQueryRunnerExceptionCode.INTERNAL_SERVER_ERROR,
-            { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
+        const path = groupByField.relationPathFieldMetadata ?? [
+          groupByField.fieldMetadata,
+        ];
+        let parentAlias = objectAlias;
+        for (const [index, field] of path.entries()) {
+          const joinAlias = getGroupByRelationAlias(
+            path.slice(0, index + 1),
+            objectAlias,
           );
-        }
-
-        const joinColumnName = formatColumnNameForRelationField(
-          groupByField.fieldMetadata.name,
-          groupByField.fieldMetadata.settings,
-        );
-
-        if (!joinAliasSet.has(joinAlias)) {
-          queryBuilder.leftJoin(
-            `${objectAlias}.${joinAlias}`,
-            `${joinAlias}`,
-            `"${objectAlias}"."${joinColumnName}" = "${joinAlias}"."id"`,
+          if (!isMorphOrRelationFlatFieldMetadata(field)) {
+            throw new CommonQueryRunnerException(
+              'Invalid grouping relation',
+              CommonQueryRunnerExceptionCode.INVALID_QUERY_INPUT,
+              { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
+            );
+          }
+          const joinColumnName = formatColumnNameForRelationField(
+            field.name,
+            field.settings,
           );
-          joinAliasSet.add(joinAlias);
+          if (!joinAliasSet.has(joinAlias)) {
+            queryBuilder.leftJoin(
+              `${parentAlias}.${field.name}`,
+              joinAlias,
+              `"${parentAlias}"."${joinColumnName}" = "${joinAlias}"."id"`,
+            );
+            joinAliasSet.add(joinAlias);
+          }
+          parentAlias = joinAlias;
         }
       }
     }

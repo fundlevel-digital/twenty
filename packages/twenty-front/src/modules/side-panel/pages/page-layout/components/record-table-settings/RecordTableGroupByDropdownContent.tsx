@@ -1,10 +1,13 @@
+import { resolveRecordTableGroupByPath } from '@/page-layout/widgets/record-table/utils/resolveRecordTableGroupByPath';
+import { RecordTableGroupByPathPicker } from '@/side-panel/pages/page-layout/components/record-table-settings/RecordTableGroupByPathPicker';
+import { useUpdateCurrentWidgetConfig } from '@/side-panel/pages/page-layout/hooks/useUpdateCurrentWidgetConfig';
 import { ChartSettingsDropdownSection } from '@/side-panel/pages/page-layout/components/chart-settings/ChartSettingsDropdownSection';
 import { SelectOptionIcon } from '@/ui/input/components/SelectOptionIcon';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useRecordTableWidgetLayoutCallbacks } from '@/page-layout/widgets/record-table/hooks/useRecordTableWidgetLayoutCallbacks';
 import { isFieldMetadataItemAvailableAsWidgetGroupByField } from '@/page-layout/widgets/record-table/utils/isFieldMetadataItemAvailableAsWidgetGroupByField';
 import { useState } from 'react';
-import { isNonEmptyArray } from 'twenty-shared/utils';
+import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
 import { useIcons } from 'twenty-ui/icon/provider';
 import { Dropdown } from 'twenty-ui/components/navigation';
 import { filterBySearchQuery } from '~/utils/filterBySearchQuery';
@@ -18,6 +21,8 @@ type RecordTableGroupByDropdownContentProps = {
   objectMetadataId: string;
   currentMainGroupByFieldMetadataId: string | null;
   isClearable?: boolean;
+  supportsRelatedFields?: boolean;
+  selectedRelatedGroupLabel?: string;
 };
 
 export const RecordTableGroupByDropdownContent = ({
@@ -26,8 +31,19 @@ export const RecordTableGroupByDropdownContent = ({
   objectMetadataId,
   currentMainGroupByFieldMetadataId,
   isClearable = true,
+  supportsRelatedFields = true,
+  selectedRelatedGroupLabel,
 }: RecordTableGroupByDropdownContentProps) => {
   const { t } = useLingui();
+  const { updateCurrentWidgetConfig } =
+    useUpdateCurrentWidgetConfig(pageLayoutId);
+  const clearRelatedGrouping = () =>
+    updateCurrentWidgetConfig({
+      configToUpdate: {
+        groupByFieldMetadataIds: null,
+        groupBySubFieldName: null,
+      },
+    });
   const [searchQuery, setSearchQuery] = useState('');
   const { getIcon } = useIcons();
 
@@ -64,40 +80,87 @@ export const RecordTableGroupByDropdownContent = ({
 
   return (
     <>
-      <Dropdown.Search
-        placeholder={t`Search fields`}
-        aria-label={t`Search fields`}
-        value={searchQuery}
-        onValueChange={setSearchQuery}
-      />
-      <ChartSettingsDropdownSection>
-        <Dropdown.SelectionGroup
-          aria-label={t`Group by`}
-          value={currentMainGroupByFieldMetadataId ?? NO_GROUP_BY_ITEM_ID}
-        >
-          {shouldShowClearOption && (
-            <Dropdown.OptionItem
-              value={NO_GROUP_BY_ITEM_ID}
-              onSelect={() => handleGroupByFieldChange(null)}
-            >{t`None`}</Dropdown.OptionItem>
+      <Dropdown.Page id="root">
+        <Dropdown.Search
+          placeholder={t`Search fields`}
+          aria-label={t`Search fields`}
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+        />
+        <ChartSettingsDropdownSection>
+          <Dropdown.SelectionGroup
+            aria-label={t`Group by`}
+            value={
+              isDefined(selectedRelatedGroupLabel)
+                ? 'related-grouping'
+                : (currentMainGroupByFieldMetadataId ?? NO_GROUP_BY_ITEM_ID)
+            }
+          >
+            {shouldShowClearOption && (
+              <Dropdown.OptionItem
+                value={NO_GROUP_BY_ITEM_ID}
+                onSelect={() => {
+                  clearRelatedGrouping();
+                  handleGroupByFieldChange(null);
+                }}
+              >{t`None`}</Dropdown.OptionItem>
+            )}
+            {filteredFields.map((fieldMetadataItem) => (
+              <Dropdown.OptionItem
+                key={fieldMetadataItem.id}
+                value={fieldMetadataItem.id}
+                onSelect={() => {
+                  clearRelatedGrouping();
+                  handleGroupByFieldChange(fieldMetadataItem);
+                }}
+                startIcon={
+                  <SelectOptionIcon Icon={getIcon(fieldMetadataItem.icon)} />
+                }
+              >
+                {fieldMetadataItem.label}
+              </Dropdown.OptionItem>
+            ))}
+          </Dropdown.SelectionGroup>
+          {!shouldShowClearOption && !isNonEmptyArray(filteredFields) && (
+            <Dropdown.Empty>{t`No results found`}</Dropdown.Empty>
           )}
-          {filteredFields.map((fieldMetadataItem) => (
-            <Dropdown.OptionItem
-              key={fieldMetadataItem.id}
-              value={fieldMetadataItem.id}
-              onSelect={() => handleGroupByFieldChange(fieldMetadataItem)}
-              startIcon={
-                <SelectOptionIcon Icon={getIcon(fieldMetadataItem.icon)} />
-              }
-            >
-              {fieldMetadataItem.label}
-            </Dropdown.OptionItem>
-          ))}
-        </Dropdown.SelectionGroup>
-        {!shouldShowClearOption && !isNonEmptyArray(filteredFields) && (
-          <Dropdown.Empty>{t`No results found`}</Dropdown.Empty>
+        </ChartSettingsDropdownSection>
+        {supportsRelatedFields && (
+          <Dropdown.Section>
+            <Dropdown.ActionItem
+              page="group-by-path-"
+              description={selectedRelatedGroupLabel}
+            >{t`Related Fields`}</Dropdown.ActionItem>
+          </Dropdown.Section>
         )}
-      </ChartSettingsDropdownSection>
+      </Dropdown.Page>
+      {supportsRelatedFields && objectMetadataItem && (
+        <RecordTableGroupByPathPicker
+          object={objectMetadataItem}
+          objects={objectMetadataItems}
+          onSelect={(path, subFieldName) => {
+            const resolved = resolveRecordTableGroupByPath({
+              objectMetadataId,
+              objectMetadataItems,
+              fieldMetadataIds: path,
+              subFieldName,
+            });
+            if (!resolved) {
+              return;
+            }
+            clearRelatedGrouping();
+            handleGroupByFieldChange(
+              resolved.fields[0],
+              [
+                ...resolved.fields.slice(1).map((field) => field.name),
+                subFieldName,
+              ]
+                .filter(Boolean)
+                .join('.') || undefined,
+            );
+          }}
+        />
+      )}
     </>
   );
 };

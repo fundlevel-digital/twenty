@@ -296,7 +296,7 @@ export class FilterArgProcessorService {
         `Relation filter nesting deeper than ${MAX_RELATION_FILTER_DEPTH} hop is not supported`,
         CommonQueryRunnerExceptionCode.INVALID_ARGS_FILTER,
         {
-          userFriendlyMessage: msg`Relation filters can only traverse one relation deep`,
+          userFriendlyMessage: msg`Relation filters support up to ${MAX_RELATION_FILTER_DEPTH} relation steps`,
         },
       );
     }

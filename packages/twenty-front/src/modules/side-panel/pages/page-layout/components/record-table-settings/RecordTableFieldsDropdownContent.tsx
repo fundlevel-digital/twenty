@@ -1,3 +1,6 @@
+import { RecordTableFieldsDropdownRelatedFieldsContent } from '@/side-panel/pages/page-layout/components/record-table-settings/RecordTableFieldsDropdownRelatedFieldsContent';
+import { isLookupColumnsEnabledSelector } from '@/object-record/record-column-lookup/states/isLookupColumnsEnabledSelector';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { RECORD_TABLE_FIELDS_DROPDOWN_PAGE } from '@/side-panel/pages/page-layout/components/record-table-settings/constants/RecordTableFieldsDropdownPage';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { type RecordField } from '@/object-record/record-field/types/RecordField';
@@ -10,6 +13,7 @@ import { Dropdown } from 'twenty-ui/components/navigation';
 type RecordTableFieldsDropdownContentProps = {
   viewId: string;
   objectMetadataId: string;
+  supportsRelatedFields?: boolean;
   onFieldUpdated?: (
     viewFieldId: string,
     update: Partial<{ position: number; isVisible: boolean }>,
@@ -20,9 +24,14 @@ type RecordTableFieldsDropdownContentProps = {
 export const RecordTableFieldsDropdownContent = ({
   viewId,
   objectMetadataId,
+  supportsRelatedFields = true,
   onFieldUpdated,
   onFieldCreated,
 }: RecordTableFieldsDropdownContentProps) => {
+  const isLookupColumnsEnabled = useAtomStateValue(
+    isLookupColumnsEnabledSelector,
+  );
+  const canAddRelatedFields = supportsRelatedFields && isLookupColumnsEnabled;
   const { objectMetadataItem } = useObjectMetadataItemById({
     objectId: objectMetadataId,
   });
@@ -40,9 +49,17 @@ export const RecordTableFieldsDropdownContent = ({
         <RecordTableFieldsDropdownVisibleFieldsContent
           objectMetadataId={objectMetadataId}
           recordIndexId={recordIndexId}
+          canAddRelatedFields={canAddRelatedFields}
           onFieldUpdated={onFieldUpdated}
         />
       </Dropdown.Page>
+      {canAddRelatedFields && (
+        <RecordTableFieldsDropdownRelatedFieldsContent
+          objectMetadataId={objectMetadataId}
+          recordIndexId={recordIndexId}
+          onFieldCreated={onFieldCreated}
+        />
+      )}
       <Dropdown.Page
         id={RECORD_TABLE_FIELDS_DROPDOWN_PAGE.HIDDEN_FIELDS}
         type="panel"

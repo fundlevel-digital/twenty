@@ -1,3 +1,5 @@
+import { RecordTableLookupSSESubscribeEffects } from '@/object-record/record-column-lookup/components/RecordTableLookupSSESubscribeEffects';
+import { RelatedRecordGroupsLoader } from '@/object-record/record-group/components/RelatedRecordGroupsLoader';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { type ContextStoreViewType } from '@/context-store/types/ContextStoreViewType';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
@@ -187,6 +189,8 @@ export const RecordTableWidgetProvider = ({
                 widgetId={widgetId}
                 objectMetadataItem={objectMetadataItem}
               />
+              <RelatedRecordGroupsLoader />
+              <RecordTableLookupSSESubscribeEffects />
               {children}
             </RecordComponentInstanceContextsWrapper>
           </ViewComponentInstanceContext.Provider>

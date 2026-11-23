@@ -1,4 +1,5 @@
-import { FieldMetadataType } from 'twenty-shared/types';
+import { isMorphOrRelationFlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/utils/is-morph-or-relation-flat-field-metadata.util';
+import { FieldMetadataType, RelationType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
 import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
@@ -13,7 +14,9 @@ export const validateRelationSubfield = ({
   paramName,
   allFields,
   fieldsByObjectId,
+  depth = 1,
 }: {
+  depth?: number;
   field: FlatFieldMetadata;
   subFieldName: string | null | undefined;
   paramName: string;
@@ -24,6 +27,15 @@ export const validateRelationSubfield = ({
     return;
   }
 
+  if (
+    depth > 5 ||
+    !isMorphOrRelationFlatFieldMetadata(field) ||
+    field.settings?.relationType !== RelationType.MANY_TO_ONE
+  ) {
+    throw new Error(
+      'Grouping requires at most five single-record relation steps.',
+    );
+  }
   const dotIndex = subFieldName.indexOf('.');
   const nestedFieldName =
     dotIndex === -1 ? subFieldName : subFieldName.slice(0, dotIndex);
@@ -34,11 +46,8 @@ export const validateRelationSubfield = ({
     throw new Error(`Relation subfield "${subFieldName}" is invalid.`);
   }
 
-  if (isDefined(nestedSubFieldName) && nestedSubFieldName.includes('.')) {
-    throw new Error(`Relation subfield "${subFieldName}" is invalid.`);
-  }
-
-  let targetObjectId = field.relationTargetObjectMetadataId ?? null;
+  let targetObjectId: string | null =
+    field.relationTargetObjectMetadataId ?? null;
 
   if (
     field.type === FieldMetadataType.MORPH_RELATION &&
@@ -62,6 +71,21 @@ export const validateRelationSubfield = ({
     throw new Error(
       `Relation subfield "${nestedFieldName}" not found for "${paramName}".`,
     );
+  }
+
+  if (
+    nestedField.type === FieldMetadataType.RELATION &&
+    isDefined(nestedSubFieldName)
+  ) {
+    validateRelationSubfield({
+      field: nestedField,
+      subFieldName: nestedSubFieldName,
+      paramName: nestedField.name,
+      allFields,
+      fieldsByObjectId,
+      depth: depth + 1,
+    });
+    return;
   }
 
   if (!isDefined(nestedSubFieldName)) {

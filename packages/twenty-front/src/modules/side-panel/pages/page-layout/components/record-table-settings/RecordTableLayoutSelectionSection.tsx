@@ -1,3 +1,5 @@
+import { ViewType } from '~/generated-metadata/graphql';
+import { useUpdateCurrentWidgetConfig } from '@/side-panel/pages/page-layout/hooks/useUpdateCurrentWidgetConfig';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useRecordTableWidgetLayoutCallbacks } from '@/page-layout/widgets/record-table/hooks/useRecordTableWidgetLayoutCallbacks';
 import { useRecordTableWidgetLayoutPickerOptions } from '@/page-layout/widgets/record-table/hooks/useRecordTableWidgetLayoutPickerOptions';
@@ -20,6 +22,8 @@ export const RecordTableLayoutSelectionSection = ({
   currentLayoutViewType,
 }: RecordTableLayoutSelectionSectionProps) => {
   const { t } = useLingui();
+  const { updateCurrentWidgetConfig } =
+    useUpdateCurrentWidgetConfig(pageLayoutId);
   const { objectMetadataItems } = useObjectMetadataItems();
   const objectMetadataItem = objectMetadataItems.find(
     (objectMetadataItemToFind) =>
@@ -51,13 +55,21 @@ export const RecordTableLayoutSelectionSection = ({
         }),
       )}
       currentVariant={currentLayoutViewType}
-      onSelect={(targetViewType) =>
+      onSelect={(targetViewType) => {
+        if (targetViewType !== ViewType.TABLE_WIDGET) {
+          updateCurrentWidgetConfig({
+            configToUpdate: {
+              groupByFieldMetadataIds: null,
+              groupBySubFieldName: null,
+            },
+          });
+        }
         handleLayoutChange({
           targetViewType,
           defaultGroupByFieldMetadataItem,
           defaultCalendarFieldMetadataItem,
-        })
-      }
+        });
+      }}
     />
   );
 };

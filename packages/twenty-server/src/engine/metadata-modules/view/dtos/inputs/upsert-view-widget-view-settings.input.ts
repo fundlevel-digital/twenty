@@ -5,6 +5,9 @@ import {
   IsEnum,
   IsInt,
   IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
   IsUUID,
   Max,
   Min,
@@ -36,6 +39,13 @@ export class UpsertViewWidgetViewSettingsInput {
   @IsUUID()
   @Field(() => UUIDScalarType, { nullable: true })
   mainGroupByFieldMetadataId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
+  @Matches(/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*){0,6}$/)
+  @Field(() => String, { nullable: true })
+  mainGroupBySubFieldName?: string | null;
 
   @IsOptional()
   @IsBoolean()

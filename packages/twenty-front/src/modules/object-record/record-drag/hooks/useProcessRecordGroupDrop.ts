@@ -61,6 +61,10 @@ export const useProcessRecordGroupDrop = () => {
         throw new Error(doNotTranslate('Record group is not defined'));
       }
 
+      if (recordIndexGroupFieldMetadataItem.relatedGroupBy) {
+        return;
+      }
+
       const updatedRecords = computeDroppedRecordPositions({
         destinationRecordIds: store.get(
           recordIdsByGroupCallbackState(destinationDroppableId),

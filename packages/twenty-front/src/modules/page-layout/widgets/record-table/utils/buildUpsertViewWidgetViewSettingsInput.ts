@@ -5,6 +5,7 @@ export const buildUpsertViewWidgetViewSettingsInput = (
   view: FlatView,
 ): UpsertViewWidgetViewSettingsInput => ({
   type: view.type,
+  mainGroupBySubFieldName: view.mainGroupBySubFieldName ?? null,
   mainGroupByFieldMetadataId: view.mainGroupByFieldMetadataId ?? null,
   shouldHideEmptyGroups: view.shouldHideEmptyGroups,
   kanbanAggregateOperation: view.kanbanAggregateOperation ?? null,

@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { msg } from '@lingui/core/macro';
 import { Brackets, type WhereExpressionBuilder } from 'typeorm';
 import { FIELD_REFERENCE_FILTER_OPERATORS } from 'twenty-shared/constants';
@@ -211,7 +212,7 @@ export class CommonQueryFilterFieldParser {
         `Relation filter nesting deeper than ${MAX_RELATION_FILTER_DEPTH} hop is not supported`,
         CommonQueryRunnerExceptionCode.INVALID_QUERY_INPUT,
         {
-          userFriendlyMessage: msg`Relation filters can only traverse one relation deep`,
+          userFriendlyMessage: msg`Relation filters support up to ${MAX_RELATION_FILTER_DEPTH} relation steps`,
         },
       );
     }
@@ -296,12 +297,17 @@ export class CommonQueryFilterFieldParser {
       return;
     }
 
-    const joinAlias = fieldMetadata.name;
+    const joinAlias =
+      parentAlias === outerQueryBuilder.alias &&
+      fieldMetadata.name !== parentAlias
+        ? fieldMetadata.name
+        : `filter_${createHash('sha256').update(`${parentAlias}.${fieldMetadata.id}`).digest('hex').slice(0, 16)}`;
 
     addRelationJoinAliasToQueryBuilder({
       queryBuilder: outerQueryBuilder,
       parentAlias,
-      relationName: joinAlias,
+      relationName: fieldMetadata.name,
+      alias: joinAlias,
     });
 
     const subBrackets = new Brackets((subQb) => {

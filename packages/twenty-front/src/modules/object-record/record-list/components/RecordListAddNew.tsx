@@ -42,7 +42,10 @@ export const RecordListAddNew = () => {
     hasAnySoftDeleteFilterOnViewComponentSelector,
   );
 
-  if (hasAnySoftDeleteFilterOnView) {
+  if (
+    hasAnySoftDeleteFilterOnView ||
+    recordIndexGroupFieldMetadataItem?.relatedGroupBy
+  ) {
     return null;
   }
 

@@ -37,7 +37,9 @@ export const handleFlatViewUpdateSideEffect = ({
   const newMainGroupByFieldMetadataId = toFlatView.mainGroupByFieldMetadataId;
 
   const hasMainGroupByFieldMetadataIdChanged =
-    fromFlatView.mainGroupByFieldMetadataId !== newMainGroupByFieldMetadataId;
+    fromFlatView.mainGroupByFieldMetadataId !== newMainGroupByFieldMetadataId ||
+    (fromFlatView.mainGroupBySubFieldName ?? null) !==
+      (toFlatView.mainGroupBySubFieldName ?? null);
 
   if (!hasMainGroupByFieldMetadataIdChanged) {
     return sideEffectResult;

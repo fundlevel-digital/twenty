@@ -1,3 +1,4 @@
+import { ADD_VIEW_RELATED_GROUPING_UPGRADE_COMMAND_NAME } from 'src/database/commands/upgrade-version-command/2-61/add-view-related-grouping-upgrade-command-name.constant';
 import {
   Check,
   Column,
@@ -60,6 +61,7 @@ export type ViewOverrides = {
   calendarEndFieldMetadataId?: SerializedRelation | null;
   visibility?: ViewVisibility;
   mainGroupByFieldMetadataId?: SerializedRelation | null;
+  mainGroupBySubFieldName?: string | null;
   shouldHideEmptyGroups?: boolean;
   shouldDisplayGroupsAsTabs?: boolean;
   kanbanColumnWidth?: number | null;
@@ -212,6 +214,12 @@ export class ViewEntity
 
   @Column({ nullable: true, type: 'uuid' })
   mainGroupByFieldMetadataId: string | null;
+
+  @WasIntroducedInUpgrade({
+    upgradeCommandName: ADD_VIEW_RELATED_GROUPING_UPGRADE_COMMAND_NAME,
+  })
+  @Column({ nullable: true, type: 'text' })
+  mainGroupBySubFieldName: string | null;
 
   @ManyToOne(
     () => FieldMetadataEntity,

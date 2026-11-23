@@ -45,6 +45,15 @@ export const convertUpdateViewInputToGql = (
     ...(view.groupLoadLimit !== undefined && {
       groupLoadLimit: view.groupLoadLimit,
     }),
+    ...(view.mainGroupBySubFieldName !== undefined && {
+      mainGroupBySubFieldName: view.mainGroupBySubFieldName,
+    }),
+    ...(view.mainGroupBySubFieldName !== undefined && {
+      mainGroupBySubFieldName: view.mainGroupBySubFieldName,
+    }),
+    ...(view.mainGroupBySubFieldName !== undefined && {
+      mainGroupBySubFieldName: view.mainGroupBySubFieldName,
+    }),
     ...(view.mainGroupByFieldMetadataId !== undefined && {
       mainGroupByFieldMetadataId: view.mainGroupByFieldMetadataId,
     }),

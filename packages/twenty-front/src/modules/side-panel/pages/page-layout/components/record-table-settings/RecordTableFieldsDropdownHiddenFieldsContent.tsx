@@ -1,3 +1,7 @@
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
+import { getLookupColumnLabel } from '@/object-record/record-column-lookup/utils/getLookupColumnLabel';
+import { getRecordFieldLookupTarget } from '@/object-record/record-column-lookup/utils/getRecordFieldLookupTarget';
+import { isCanonicalRecordField } from '@/object-record/record-field/utils/isCanonicalRecordField';
 import { ChartSettingsDropdownSection } from '@/side-panel/pages/page-layout/components/chart-settings/ChartSettingsDropdownSection';
 import { Dropdown } from 'twenty-ui/components/navigation';
 import { useActiveFieldMetadataItems } from '@/object-metadata/hooks/useActiveFieldMetadataItems';
@@ -40,6 +44,7 @@ export const RecordTableFieldsDropdownHiddenFieldsContent = ({
   });
 
   const { getIcon } = useIcons();
+  const { objectMetadataItems } = useObjectMetadataItems();
 
   const { upsertRecordField } = useUpsertRecordField(recordIndexId);
 
@@ -65,6 +70,10 @@ export const RecordTableFieldsDropdownHiddenFieldsContent = ({
           fieldMetadataItemId: fieldMetadataItem.id,
         }),
       ),
+  );
+
+  const hiddenRelatedFields = currentRecordFields.filter(
+    (field) => !field.isVisible && !isCanonicalRecordField(field),
   );
 
   const handleShowField = (fieldMetadataId: string) => {
@@ -99,6 +108,48 @@ export const RecordTableFieldsDropdownHiddenFieldsContent = ({
     <>
       <Dropdown.Back>{t`Hidden Fields`}</Dropdown.Back>
       <ChartSettingsDropdownSection>
+        {hiddenRelatedFields.map((recordField) => {
+          const fieldMetadataItem = objectMetadataItem.fields.find(
+            (field) => field.id === recordField.fieldMetadataItemId,
+          );
+          if (!isDefined(fieldMetadataItem)) {
+            return null;
+          }
+          const lookupTarget = getRecordFieldLookupTarget({
+            recordField,
+            fieldMetadataItem,
+            objectMetadataItems,
+          });
+          if (!isDefined(lookupTarget)) {
+            return null;
+          }
+          const label = getLookupColumnLabel(lookupTarget);
+          return (
+            <ListItem
+              key={recordField.id}
+              startIcon={
+                <SelectOptionIcon
+                  Icon={getIcon(
+                    lookupTarget.lookupTargetFieldMetadataItem.icon,
+                  )}
+                />
+              }
+              actions={
+                <LightIconButton
+                  aria-label={t`Show ${label}`}
+                  onClick={() => {
+                    updateRecordField(recordField.id, { isVisible: true });
+                    onFieldUpdated?.(recordField.id, { isVisible: true });
+                  }}
+                >
+                  <IconEye />
+                </LightIconButton>
+              }
+            >
+              {label}
+            </ListItem>
+          );
+        })}
         {hiddenFieldMetadataItems.map((fieldMetadataItem) => (
           <ListItem
             key={fieldMetadataItem.id}

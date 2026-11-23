@@ -1,5 +1,11 @@
 # Twenty Engineering Notes
 
+- [Platform Related Fields And Grouping](handoffs/2026-11-23-platform-related-fields.md): shared record-view/widget grouping, related display fields and nested chart dimensions.
+
+- [Dashboard Relation Grouping Preview](handoffs/2026-11-23-dashboard-relation-grouping.md): single-value relation paths, nested grouping and preview verification.
+
+- [Dashboard Related Fields Preview](handoffs/2026-11-23-dashboard-related-fields-preview.md): related-field picker and synthetic Contracts → Production → Deal filter.
+
 - [Record Table Widget Save Failure](handoffs/2026-11-23-record-table-widget-save.md): duplicate view creation on retry, local fix and verification limits.
 
 - [Better Lists Live Release](handoffs/2026-11-22-better-lists-live-release.md): pinned core deployment, SDK app installation, preserved workspace data and offsite backups.

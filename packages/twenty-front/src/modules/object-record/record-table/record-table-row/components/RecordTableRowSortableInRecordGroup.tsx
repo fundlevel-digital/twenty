@@ -1,3 +1,5 @@
+import { recordIndexGroupFieldMetadataItemComponentState } from '@/object-record/record-index/states/recordIndexGroupFieldMetadataComponentState';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { type RefObject } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -20,6 +22,10 @@ export const RecordTableRowSortableInRecordGroup = ({
   rowElementRef,
   handleElementRef,
 }: RecordTableRowSortableInRecordGroupProps) => {
+  const recordIndexGroupFieldMetadataItem = useAtomComponentStateValue(
+    recordIndexGroupFieldMetadataItemComponentState,
+  );
+
   const recordGroupRowIndexOfRecord = useAtomComponentFamilySelectorValue(
     recordGroupRowIndexOfRecordComponentFamilySelector,
     { recordGroupId, recordId },
@@ -34,7 +40,9 @@ export const RecordTableRowSortableInRecordGroup = ({
       recordId={recordId}
       index={recordGroupRowIndexOfRecord}
       droppableId={recordGroupId}
-      isDragDisabled={isDragDisabled}
+      isDragDisabled={
+        isDragDisabled || !!recordIndexGroupFieldMetadataItem?.relatedGroupBy
+      }
       rowElementRef={rowElementRef}
       handleElementRef={handleElementRef}
     />

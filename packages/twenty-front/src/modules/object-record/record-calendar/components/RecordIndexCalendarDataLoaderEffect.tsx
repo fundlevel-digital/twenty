@@ -4,7 +4,7 @@ import { hasInitializedRecordCalendarSelectedDateComponentState } from '@/object
 import { recordCalendarSelectedDateComponentState } from '@/object-record/record-calendar/states/recordCalendarSelectedDateComponentState';
 import { recordIndexRecordIdsByGroupComponentFamilyState } from '@/object-record/record-index/states/recordIndexRecordIdsByGroupComponentFamilyState';
 import { NO_RECORD_GROUP_FAMILY_KEY } from '@/object-record/record-index/states/selectors/recordIndexAllRecordIdsComponentSelector';
-import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useUpsertRecordsInStore';
+import { useUpsertRecordIndexRecordsInStore } from '@/object-record/record-index/hooks/useUpsertRecordIndexRecordsInStore';
 import { useAvailableComponentInstanceIdOrThrow } from '@/ui/utilities/state/component-state/hooks/useAvailableComponentInstanceIdOrThrow';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomComponentFamilyState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentFamilyState';
@@ -20,7 +20,8 @@ export const RecordIndexCalendarDataLoaderEffect = () => {
     recordCalendarId,
   );
 
-  const { upsertRecordsInStore } = useUpsertRecordsInStore();
+  const { upsertRecordIndexRecordsInStore } =
+    useUpsertRecordIndexRecordsInStore();
 
   const setRecordIndexRecordIdsByGroup = useSetAtomComponentFamilyState(
     recordIndexRecordIdsByGroupComponentFamilyState,
@@ -42,14 +43,14 @@ export const RecordIndexCalendarDataLoaderEffect = () => {
       return;
     }
 
-    upsertRecordsInStore({ partialRecords: records });
+    upsertRecordIndexRecordsInStore(records);
     const recordIds = records.map((record) => record.id);
     setRecordIndexRecordIdsByGroup(recordIds);
   }, [
     hasInitializedRecordCalendarSelectedDate,
     records,
     setRecordIndexRecordIdsByGroup,
-    upsertRecordsInStore,
+    upsertRecordIndexRecordsInStore,
   ]);
 
   return <></>;

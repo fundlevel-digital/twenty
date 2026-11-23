@@ -1,0 +1,2 @@
+export const ADD_VIEW_RELATED_GROUPING_UPGRADE_COMMAND_NAME =
+  '2.61.0_AddViewRelatedGroupingFastInstanceCommand_1795452245250';

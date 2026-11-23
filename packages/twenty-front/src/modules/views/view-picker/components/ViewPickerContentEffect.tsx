@@ -1,3 +1,4 @@
+import { viewPickerMainGroupBySubFieldNameComponentState } from '@/views/view-picker/states/viewPickerMainGroupBySubFieldNameComponentState';
 import { useEffect } from 'react';
 
 import { useContextStoreObjectMetadataItemOrThrow } from '@/context-store/hooks/useContextStoreObjectMetadataItemOrThrow';
@@ -42,6 +43,10 @@ export const ViewPickerContentEffect = () => {
     viewPickerMainGroupByFieldMetadataId,
     setViewPickerMainGroupByFieldMetadataId,
   ] = useAtomComponentState(viewPickerMainGroupByFieldMetadataIdComponentState);
+
+  const setViewPickerMainGroupBySubFieldName = useSetAtomComponentState(
+    viewPickerMainGroupBySubFieldNameComponentState,
+  );
 
   const setViewPickerCalendarFieldMetadataId = useSetAtomComponentState(
     viewPickerCalendarFieldMetadataIdComponentState,
@@ -129,6 +134,9 @@ export const ViewPickerContentEffect = () => {
       availableFieldsForGrouping.length > 0 &&
       viewPickerMainGroupByFieldMetadataId === ''
     ) {
+      setViewPickerMainGroupBySubFieldName(
+        referenceView.mainGroupBySubFieldName ?? null,
+      );
       setViewPickerMainGroupByFieldMetadataId(
         isDefined(referenceView.mainGroupByFieldMetadataId) &&
           referenceView.mainGroupByFieldMetadataId !== ''
@@ -141,6 +149,7 @@ export const ViewPickerContentEffect = () => {
     availableFieldsForGrouping,
     viewPickerMainGroupByFieldMetadataId,
     setViewPickerMainGroupByFieldMetadataId,
+    setViewPickerMainGroupBySubFieldName,
   ]);
 
   return <></>;

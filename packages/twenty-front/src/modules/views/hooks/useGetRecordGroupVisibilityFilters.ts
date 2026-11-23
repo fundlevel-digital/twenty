@@ -1,3 +1,6 @@
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
+import { resolveRelatedGroupField } from '@/object-record/record-group/utils/resolveRelatedGroupField';
+import { useUserTimezone } from '@/ui/input/components/internal/date/hooks/useUserTimezone';
 import { flattenedFieldMetadataItemsSelector } from '@/object-metadata/states/flattenedFieldMetadataItemsSelector';
 import { isManyToOneRelationField } from '@/object-metadata/utils/isManyToOneRelationField';
 import { type RecordFilter } from '@/object-record/record-filter/types/RecordFilter';
@@ -20,6 +23,8 @@ type RecordGroupVisibilityFilters = {
 export const useGetRecordGroupVisibilityFilters =
   (): RecordGroupVisibilityFilters => {
     const { currentView } = useGetCurrentViewOnly();
+    const { objectMetadataItems } = useObjectMetadataItems();
+    const { userTimezone } = useUserTimezone();
     const flattenedFieldMetadataItems = useAtomStateValue(
       flattenedFieldMetadataItemsSelector,
     );
@@ -37,29 +42,46 @@ export const useGetRecordGroupVisibilityFilters =
 
     const viewGroups = currentView?.viewGroups ?? [];
 
+    const groupingField = mainGroupByFieldMetadataItem
+      ? resolveRelatedGroupField({
+          field: mainGroupByFieldMetadataItem,
+          subFieldName: currentView?.mainGroupBySubFieldName,
+          objects: objectMetadataItems,
+          timeZone: userTimezone,
+        })
+      : undefined;
     if (
-      isDefined(mainGroupByFieldMetadataItem) &&
-      isManyToOneRelationField(mainGroupByFieldMetadataItem)
+      isDefined(groupingField) &&
+      (isDefined(groupingField.relatedGroupBy) ||
+        isManyToOneRelationField(groupingField))
     ) {
-      const visibleGroups = viewGroups.filter((group) => group.isVisible);
-
-      if (!isNonEmptyArray(visibleGroups)) {
-        return {
-          recordFilters: [],
-          recordGroupGqlFilter: { id: { is: 'NULL' } },
-        };
-      }
-
-      const visibleRecordGroupValues = visibleGroups.map((group) =>
-        isNonEmptyString(group.fieldValue) ? group.fieldValue : null,
-      );
-
+      const hiddenValues = viewGroups
+        .filter((group) => !group.isVisible)
+        .map((group) =>
+          isNonEmptyString(group.fieldValue) ? group.fieldValue : null,
+        );
       return {
         recordFilters: [],
-        recordGroupGqlFilter: computeRecordGroupOptionsFilter({
-          recordGroupFieldMetadata: mainGroupByFieldMetadataItem,
-          recordGroupValues: visibleRecordGroupValues,
-        }),
+        recordGroupGqlFilter: isNonEmptyArray(hiddenValues)
+          ? {
+              or: [
+                {
+                  not: computeRecordGroupOptionsFilter({
+                    recordGroupFieldMetadata: groupingField,
+                    recordGroupValues: hiddenValues,
+                  }),
+                },
+                ...(!hiddenValues.includes(null)
+                  ? [
+                      computeRecordGroupOptionsFilter({
+                        recordGroupFieldMetadata: groupingField,
+                        recordGroupValues: [null],
+                      }),
+                    ]
+                  : []),
+              ],
+            }
+          : null,
       };
     }
 

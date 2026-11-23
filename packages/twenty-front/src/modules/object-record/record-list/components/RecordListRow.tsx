@@ -132,6 +132,9 @@ export const RecordListRow = ({ recordId, rowRef }: RecordListRowProps) => {
         return [];
       }
 
+      if (recordField.relationTargetFieldMetadataId) {
+        return [{ recordField, fieldDefinition }];
+      }
       const fieldValueSourceDefinition = getFieldValueSourceDefinition({
         fieldDefinition,
         coreRecordReferenceFields,
