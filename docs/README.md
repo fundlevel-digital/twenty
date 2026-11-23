@@ -13,6 +13,8 @@
 - [Attio Backup And Outreach Audit](handoffs/2026-11-22-attio-outreach-backup-audit.md): latest located Drive export and 265 influencers with missing historical send evidence despite retained POC emails.
 
 - [Influencer Outreach Dashboard](handoffs/2026-11-22-influencer-outreach-dashboard.md): live native influencer/POC coverage, email usage, verified counts and source-history limits.
+- [Influencer Reply Workflow](handoffs/2026-11-23-influencer-reply-workflow.md): active native workflow, verified email-thread lookup, AI drafting correction and first provider draft test.
+
 - [Influencer Enrichment VM Preview](handoffs/2026-11-23-influencer-enrichment-preview.md): copied influencer/contact/social data and a draft containing only a manual trigger.
 
 - [Platform Related Fields And Grouping](handoffs/2026-11-23-platform-related-fields.md): shared record-view/widget grouping, related display fields and nested chart dimensions.

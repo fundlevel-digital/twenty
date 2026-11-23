@@ -141,3 +141,7 @@ Verification after reconciliation: 168 PlusVibe tests across 22 files, direct
 TypeScript check, source Oxlint, preview production build, Python helper
 compilation and diff whitespace checks passed. This integration does not perform
 a deployment or change the outstanding live-history repair status above.
+
+Main advanced to `c04a803857` during the push. Integrated that reply-workflow
+commit too, preserving both added documentation indexes; PlusVibe implementation
+was unchanged by this second merge.
