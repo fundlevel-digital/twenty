@@ -1,3 +1,4 @@
+import { EXTERNAL_APPLICATION_AGENT_MODEL_ID } from 'twenty-shared/ai';
 import { createHash } from 'node:crypto';
 import { ExternalAssistantService } from './external-assistant.service';
 import { type FlatApplication } from 'src/engine/core-modules/application/types/flat-application.type';
@@ -34,6 +35,7 @@ const functions = { findOne: jest.fn() };
 const memberships = { findOne: jest.fn() };
 const executor = { execute: jest.fn() };
 const threads = {
+  createThreadIfMissing: jest.fn(),
   getWritableThread: jest.fn(),
   recordThreadActivity: jest.fn(),
 };
@@ -45,6 +47,19 @@ const writer = {
 const events = { publish: jest.fn() };
 const messages = { findOne: jest.fn() };
 const parts = { findOne: jest.fn() };
+const nativeAgents = { ensure: jest.fn(), find: jest.fn() };
+const nativeRuntime = { register: jest.fn() };
+const settlements = { publish: jest.fn() };
+let agentRecords: Map<
+  string,
+  {
+    id: string;
+    label: string;
+    isActive: boolean;
+    applicationId: string;
+    modelId?: string;
+  }
+>;
 const registry = {
   find: jest.fn(),
   findOne: jest.fn(),
@@ -90,6 +105,19 @@ const grant = (overrides: Partial<ExternalAssistantRequest> = {}) => {
 beforeEach(() => {
   jest.resetAllMocks();
   rows = [];
+  agentRecords = new Map();
+  nativeAgents.ensure.mockImplementation(async (_workspace, app, profile) => {
+    agentRecords.set(profile.id, {
+      id: profile.id,
+      label: profile.name,
+      isActive: profile.enabled,
+      applicationId: app.id,
+      modelId: EXTERNAL_APPLICATION_AGENT_MODEL_ID,
+    });
+  });
+  nativeAgents.find.mockImplementation(async (_workspace, id) =>
+    agentRecords.get(id),
+  );
   sourceParts = new Map();
   functions.findOne.mockResolvedValue({ id: 'handler' });
   memberships.findOne.mockResolvedValue({ userId: 'user' });
@@ -176,6 +204,9 @@ beforeEach(() => {
       events,
       messages,
       parts,
+      nativeAgents,
+      nativeRuntime,
+      settlements,
     ] as unknown as ConstructorParameters<typeof ExternalAssistantService>),
   );
 });
@@ -365,4 +396,90 @@ it('permits notification attribution only to an active identity owned by the cal
   await expect(
     service.ownedIdentity(workspaceId, 'other', botId),
   ).rejects.toThrow('not enrolled by this application');
+});
+
+it('projects native Agent identity changes and respects native archival', async () => {
+  await service.register(workspaceId, application, input);
+  agentRecords.set(botId, {
+    id: botId,
+    label: 'Native Name',
+    modelId: EXTERNAL_APPLICATION_AGENT_MODEL_ID,
+    applicationId: application.id,
+    isActive: true,
+  });
+  expect(await service.list(workspaceId)).toEqual([
+    expect.objectContaining({ id: botId, agentId: botId, name: 'Native Name' }),
+  ]);
+  agentRecords.set(botId, {
+    id: botId,
+    label: 'Native Name',
+    modelId: EXTERNAL_APPLICATION_AGENT_MODEL_ID,
+    applicationId: application.id,
+    isActive: false,
+  });
+  expect(await service.list(workspaceId)).toEqual([]);
+});
+it('starts a native run through the registered handler with persisted explicit addressing', async () => {
+  await service.register(workspaceId, application, input);
+  threads.createThreadIfMissing = jest.fn();
+  service.onModuleInit();
+  const start = nativeRuntime.register.mock.calls[0][0];
+  await start({
+    agentId: botId,
+    threadId: 'thread',
+    runId: 'native-run',
+    actor,
+    text: 'Native request',
+  });
+  expect(writer.insertTurn).toHaveBeenCalledWith(
+    expect.objectContaining({ id: 'native-run', agentId: botId }),
+  );
+  expect(executor.execute).toHaveBeenCalledWith(
+    expect.objectContaining({
+      logicFunctionId: 'handler',
+      payload: { requestId: expect.any(String) },
+    }),
+  );
+  const saved = rows.find((row) =>
+    row.key.startsWith('external-assistant:request:'),
+  );
+  expect(saved?.value).toMatchObject({
+    nativeRunId: 'native-run',
+    assistantId: botId,
+  });
+});
+
+it('settles the native run and attributes its reply to the native Agent', async () => {
+  await service.register(workspaceId, application, input);
+  grant({ nativeRunId: 'native-run' });
+  writer.runInTransaction.mockImplementation(async ({ work }) =>
+    work({
+      executeRawQuery: async (query: string) =>
+        query.includes('SELECT "status"') ? [{ status: 'running' }] : [],
+    }),
+  );
+  await service.reply(workspaceId, application.id, 'request', 'Native answer');
+  expect(writer.insertMessage).toHaveBeenCalledWith(
+    expect.objectContaining({ agentId: botId, turnId: 'native-run' }),
+  );
+  expect(settlements.publish).toHaveBeenCalledWith({
+    runId: 'native-run',
+    settledRun: {
+      status: 'COMPLETED',
+      result: { text: 'Native answer' },
+      error: null,
+    },
+  });
+});
+it('rejects a native callback after the run is cancelled', async () => {
+  await service.register(workspaceId, application, input);
+  grant({ nativeRunId: 'cancelled-run' });
+  writer.runInTransaction.mockImplementation(async ({ work }) =>
+    work({ executeRawQuery: async () => [{ status: 'cancelled' }] }),
+  );
+  await expect(
+    service.reply(workspaceId, application.id, 'request', 'Late answer'),
+  ).rejects.toThrow('no longer accepting');
+  expect(writer.insertMessage).not.toHaveBeenCalled();
+  expect(settlements.publish).not.toHaveBeenCalled();
 });

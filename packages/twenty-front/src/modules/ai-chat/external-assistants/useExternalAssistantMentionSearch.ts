@@ -9,6 +9,7 @@ const EXTERNAL_ASSISTANTS = gql`
   query ExternalAssistantDirectory {
     externalAssistants {
       id
+      agentId
       name
       applicationName
       avatarUrl
@@ -44,8 +45,8 @@ export const useExternalAssistantMentionSearch = () => {
       )
       .map((assistant) => ({
         recordId: assistant.id,
-        objectNameSingular: 'externalAssistant',
-        objectLabelSingular: t`Assistant · ${assistant.applicationName}`,
+        objectNameSingular: 'agent',
+        objectLabelSingular: t`Agent · ${assistant.applicationName}`,
         objectLabelPlural: t`Teammates`,
         label: assistant.name,
         imageUrl: assistant.avatarUrl ?? '',

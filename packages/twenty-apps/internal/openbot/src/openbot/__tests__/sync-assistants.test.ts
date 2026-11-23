@@ -21,7 +21,13 @@ it('reconciles renamed profiles and disables identities whose connection was rem
   mocks.api
     .mockResolvedValueOnce({
       ownExternalAssistants: [
-        { id: bot.id, name: 'Old Name', avatarUrl: null, enabled: true },
+        {
+          id: bot.id,
+          agentId: bot.id,
+          name: 'Old Name',
+          avatarUrl: null,
+          enabled: true,
+        },
         { id: 'removed', name: 'Retired Bot', avatarUrl: null, enabled: true },
       ],
     })
@@ -39,7 +45,13 @@ it('reconciles renamed profiles and disables identities whose connection was rem
 it('does not rewrite identities whose saved configuration already matches', async () => {
   mocks.api.mockResolvedValue({
     ownExternalAssistants: [
-      { id: bot.id, name: bot.name, avatarUrl: null, enabled: true },
+      {
+        id: bot.id,
+        agentId: bot.id,
+        name: bot.name,
+        avatarUrl: null,
+        enabled: true,
+      },
     ],
   });
   expect(await syncNativeAssistants()).toEqual({ updated: 0 });

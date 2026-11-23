@@ -28,7 +28,7 @@ export const ChatReferenceSegments = ({
 
         if (
           segment.kind === 'record' &&
-          segment.objectNameSingular === 'externalAssistant'
+          ['externalAssistant', 'agent'].includes(segment.objectNameSingular)
         ) {
           return (
             <StyledChatReferenceChipContainer key={segment.index}>

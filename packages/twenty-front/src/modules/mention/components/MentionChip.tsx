@@ -14,7 +14,7 @@ export const MentionChip = ({ node }: MentionChipProps) => {
   const label = node.attrs.label as string;
   const imageUrl = (node.attrs.imageUrl as string) ?? '';
 
-  if (objectNameSingular === 'externalAssistant') {
+  if (['externalAssistant', 'agent'].includes(objectNameSingular)) {
     return (
       <NodeViewWrapper
         as="span"

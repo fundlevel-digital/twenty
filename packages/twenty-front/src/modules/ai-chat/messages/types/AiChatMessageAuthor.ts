@@ -17,7 +17,11 @@ export type AiChatMessageAuthor<
       applicationId: string;
       externalAssistant?: ExternalAssistantIdentity;
     }
-  | { type: 'agent'; agentId: string }
+  | {
+      type: 'agent';
+      agentId: string;
+      externalAssistant?: ExternalAssistantIdentity;
+    }
   | {
       type: 'member';
       senderWorkspaceMemberId: string;

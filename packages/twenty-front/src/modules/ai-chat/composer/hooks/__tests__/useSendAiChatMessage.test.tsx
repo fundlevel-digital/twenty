@@ -1284,7 +1284,7 @@ it('addresses a selected external recipient without a body mention or native mod
   expect(sentMessageVariables).toHaveBeenCalledWith(
     expect.objectContaining({
       mentionedExternalAssistantIds: [botId],
-      text: `[[record:externalAssistant:${botId}:Research Bot]] Please review this`,
+      text: `[[record:agent:${botId}:Research Bot]] Please review this`,
       isAssistantMentioned: false,
       isAssistantParticipant: false,
     }),

@@ -46,3 +46,13 @@ describe('resolveEffectiveAgent', () => {
     ).toMatchObject({ isActive: true });
   });
 });
+
+it('does not turn an application runtime into a model when its model override changes', () => {
+  const agent = {
+    id: 'external',
+    isActive: true,
+    modelId: 'external-application',
+    overrides: { 'custom-app': { modelId: 'other-model' } },
+  };
+  expect(resolveEffectiveAgent(agent).modelId).toBe('external-application');
+});

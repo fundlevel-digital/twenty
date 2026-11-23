@@ -194,3 +194,4 @@ export { parseAiModelVariantId } from './utils/parse-ai-model-variant-id.util';
 export { parseChatReferenceBody } from './utils/parse-chat-reference-body.util';
 export { parseChatReferences } from './utils/parse-chat-references.util';
 export { replaceMalformedChatReferencesWithDisplayName } from './utils/replace-malformed-chat-references-with-display-name.util';
+export { EXTERNAL_APPLICATION_AGENT_MODEL_ID } from './constants/external-application-agent-model-id.constant';

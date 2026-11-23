@@ -45,7 +45,7 @@ const renderItem = ({
       startIcon={
         isAssistantReference ? (
           <AiChatAssistantAvatar size={14} />
-        ) : item.objectNameSingular === 'externalAssistant' &&
+        ) : ['externalAssistant', 'agent'].includes(item.objectNameSingular) &&
           !item.imageUrl ? (
           <AssistantAvatar size={14} />
         ) : (

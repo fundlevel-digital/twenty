@@ -30,11 +30,13 @@ secret on its configuration page to change routines. Rotating a secret also
 invalidates outstanding callbacks signed using the old secret. Manage the
 corresponding routine manually in OpenBot.
 
-## Native Inbox Assistants
+## Native Agents And Inbox
 
-Saving a bot registers its stable identity with Twenty's native assistant
-registry. It appears under **Teammates** as **Assistant · OpenBot** in the `@`
-picker. Select its chip, enter a request and send. The app delivers
+Saving a bot creates or updates an app-owned native Twenty Agent using the
+existing bot UUID. Its name and active state come from native Agent metadata;
+protected application bindings hold execution routing and the optional avatar.
+It appears under **Teammates** as **Agent · OpenBot** in the `@` picker. Its chip
+opens the native Agent profile, with **External Application** execution details. Select its chip, enter a request and send. The app delivers
 `crm.inbox.mentioned` to the configured webhook; the signed callback writes the
 answer into the same conversation under that bot's name/avatar.
 No Twenty model provider is required for an external-only request.
@@ -65,6 +67,28 @@ an app-owned logic-function handler and AI permission. The handler receives only
 pinned to published SDK 2.59.0, so its adapter calls the equivalent metadata API
 until those helpers are published. Installing only the app on an older host is
 insufficient; this feature requires the host changes in this branch.
+
+## Run Through The Native Agent API
+
+Use the app’s **Run OpenBot Agent** workflow action with an enabled bot’s ID and
+a text prompt. It calls native `runAgent()` with the initiating member’s context;
+the action returns its thread ID, run ID and `RUNNING` status. It does not hold
+the workflow open for a potentially long external routine. The signed callback
+completes the native run and saves the result in that conversation. Direct
+`runAgent()` callers can choose `waitForCompletion: true`. The native
+in-request workflow Agent runner also supports member-scoped text execution.
+Normal app updates preserve enrolled Agents; uninstall removes their app-owned
+metadata. Existing IDs and legacy mention tokens remain compatible.
+
+These external Agents use the reserved `external-application` model ID to select
+the app runtime. Twenty does not invoke a model, execute native prompts/skills,
+or charge native tokens for them. Configure instructions and tools in OpenBot.
+Text requests and replies are supported; attachments and structured JSON output
+are rejected. App-only/API-key-only execution and background native model-runner
+paths fail explicitly because this adapter requires a workspace member. For
+scheduled Task reminders, use the existing app actions and reminder workflow
+below. An in-request wait that expires can still receive the eventual callback;
+use `runAgent()` when a caller needs the normal asynchronous run status.
 
 ## Assign Tasks And Set Reminders
 
@@ -213,7 +237,8 @@ using the same comment and job IDs.
 
 OpenBot owns the supplied logo, settings, encrypted credentials, native Bots
 object, Bot Request receipt index, webhook delivery, callbacks and task policies.
-The Bots object holds public identities and a native Provider Select. Only the
+The Bots object holds compatible public bot profiles and a native Provider Select;
+the canonical execution identity is the app-owned native Agent. Only the
 OpenBot provider is implemented; `providers/registry.ts` defines the extension
 boundary for a future adapter such as Grok. Bots have no passwords or login
 sessions and do not impersonate workspace members.
@@ -239,8 +264,10 @@ Task assignments; old private delivery jobs are not transferred between apps.
 
 ## Preview Boundary
 
-The isolated VM uses local demo bots and a local HTTPS callback. Its server and
-worker reject non-loopback HTTP destinations during verification. No live
+The VM preserves saved connections, including owner-configured connections.
+Verification targets only a confirmed loopback demo bot; it does not trigger
+other configured bots. Server/worker fetch guards alone are not a guarantee
+that application subprocesses cannot reach external destinations. No live
 OpenBot access, routine changes, paid model calls or production deployment are
-part of this work. The maintained verification handoff is
-[Native Assistants Preview](../../../../../../docs/handoffs/2026-11-23-openbot-native-assistants.md).
+part of this work. See the [native Agent handoff](../../../../../../docs/handoffs/2026-11-23-openbot-native-agent-runtime.md)
+for the callback edge-gate limitation and verified runtime boundaries.

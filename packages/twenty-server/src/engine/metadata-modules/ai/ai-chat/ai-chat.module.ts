@@ -1,3 +1,4 @@
+import { AiAgentModule } from '../ai-agent/ai-agent.module';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import { LogicFunctionEntity } from 'src/engine/metadata-modules/logic-function/logic-function.entity';
@@ -72,6 +73,7 @@ import { AgentChatWebPushNotificationService } from 'src/engine/metadata-modules
 
 @Module({
   imports: [
+    AiAgentModule,
     LogicFunctionExecutorModule,
     TypeOrmModule.forFeature([
       KeyValuePairEntity,

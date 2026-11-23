@@ -487,7 +487,7 @@ export const useSendAiChatMessage = () => {
       const contentToSend = [
         ...selectedAssistants.map(({ id, name }) =>
           formatRecordReference({
-            objectNameSingular: 'externalAssistant',
+            objectNameSingular: 'agent',
             recordId: id,
             displayName: name,
           }),

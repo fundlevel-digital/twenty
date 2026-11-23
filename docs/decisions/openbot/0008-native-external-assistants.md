@@ -1,7 +1,7 @@
 # 0008. Native External Assistants
 
 - Date: 2026-11-23
-- Status: accepted
+- Status: superseded in identity storage by [0011](0011-native-agent-identities-and-execution.md)
 - Decided by: Kareem
 - Area: OpenBot
 - Related: [0007](0007-standalone-app-and-shared-bot-identities.md)

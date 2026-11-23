@@ -1,3 +1,8 @@
+import { NativeApplicationAgentService } from '../../ai-agent/native-application-agent.service';
+import { NativeApplicationAgentRuntimeRegistry } from '../../ai-agent/native-application-agent-runtime.registry';
+import { isUserAuthContext } from 'src/engine/core-modules/auth/guards/is-user-auth-context.guard';
+import { AgentRunSettlementService } from './agent-run-settlement.service';
+import { RUN_AGENT_MAX_WAIT_MS } from '../constants/run-agent-max-wait-ms.constant';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { randomUUID } from 'node:crypto';
@@ -5,6 +10,7 @@ import { randomUUID } from 'node:crypto';
 import { isNonEmptyString, isUndefined } from '@sniptt/guards';
 import { generateId } from 'ai';
 import {
+  EXTERNAL_APPLICATION_AGENT_MODEL_ID,
   type AgentChatSubscriptionEvent,
   type AgentRunSummary,
   type ExtendedUIMessage,
@@ -123,6 +129,9 @@ export class AgentRunnerService {
   private readonly threadRepository: AgentHistoryRepository<AgentChatThreadWorkspaceEntity>;
 
   constructor(
+    private readonly nativeApplicationAgents: NativeApplicationAgentService,
+    private readonly nativeApplicationRuntime: NativeApplicationAgentRuntimeRegistry,
+    private readonly nativeApplicationSettlements: AgentRunSettlementService,
     private readonly agentRunTurnService: AgentRunTurnService,
     private readonly agentRunConversationService: AgentRunConversationService,
     private readonly conversationReaderService: AgentConversationReaderService,
@@ -161,6 +170,63 @@ export class AgentRunnerService {
     streamChannelId?: string;
     abortSignal?: AbortSignal;
   }): Promise<InRequestAgentRun> {
+    const nativeAgent = input.spec.agentId
+      ? await this.nativeApplicationAgents.find(
+          input.workspaceId,
+          input.spec.agentId,
+        )
+      : undefined;
+    if (
+      nativeAgent &&
+      nativeAgent.modelId === EXTERNAL_APPLICATION_AGENT_MODEL_ID
+    ) {
+      const context = input.executionContext.authContext;
+      if (!isUserAuthContext(context)) {
+        throw new Error(
+          'External agents require a workspace member execution context',
+        );
+      }
+      if (
+        !input.prompt ||
+        input.prompt.messages.some((message) => message.attachments?.length) ||
+        input.spec.responseFormat?.type === 'json'
+      ) {
+        throw new Error('External agents require text input and text output');
+      }
+      const runId = input.turnId ?? randomUUID();
+      await this.nativeApplicationRuntime.run({
+        agentId: nativeAgent.id,
+        runId,
+        threadId: randomUUID(),
+        actor: {
+          workspaceId: input.workspaceId,
+          workspaceMemberId: context.workspaceMemberId,
+          userWorkspaceId: context.userWorkspaceId,
+        },
+        text: [
+          input.spec.instructions,
+          ...input.prompt.messages
+            .filter((message) => message.role === 'user')
+            .map((message) => message.content),
+        ]
+          .filter(isNonEmptyString)
+          .join('\n'),
+      });
+      const settled = await this.nativeApplicationSettlements.waitFor({
+        runId,
+        timeoutMs: RUN_AGENT_MAX_WAIT_MS,
+      });
+      const outcome: AgentRunnerOutcome =
+        settled?.status === 'COMPLETED' && settled.result
+          ? { status: 'COMPLETED', result: settled.result }
+          : {
+              status: 'FAILED',
+              error:
+                settled?.error ??
+                'External agent is still running; use runAgent to receive its asynchronous reply',
+            };
+      return { runId, outcome, usage: { inputTokens: 0, outputTokens: 0 } };
+    }
     const persona = await this.agentRunPersonaService.resolveOrThrow({
       workspaceId: input.workspaceId,
       spec: input.spec,

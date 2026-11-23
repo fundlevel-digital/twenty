@@ -2,6 +2,7 @@ import { postGraphqlRequest } from '@/sdk/logic-function/utils/post-graphql-requ
 
 export type ExternalAssistantProfile = {
   id: string;
+  agentId?: string | null;
   applicationId: string;
   applicationName: string;
   name: string;
@@ -32,7 +33,7 @@ export const registerExternalAssistant = async (
     { registerExternalAssistant: ExternalAssistantProfile }
   >({
     query:
-      'mutation($input:JSON!){registerExternalAssistant(input:$input){id applicationId applicationName name avatarUrl enabled}}',
+      'mutation($input:JSON!){registerExternalAssistant(input:$input){id agentId applicationId applicationName name avatarUrl enabled}}',
     variables: { input },
     caller: 'registerExternalAssistant',
   });
@@ -76,7 +77,7 @@ export const listOwnExternalAssistants = async (): Promise<
     { ownExternalAssistants: ExternalAssistantProfile[] }
   >({
     query:
-      'query{ownExternalAssistants{id applicationId applicationName name avatarUrl enabled}}',
+      'query{ownExternalAssistants{id agentId applicationId applicationName name avatarUrl enabled}}',
     variables: {},
     caller: 'listOwnExternalAssistants',
   });

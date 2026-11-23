@@ -11,16 +11,18 @@ export const syncNativeAssistants = async () => {
   const { ownExternalAssistants: published } = await nativeAssistantApi<{
     ownExternalAssistants: {
       id: string;
+      agentId?: string;
       name: string;
       avatarUrl: string | null;
       enabled: boolean;
     }[];
-  }>('query{ownExternalAssistants{id name avatarUrl enabled}}', {});
+  }>('query{ownExternalAssistants{id agentId name avatarUrl enabled}}', {});
   let updated = 0;
   for (const bot of configured) {
     const existing = published.find((profile) => profile.id === bot.id);
     if (
-      existing?.name === bot.name &&
+      existing?.agentId &&
+      existing.name === bot.name &&
       existing.avatarUrl === bot.avatarUrl &&
       existing.enabled === (bot.enabled !== false)
     )

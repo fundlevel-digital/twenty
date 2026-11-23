@@ -15,10 +15,13 @@ the shared external-assistant engine and UI support in this branch.
 A stock host can store `botAssignees` through the native data API, but needs that
 adapter for the integrated human-and-bot picker.
 
-Bots appear as **Assistant · OpenBot** in the native Inbox mention picker.
+Bots are native Twenty **Agents** and appear as **Agent · OpenBot** in the native Inbox mention picker.
 Selecting a bot sends the current message to its webhook; its signed reply
 returns to that conversation under its own identity. See the
-[native assistant handoff](../../../../docs/handoffs/2026-11-23-openbot-native-assistants.md).
+[native Agent handoff](../../../../docs/handoffs/2026-11-23-openbot-native-agent-runtime.md).
+The **Run OpenBot Agent** workflow action uses the native `runAgent()` API with
+the initiating member’s permissions. OpenBot executes the request; Twenty
+requires no model provider for it.
 
 Only the OpenBot webhook adapter is implemented. The Bots model is separate from
 human login accounts; future providers can extend its native Provider Select and

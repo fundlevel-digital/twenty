@@ -1,3 +1,9 @@
+import {
+  NativeApplicationAgentRuntimeRegistry,
+  type NativeApplicationAgentRun,
+} from '../../ai-agent/native-application-agent-runtime.registry';
+import { AgentRunSettlementService } from '../../ai-agent-execution/services/agent-run-settlement.service';
+import { NativeApplicationAgentService } from '../../ai-agent/native-application-agent.service';
 import { createHash } from 'node:crypto';
 import { readAgentChatAssistantReplyContext } from '../utils/read-agent-chat-assistant-reply-context.util';
 import { ApplicationState } from 'src/engine/core-modules/application/enums/application-state.enum';
@@ -6,12 +12,13 @@ import { doNotTranslate } from 'twenty-shared/i18n';
 import { AiException, AiExceptionCode } from '../../ai.exception';
 import { getWorkspaceAgentHistoryTable } from 'src/engine/metadata-modules/ai/ai-history/utils/get-workspace-agent-history-table.util';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isString } from '@sniptt/guards';
 import { IsNull, Like, Repository } from 'typeorm';
 import { v5, validate } from 'uuid';
 import {
+  EXTERNAL_APPLICATION_AGENT_MODEL_ID,
   AgentChatThreadConversationType,
   parseChatReferences,
 } from 'twenty-shared/ai';
@@ -47,7 +54,7 @@ const getMessageDigest = (text: string) =>
   createHash('sha256').update(text).digest('hex');
 
 @Injectable()
-export class ExternalAssistantService {
+export class ExternalAssistantService implements OnModuleInit {
   private readonly logger = new Logger(ExternalAssistantService.name);
   constructor(
     @InjectRepository(UserWorkspaceEntity)
@@ -64,7 +71,127 @@ export class ExternalAssistantService {
     private readonly messages: AgentHistoryRepository<AgentMessageWorkspaceEntity>,
     @InjectAgentHistoryRepository('agentMessagePart')
     private readonly parts: AgentHistoryRepository<AgentMessagePartWorkspaceEntity>,
+    private readonly nativeAgents: NativeApplicationAgentService,
+    private readonly nativeRuntime: NativeApplicationAgentRuntimeRegistry,
+    private readonly settlements: AgentRunSettlementService,
   ) {}
+
+  onModuleInit() {
+    this.nativeRuntime.register((input) => this.runNativeAgent(input));
+  }
+
+  async runNativeAgent({
+    agentId,
+    threadId,
+    runId,
+    actor,
+    text,
+  }: NativeApplicationAgentRun) {
+    const profile = (await this.list(actor.workspaceId)).find(
+      (profile) => profile.agentId === agentId,
+    );
+    if (!profile) {
+      throw new AiException(
+        'Application agent unavailable',
+        AiExceptionCode.AGENT_IS_INACTIVE,
+      );
+    }
+    if (!text.trim() || text.length > 9500) {
+      throw new AiException(
+        'Write a request of up to 9,500 characters',
+        AiExceptionCode.INVALID_AGENT_INPUT,
+      );
+    }
+    await this.threads.createThreadIfMissing({
+      workspaceId: actor.workspaceId,
+      workspaceMemberId: actor.workspaceMemberId,
+      threadId,
+      title: profile.name,
+      isSubscribed: true,
+      isInitialAssistantParticipant: false,
+      isAssistantMentioned: false,
+      shouldApplyAssistantParticipation: false,
+    });
+    await this.threads.getWritableThread({ ...actor, threadId });
+    const sourceText = `[[record:agent:${agentId}:${profile.name}]] ${text}`;
+    const messageId = v5(`external-agent-input:${runId}`, v5.URL);
+    await this.writer.runInTransaction({
+      workspaceId: actor.workspaceId,
+      threadId,
+      work: async (scope) => {
+        await this.writer.insertTurn({
+          workspaceId: actor.workspaceId,
+          threadId,
+          agentId,
+          id: runId,
+          status: AgentTurnStatus.RUNNING,
+          scope,
+        });
+        await this.writer.insertMessage({
+          workspaceId: actor.workspaceId,
+          threadId,
+          turnId: runId,
+          id: messageId,
+          role: AgentMessageRole.USER,
+          agentId: null,
+          senderUserWorkspaceId: actor.userWorkspaceId,
+          parts: [
+            {
+              type: 'text',
+              text: sourceText,
+              providerMetadata: {
+                twenty: {
+                  assistantReplyContext: {
+                    isAssistantMentioned: false,
+                    isDirectAssistantChat: false,
+                    isStructuredRequestContinuation: false,
+                    mentionedExternalAssistantIds: [agentId],
+                  },
+                },
+              },
+            },
+          ],
+          scope,
+        });
+      },
+    });
+    await this.events.publish({
+      workspaceId: actor.workspaceId,
+      threadId,
+      event: { type: 'message-added', messageId },
+    });
+    let delivered = false;
+    try {
+      delivered = await this.dispatch(actor, threadId, messageId, runId);
+    } catch {
+      this.logger.warn(
+        `Native application agent dispatch failed for run ${runId}`,
+      );
+    }
+    if (!delivered) {
+      await this.writer.runInTransaction({
+        workspaceId: actor.workspaceId,
+        threadId,
+        work: async (scope) => {
+          const table = getWorkspaceAgentHistoryTable(actor.workspaceId);
+          await scope.executeRawQuery(
+            `UPDATE ${table('agentTurn')} SET "status" = $2, "endedAt" = now() WHERE "id" = $1`,
+            [runId, AgentTurnStatus.FAILED],
+          );
+        },
+      });
+    }
+    if (!delivered) {
+      await this.settlements.publish({
+        runId,
+        settledRun: {
+          status: 'FAILED',
+          result: null,
+          error: 'Application agent could not be reached',
+        },
+      });
+    }
+  }
 
   async register(
     workspaceId: string,
@@ -149,6 +276,7 @@ export class ExternalAssistantService {
           },
         );
       }
+      await this.nativeAgents.ensure(workspaceId, application, profile);
       // Native registry records use a different type from app-writable KV values.
       await repository.upsert(
         {
@@ -166,7 +294,7 @@ export class ExternalAssistantService {
         },
       );
     });
-    return profile;
+    return { ...profile, agentId: profile.id };
   }
 
   async list(
@@ -181,8 +309,8 @@ export class ExternalAssistantService {
       },
       relations: { application: true },
     });
-    return rows
-      .flatMap((row) => {
+    const profiles = await Promise.all(
+      rows.map(async (row) => {
         const application = row.application;
         if (
           !application ||
@@ -190,15 +318,30 @@ export class ExternalAssistantService {
           application.state === ApplicationState.UNINSTALLING ||
           row.deletedAt
         ) {
-          return [];
+          return undefined;
         }
-        return [
-          {
-            ...(row.value as unknown as ExternalAssistant),
-            applicationName: application.name,
-          },
-        ];
-      })
+        const binding = row.value as unknown as ExternalAssistant;
+        const agent = await this.nativeAgents.find(workspaceId, binding.id);
+        if (
+          !agent ||
+          agent.applicationId !== row.applicationId ||
+          agent.modelId !== EXTERNAL_APPLICATION_AGENT_MODEL_ID ||
+          agent.deletedAt ||
+          agent.isPrivate
+        ) {
+          return applicationId ? { ...binding, agentId: undefined } : undefined;
+        }
+        return {
+          ...binding,
+          agentId: agent.id,
+          name: agent.label,
+          enabled: binding.enabled && agent.isActive,
+          applicationName: application.name,
+        };
+      }),
+    );
+    return profiles
+      .filter((profile): profile is ExternalAssistant => !!profile)
       .filter((profile) =>
         applicationId
           ? profile.applicationId === applicationId
@@ -232,7 +375,7 @@ export class ExternalAssistantService {
       ...new Set(
         parseChatReferences(text).flatMap((reference) =>
           reference.kind === 'record' &&
-          reference.objectNameSingular === 'externalAssistant'
+          ['externalAssistant', 'agent'].includes(reference.objectNameSingular)
             ? [reference.recordId]
             : [],
         ),
@@ -297,6 +440,7 @@ export class ExternalAssistantService {
     actor: AgentChatMemberMessageActor,
     threadId: string,
     messageId: string,
+    nativeRunId?: string,
   ): Promise<boolean> {
     const sourcePart = await this.parts.findOne(actor.workspaceId, {
       where: { messageId, type: 'text' },
@@ -331,6 +475,7 @@ export class ExternalAssistantService {
       const id = v5(`${messageId}:${profile.id}`, v5.URL);
       const request: ExternalAssistantGrant = {
         id,
+        ...(nativeRunId ? { nativeRunId } : {}),
         assistantId: profile.id,
         threadId,
         messageId,
@@ -499,6 +644,22 @@ export class ExternalAssistantService {
           [`${workspaceId}:${requestId}`],
         );
         const table = getWorkspaceAgentHistoryTable(workspaceId);
+        if (request.nativeRunId) {
+          const turns = await scope.executeRawQuery(
+            `SELECT "status" FROM ${table('agentTurn')} WHERE "id" = $1 FOR UPDATE`,
+            [request.nativeRunId],
+          );
+          if (
+            !turns.length ||
+            turns[0]?.status === 'cancelled' ||
+            turns[0]?.status === 'failed'
+          ) {
+            throw new AiException(
+              'The agent run is no longer accepting a reply',
+              AiExceptionCode.INVALID_AGENT_INPUT,
+            );
+          }
+        }
         const existing = await scope.executeRawQuery(
           `SELECT "textContent" FROM ${table('agentMessagePart')} WHERE "messageId" = $1 AND "type" = 'text'`,
           [id],
@@ -515,20 +676,22 @@ export class ExternalAssistantService {
           }
           return false;
         }
-        const turnId = await this.writer.insertTurn({
-          workspaceId,
-          threadId: request.threadId,
-          agentId: null,
-          status: AgentTurnStatus.COMPLETED,
-          scope,
-        });
+        const turnId =
+          request.nativeRunId ??
+          (await this.writer.insertTurn({
+            workspaceId,
+            threadId: request.threadId,
+            agentId: profile.agentId ?? profile.id,
+            status: AgentTurnStatus.COMPLETED,
+            scope,
+          }));
         await this.writer.insertMessage({
           workspaceId,
           id,
           threadId: request.threadId,
           turnId,
           role: AgentMessageRole.ASSISTANT,
-          agentId: null,
+          agentId: profile.agentId ?? profile.id,
           senderUserWorkspaceId: null,
           senderApplicationId: applicationId,
           parts: [
@@ -547,9 +710,25 @@ export class ExternalAssistantService {
           ],
           scope,
         });
+        if (request.nativeRunId) {
+          await scope.executeRawQuery(
+            `UPDATE ${table('agentTurn')} SET "status" = $2, "endedAt" = now() WHERE "id" = $1`,
+            [request.nativeRunId, AgentTurnStatus.COMPLETED],
+          );
+        }
         return true;
       },
     });
+    if (request.nativeRunId) {
+      await this.settlements.publish({
+        runId: request.nativeRunId,
+        settledRun: {
+          status: 'COMPLETED',
+          result: { text: text.trim() },
+          error: null,
+        },
+      });
+    }
     if (written) {
       await this.events.publish({
         workspaceId,

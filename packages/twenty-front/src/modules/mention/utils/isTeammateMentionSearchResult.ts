@@ -9,4 +9,4 @@ export const isTeammateMentionSearchResult = (
   isWorkspaceMemberMentionSearchResult(item) ||
   item.objectNameSingular ===
     AGENT_CHAT_ASSISTANT_MENTION_OBJECT_NAME_SINGULAR ||
-  item.objectNameSingular === 'externalAssistant';
+  ['externalAssistant', 'agent'].includes(item.objectNameSingular);

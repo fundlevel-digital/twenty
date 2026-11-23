@@ -190,7 +190,7 @@ export class AgentInboxService {
         threadId,
         turnId,
         role: AgentMessageRole.ASSISTANT,
-        agentId: null,
+        agentId: senderDetails.externalAssistant?.id ?? null,
         senderUserWorkspaceId: null,
         senderApplicationId: senderDetails.applicationId,
         isAwaitingAnswer: toolCallPart?.isAwaitingAnswer,

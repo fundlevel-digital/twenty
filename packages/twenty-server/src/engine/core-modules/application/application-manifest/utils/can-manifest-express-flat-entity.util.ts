@@ -1,3 +1,4 @@
+import { EXTERNAL_APPLICATION_AGENT_MODEL_ID } from 'twenty-shared/ai';
 import { type AllMetadataName } from 'twenty-shared/metadata';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -20,7 +21,8 @@ type ProbedPropertyName =
   | (typeof WORKSPACE_BOUND_PROPERTIES)[number]
   | 'frontComponentUniversalIdentifier'
   | 'workflowId'
-  | 'agentId';
+  | 'agentId'
+  | 'modelId';
 
 type ProbedFlatEntity = {
   universalIdentifier: string;
@@ -36,6 +38,13 @@ export const canManifestExpressFlatEntity = ({
   flatEntity: ProbedFlatEntity;
   parentFlatRole?: ProbedFlatEntity;
 }): boolean => {
+  if (
+    metadataName === 'agent' &&
+    flatEntity.modelId === EXTERNAL_APPLICATION_AGENT_MODEL_ID
+  ) {
+    return false;
+  }
+
   if (METADATA_NAMES_WITHOUT_MANIFEST_REPRESENTATION.includes(metadataName)) {
     return false;
   }

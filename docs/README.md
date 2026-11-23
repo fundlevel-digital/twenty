@@ -79,3 +79,5 @@ package. Decision records are centralized under this directory.
 
 - [OpenBot Native Assistants](handoffs/2026-11-23-openbot-native-assistants.md): standalone app enrollment, native Inbox mentions and attributed webhook replies.
 - [OpenBot Selection And Reply Compatibility](handoffs/2026-11-23-openbot-selection-and-reply-compatibility.md): recipient and draft Task picker corrections, plus trusted callback setup requirements.
+
+- [OpenBot Native Agent Runtime](handoffs/2026-11-23-openbot-native-agent-runtime.md): app-owned native Agents, delegated external runs, signed completion and isolated verification.

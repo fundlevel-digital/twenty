@@ -2650,6 +2650,7 @@ export type ExecuteOneLogicFunctionInput = {
 
 export type ExternalAssistant = {
   __typename?: 'ExternalAssistant';
+  agentId?: Maybe<Scalars['UUID']['output']>;
   applicationId: Scalars['UUID']['output'];
   applicationName: Scalars['String']['output'];
   avatarUrl?: Maybe<Scalars['String']['output']>;

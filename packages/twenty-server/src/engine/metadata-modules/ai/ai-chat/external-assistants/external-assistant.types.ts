@@ -1,4 +1,5 @@
 export type ExternalAssistant = {
+  agentId?: string;
   id: string;
   applicationId: string;
   applicationName: string;
@@ -8,6 +9,7 @@ export type ExternalAssistant = {
   handlerUniversalIdentifier: string;
 };
 export type ExternalAssistantRequest = {
+  nativeRunId?: string;
   id: string;
   assistantId: string;
   threadId: string;

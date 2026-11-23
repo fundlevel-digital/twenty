@@ -1,3 +1,5 @@
+import { EXTERNAL_APPLICATION_AGENT_MODEL_ID } from 'twenty-shared/ai';
+import { Text } from 'twenty-ui/primitives/typography';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { isNonEmptyArray } from 'twenty-shared/utils';
@@ -43,6 +45,20 @@ export const CoreAgentModelSection = ({
       onFieldChange('modelConfiguration', configuration),
     disabled: isReadOnly,
   });
+
+  if (formValues.modelId === EXTERNAL_APPLICATION_AGENT_MODEL_ID) {
+    return (
+      <Section.Root>
+        <Section.Header
+          title={t`Execution`}
+          description={t`Requests are handled by the owning application.`}
+        />
+        <CoreAgentSectionCard>
+          <Text>{t`External Application`}</Text>
+        </CoreAgentSectionCard>
+      </Section.Root>
+    );
+  }
 
   return (
     <Section.Root>

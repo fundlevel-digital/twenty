@@ -15,7 +15,9 @@ const collectMentionIds = (node: TipTapNode): string[] => {
   const id = node.attrs?.recordId;
   return [
     ...(node.type === TIPTAP_NODE_TYPES.MENTION_TAG &&
-    node.attrs?.objectNameSingular === 'externalAssistant' &&
+    ['externalAssistant', 'agent'].includes(
+      String(node.attrs?.objectNameSingular),
+    ) &&
     isNonEmptyString(id)
       ? [id]
       : []),

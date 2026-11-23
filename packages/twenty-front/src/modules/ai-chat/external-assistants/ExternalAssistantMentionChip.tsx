@@ -1,5 +1,7 @@
+import { getCoreAgentLink } from '@/object-core/agents/utils/getCoreAgentLink';
+import { LinkChip } from '@/ui/navigation/link/components/LinkChip/LinkChip';
 import { AssistantAvatar } from 'twenty-ui/components/data-display';
-import { Avatar, Chip } from 'twenty-ui/primitives/data-display';
+import { Avatar } from 'twenty-ui/primitives/data-display';
 
 type ExternalAssistantMentionChipProps = {
   id: string;
@@ -11,7 +13,8 @@ export const ExternalAssistantMentionChip = ({
   name,
   avatarUrl,
 }: ExternalAssistantMentionChipProps) => (
-  <Chip
+  <LinkChip
+    to={getCoreAgentLink(id)}
     variant="soft"
     startElement={
       avatarUrl ? (
@@ -26,5 +29,5 @@ export const ExternalAssistantMentionChip = ({
         <AssistantAvatar size={14} />
       )
     }
-  >{`@${name}`}</Chip>
+  >{`@${name}`}</LinkChip>
 );

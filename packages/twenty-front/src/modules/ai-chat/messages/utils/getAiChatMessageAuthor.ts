@@ -43,6 +43,17 @@ export const getAiChatMessageAuthor = <
     };
   }
 
+  if (
+    isDefined(agentId) &&
+    externalAssistant &&
+    externalAssistant.id === agentId
+  ) {
+    return {
+      ...getAiChatAgentAuthor({ agentId, agentName: externalAssistant.name }),
+      externalAssistant,
+    };
+  }
+
   if (isDefined(applicationId)) {
     return {
       type: 'application',

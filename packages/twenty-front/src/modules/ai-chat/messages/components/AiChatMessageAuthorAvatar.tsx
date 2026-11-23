@@ -32,6 +32,19 @@ export const AiChatMessageAuthorAvatar = ({
       }
       return <AppChip applicationId={author.applicationId} chipOnly rounded />;
     case 'agent':
+      if (author.externalAssistant) {
+        return author.externalAssistant.avatarUrl ? (
+          <Avatar
+            name={author.name}
+            src={author.externalAssistant.avatarUrl}
+            colorSeed={author.agentId}
+            size="sm"
+            shape="circle"
+          />
+        ) : (
+          <AssistantAvatar size={24} />
+        );
+      }
       return (
         <Avatar
           colorSeed={author.agentId}

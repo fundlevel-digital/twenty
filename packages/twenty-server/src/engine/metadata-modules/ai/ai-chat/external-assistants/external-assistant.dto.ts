@@ -3,6 +3,8 @@ import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/
 
 @ObjectType('ExternalAssistant')
 export class ExternalAssistantDTO {
+  @Field(() => UUIDScalarType, { nullable: true })
+  agentId?: string;
   @Field(() => UUIDScalarType) id: string;
   @Field(() => UUIDScalarType) applicationId: string;
   @Field() name: string;
