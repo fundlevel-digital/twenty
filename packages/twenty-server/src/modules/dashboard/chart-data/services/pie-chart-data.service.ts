@@ -1,3 +1,4 @@
+import { resolveChartGroupDimension } from 'src/modules/dashboard/chart-data/utils/resolve-chart-group-dimension.util';
 import { Injectable } from '@nestjs/common';
 
 import { CalendarStartDay } from 'twenty-shared/constants';
@@ -157,10 +158,19 @@ export class PieChartDataService {
         secondaryRelationLabelResolution: undefined,
       });
 
+      const dimension = resolveChartGroupDimension({
+        field: groupByField,
+        subFieldName: configuration.groupBySubFieldName,
+        flatFieldMetadataMaps,
+        flatFieldMetadataOptionMaps,
+      });
       return transformToPieChartData({
         filteredRawResults: resolvedResults,
-        groupByField,
-        configuration,
+        groupByField: dimension.field,
+        configuration: {
+          ...configuration,
+          groupBySubFieldName: dimension.subFieldName,
+        },
         userTimezone: configuration.timezone ?? 'UTC',
         firstDayOfTheWeek:
           (configuration.firstDayOfTheWeek as CalendarStartDay | undefined) ??

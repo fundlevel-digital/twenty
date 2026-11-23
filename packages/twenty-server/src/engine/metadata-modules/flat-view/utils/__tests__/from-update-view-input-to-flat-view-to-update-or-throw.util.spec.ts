@@ -126,6 +126,7 @@ const buildExistingFlatView = ({
     isSystemSideEffect: false,
     mainGroupByFieldMetadataId: STAGE_FIELD_ID,
     mainGroupByFieldMetadataUniversalIdentifier: STAGE_FIELD_ID,
+    mainGroupBySubFieldName: null,
     overrides: {
       [WORKSPACE_CUSTOM_APPLICATION_UNIVERSAL_IDENTIFIER]: {
         mainGroupByFieldMetadataId: groupingOverride,

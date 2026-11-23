@@ -36,15 +36,18 @@ export const isRelationNestedFieldDateKind = ({
     return false;
   }
 
-  const nestedFieldName = relationNestedFieldName.split('.')[0];
-
-  const nestedFieldMetadata = targetObjectMetadata.fields.find(
-    (fieldMetadataItem) => fieldMetadataItem.name === nestedFieldName,
+  const [nestedFieldName, ...remaining] = relationNestedFieldName.split('.');
+  const nestedFieldMetadata = targetObjectMetadata.readableFields.find(
+    (field) => field.name === nestedFieldName,
   );
-
   if (!isDefined(nestedFieldMetadata)) {
     return false;
   }
-
-  return isFieldMetadataDateKind(nestedFieldMetadata.type);
+  return remaining.length > 0 && isFieldRelation(nestedFieldMetadata)
+    ? isRelationNestedFieldDateKind({
+        relationField: nestedFieldMetadata,
+        relationNestedFieldName: remaining.join('.'),
+        objectMetadataItems,
+      })
+    : isFieldMetadataDateKind(nestedFieldMetadata.type);
 };

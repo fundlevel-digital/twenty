@@ -75,6 +75,7 @@ export const useCreateViewFromCurrentView = (viewBarComponentId?: string) => {
         name,
         icon,
         mainGroupByFieldMetadataId,
+        mainGroupBySubFieldName,
         calendarFieldMetadataId,
         calendarEndFieldMetadataId,
         type,
@@ -86,6 +87,7 @@ export const useCreateViewFromCurrentView = (viewBarComponentId?: string) => {
           | 'name'
           | 'icon'
           | 'mainGroupByFieldMetadataId'
+          | 'mainGroupBySubFieldName'
           | 'calendarFieldMetadataId'
           | 'calendarEndFieldMetadataId'
           | 'type'
@@ -136,6 +138,9 @@ export const useCreateViewFromCurrentView = (viewBarComponentId?: string) => {
             shouldDisplayGroupsAsTabs: shouldCopyFiltersAndSortsAndAggregate
               ? (sourceView.shouldDisplayGroupsAsTabs ?? undefined)
               : undefined,
+            mainGroupBySubFieldName: shouldCopyFiltersAndSortsAndAggregate
+              ? sourceView.mainGroupBySubFieldName
+              : mainGroupBySubFieldName,
             mainGroupByFieldMetadataId: shouldCopyFiltersAndSortsAndAggregate
               ? sourceView.mainGroupByFieldMetadataId
               : mainGroupByFieldMetadataId,

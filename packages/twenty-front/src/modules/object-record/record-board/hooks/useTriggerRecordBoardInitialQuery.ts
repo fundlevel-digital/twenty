@@ -10,7 +10,7 @@ import { useRecordIndexContextOrThrow } from '@/object-record/record-index/conte
 import { useRecordIndexGroupsRecordsLazyGroupBy } from '@/object-record/record-index/hooks/useRecordIndexGroupsRecordsLazyGroupBy';
 import { recordIndexGroupFieldMetadataItemComponentState } from '@/object-record/record-index/states/recordIndexGroupFieldMetadataComponentState';
 import { recordIndexRecordGroupsAreInInitialLoadingComponentState } from '@/object-record/record-index/states/recordIndexRecordGroupsAreInInitialLoadingComponentState';
-import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useUpsertRecordsInStore';
+import { useUpsertRecordIndexRecordsInStore } from '@/object-record/record-index/hooks/useUpsertRecordIndexRecordsInStore';
 import { getGroupByQueryResultGqlFieldName } from '@/page-layout/utils/getGroupByQueryResultGqlFieldName';
 import { useScrollWrapperHTMLElement } from '@/ui/utilities/scroll/hooks/useScrollWrapperHTMLElement';
 import { useAtomComponentFamilyStateCallbackState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentFamilyStateCallbackState';
@@ -57,7 +57,8 @@ export const useTriggerRecordBoardInitialQuery = () => {
   const queryIdentifier = useRecordBoardQueryIdentifier();
 
   const { setRecordIdsForColumn } = useSetRecordIdsForColumn();
-  const { upsertRecordsInStore } = useUpsertRecordsInStore();
+  const { upsertRecordIndexRecordsInStore } =
+    useUpsertRecordIndexRecordsInStore();
 
   const { scrollWrapperHTMLElement } = useScrollWrapperHTMLElement();
 
@@ -107,7 +108,9 @@ export const useTriggerRecordBoardInitialQuery = () => {
       for (const recordGroupDefinition of recordGroupDefinitions) {
         const foundGroupInResult = groups?.find(
           (recordGroup) =>
-            recordGroup.groupByDimensionValues[0] ===
+            (recordGroup.groupByDimensionValues[0] === null
+              ? null
+              : String(recordGroup.groupByDimensionValues[0])) ===
             recordGroupDefinition.value,
         );
 
@@ -137,7 +140,7 @@ export const useTriggerRecordBoardInitialQuery = () => {
           continue;
         }
 
-        upsertRecordsInStore({ partialRecords: records });
+        upsertRecordIndexRecordsInStore(records);
 
         setRecordIdsForColumn(recordGroupDefinition.id, records);
 
@@ -170,7 +173,7 @@ export const useTriggerRecordBoardInitialQuery = () => {
       setRecordBoardCurrentGroupByQueryOffset,
       scrollWrapperHTMLElement,
       recordGroupDefinitions,
-      upsertRecordsInStore,
+      upsertRecordIndexRecordsInStore,
       setRecordIdsForColumn,
       recordBoardShouldFetchMoreInColumnFamilyCallbackState,
     ],

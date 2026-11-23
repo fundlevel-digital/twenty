@@ -1,3 +1,4 @@
+import { resolveChartGroupDimension } from 'src/modules/dashboard/chart-data/utils/resolve-chart-group-dimension.util';
 import { Injectable } from '@nestjs/common';
 
 import { CalendarStartDay } from 'twenty-shared/constants';
@@ -206,13 +207,32 @@ export class LineChartDataService {
 
       const i18n = this.i18nService.getI18nInstance(locale);
 
+      const primaryDimension = resolveChartGroupDimension({
+        field: primaryAxisGroupByField,
+        subFieldName: configuration.primaryAxisGroupBySubFieldName,
+        flatFieldMetadataMaps,
+        flatFieldMetadataOptionMaps,
+      });
+      const secondaryDimension = secondaryAxisGroupByField
+        ? resolveChartGroupDimension({
+            field: secondaryAxisGroupByField,
+            subFieldName: configuration.secondaryAxisGroupBySubFieldName,
+            flatFieldMetadataMaps,
+            flatFieldMetadataOptionMaps,
+          })
+        : undefined;
       if (isTwoDimensional && isDefined(secondaryAxisGroupByField)) {
         return transformToTwoDimensionalLineChartData({
           filteredRawResults: resolvedResults,
-          primaryAxisGroupByField,
-          secondaryAxisGroupByField,
+          primaryAxisGroupByField: primaryDimension.field,
+          secondaryAxisGroupByField:
+            secondaryDimension?.field ?? secondaryAxisGroupByField,
           aggregateField,
-          configuration,
+          configuration: {
+            ...configuration,
+            primaryAxisGroupBySubFieldName: primaryDimension.subFieldName,
+            secondaryAxisGroupBySubFieldName: secondaryDimension?.subFieldName,
+          },
           userTimezone,
           firstDayOfTheWeek,
           seriesIdPrefix,
@@ -224,9 +244,13 @@ export class LineChartDataService {
 
       return transformToOneDimensionalLineChartData({
         filteredRawResults: resolvedResults,
-        primaryAxisGroupByField,
+        primaryAxisGroupByField: primaryDimension.field,
         aggregateField,
-        configuration,
+        configuration: {
+          ...configuration,
+          primaryAxisGroupBySubFieldName: primaryDimension.subFieldName,
+          secondaryAxisGroupBySubFieldName: secondaryDimension?.subFieldName,
+        },
         userTimezone,
         firstDayOfTheWeek,
         seriesIdPrefix,

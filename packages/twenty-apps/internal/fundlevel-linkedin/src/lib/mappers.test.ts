@@ -25,9 +25,11 @@ test('accountSnapshot keeps only the account details the payload carries', () =>
   });
   assert.deepEqual(full?.details, {
     proxyProtocol: 'http',
+    proxyProtocolType: 'HTTP',
     proxyCountry: '',
     allowCountryFallback: true,
     connectionMethod: 'cookie',
+    connectionMethodType: 'COOKIE',
     isLocked: false,
     unipileCreatedAt: '2026-01-01T00:00:00.000Z',
   });
@@ -39,6 +41,7 @@ test('memberDetails skips missing fields so they never blank stored values', () 
     headline: 'Founder',
     profilePictureUrl: 'https://x/p.jpg',
     memberType: 'PERSON',
+    memberCategory: 'PERSON',
   });
   assert.deepEqual(memberDetails({}), {});
 });

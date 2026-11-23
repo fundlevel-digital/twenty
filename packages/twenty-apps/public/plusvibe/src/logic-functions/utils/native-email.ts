@@ -1,3 +1,4 @@
+import { normalizeEnumValue } from 'src/utils/enum-fields';
 import { isNonEmptyString } from '@sniptt/guards';
 import { RestApiClient, RestApiClientError } from 'twenty-client-sdk/rest';
 import { setTimeout } from 'node:timers/promises';
@@ -184,6 +185,7 @@ export const mergeThreadState = (
       isLatest && isNonEmptyString(label)
         ? label
         : (current.plusvibeReplyLabel ?? ''),
+    plusvibeLatestReplyCategory: normalizeEnumValue('plusvibeLatestReplyCategory', isLatest && isNonEmptyString(label) ? label : current.plusvibeReplyLabel),
     plusvibeLatestActivityAt: isLatest
       ? email.receivedAt
       : current.plusvibeLatestActivityAt,

@@ -1,3 +1,4 @@
+import { viewPickerMainGroupBySubFieldNameComponentState } from '@/views/view-picker/states/viewPickerMainGroupBySubFieldNameComponentState';
 import { useAtomComponentStateCallbackState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateCallbackState';
 import { useChangeView } from '@/views/hooks/useChangeView';
 import { useCreateViewFromCurrentView } from '@/views/hooks/useCreateViewFromCurrentView';
@@ -58,6 +59,9 @@ export const useCreateViewFromCurrentState = () => {
   const { createViewFromCurrentView } = useCreateViewFromCurrentView();
   const { changeView } = useChangeView();
 
+  const subFieldNameCallbackState = useAtomComponentStateCallbackState(
+    viewPickerMainGroupBySubFieldNameComponentState,
+  );
   const store = useStore();
 
   const createViewFromCurrentState = useCallback(async () => {
@@ -85,6 +89,10 @@ export const useCreateViewFromCurrentState = () => {
         name,
         icon: iconKey,
         type,
+        mainGroupBySubFieldName:
+          type === ViewType.KANBAN
+            ? store.get(subFieldNameCallbackState)
+            : null,
         mainGroupByFieldMetadataId:
           type === ViewType.KANBAN ? mainGroupByFieldMetadataId : null,
         calendarFieldMetadataId,
@@ -112,6 +120,7 @@ export const useCreateViewFromCurrentState = () => {
     viewPickerTypeCallbackState,
     viewPickerModeCallbackState,
     viewPickerVisibilityCallbackState,
+    subFieldNameCallbackState,
   ]);
 
   return { createViewFromCurrentState };

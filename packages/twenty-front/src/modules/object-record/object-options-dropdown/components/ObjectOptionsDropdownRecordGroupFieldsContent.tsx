@@ -1,3 +1,4 @@
+import { RelatedGroupByDropdown } from '@/object-record/record-group/components/RelatedGroupByDropdown';
 import { ListItemButton } from 'twenty-ui/components/navigation';
 import { useObjectNamePluralFromSingular } from '@/object-metadata/hooks/useObjectNamePluralFromSingular';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
@@ -134,6 +135,7 @@ export const ObjectOptionsDropdownRecordGroupFieldsContent = () => {
             indicator="check"
           >{t`None`}</ListItemButton>
         )}
+        <RelatedGroupByDropdown />
         {filteredRecordGroupFieldMetadataItems.map((fieldMetadataItem) => (
           <ListItemButton
             key={fieldMetadataItem.id}

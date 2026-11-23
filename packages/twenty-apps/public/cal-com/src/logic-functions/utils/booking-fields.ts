@@ -1,3 +1,4 @@
+import { normalizeEnumValue } from 'src/utils/enum-fields';
 import { createHash } from 'node:crypto';
 import { type CalComBooking } from 'src/logic-functions/types/booking';
 
@@ -9,10 +10,7 @@ export const bookingRecordId = (uid: string): string => {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 };
 
-export const bookingFields = (
-  booking: CalComBooking,
-  connectionId: string,
-) => ({
+const legacyBookingFields = (booking: CalComBooking, connectionId: string) => ({
   name: booking.title,
   bookingUid: booking.uid,
   status: booking.rescheduledToUid
@@ -37,3 +35,11 @@ export const bookingFields = (
   rescheduledToUid: booking.rescheduledToUid ?? '',
   bookingUrl: `https://app.cal.com/booking/${encodeURIComponent(booking.uid)}`,
 });
+
+export const bookingFields = (booking: CalComBooking, connectionId: string) => {
+  const fields = legacyBookingFields(booking, connectionId);
+  return {
+    ...fields,
+    bookingStatus: normalizeEnumValue('bookingStatus', fields.status),
+  };
+};

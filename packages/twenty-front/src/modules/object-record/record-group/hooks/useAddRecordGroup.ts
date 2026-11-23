@@ -79,6 +79,7 @@ export const useAddRecordGroup = () => {
     setRecordGroupsFromViewGroups({
       viewId: currentViewId,
       mainGroupByFieldMetadataId: view.mainGroupByFieldMetadataId,
+      mainGroupBySubFieldName: view.mainGroupBySubFieldName,
       viewGroups: [...view.viewGroups, newViewGroup],
       objectMetadataItem,
     });

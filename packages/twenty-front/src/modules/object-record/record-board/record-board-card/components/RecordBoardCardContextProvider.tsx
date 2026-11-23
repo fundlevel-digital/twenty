@@ -36,7 +36,8 @@ export const RecordBoardCardContextProvider = ({
   rowIndex,
   group,
 }: RecordBoardCardContextProviderProps) => {
-  const { objectMetadataItem } = useContext(RecordBoardContext);
+  const { objectMetadataItem, selectFieldMetadataItem } =
+    useContext(RecordBoardContext);
   const { columnIndex } = useContext(RecordBoardColumnContext);
 
   const isRecordReadOnlyFromPermissions = useIsRecordReadOnly({
@@ -74,11 +75,17 @@ export const RecordBoardCardContextProvider = ({
         type={RECORD_BOARD_CARD_DND_TYPE}
         accept={RECORD_BOARD_CARD_DND_TYPE}
         data={{ recordId }}
-        disabled={isRecordBoardDropProcessing || isRecordBoardCellsNonEditable}
+        disabled={
+          isRecordBoardDropProcessing ||
+          isRecordBoardCellsNonEditable ||
+          !!selectFieldMetadataItem.relatedGroupBy
+        }
       >
         <StyledDraggableContainer
           isDragDisabled={
-            isRecordBoardDropProcessing || isRecordBoardCellsNonEditable
+            isRecordBoardDropProcessing ||
+            isRecordBoardCellsNonEditable ||
+            !!selectFieldMetadataItem.relatedGroupBy
           }
           id={`record-board-card-${columnIndex}-${rowIndex}`}
           data-selectable-id={recordId}

@@ -41,5 +41,6 @@ export type ObjectRecordOrderByForRelationField = {
   [Property in keyof ObjectRecord]?:
     | ObjectRecordOrderByForCompositeField
     | ObjectRecordOrderByWithGroupByDateField
-    | ObjectRecordOrderByForScalarField;
+    | ObjectRecordOrderByForScalarField
+    | ObjectRecordOrderByForRelationField;
 };

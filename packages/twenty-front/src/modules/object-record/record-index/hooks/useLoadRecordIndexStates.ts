@@ -412,6 +412,7 @@ export const useLoadRecordIndexStates = () => {
       setRecordGroupsFromViewGroups({
         viewId: view.id,
         mainGroupByFieldMetadataId: view.mainGroupByFieldMetadataId ?? '',
+        mainGroupBySubFieldName: view.mainGroupBySubFieldName,
         viewGroups: view.viewGroups,
         objectMetadataItem,
         recordIndexId,

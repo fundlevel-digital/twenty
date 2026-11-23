@@ -5,7 +5,7 @@ import { RecordGroupContext } from '@/object-record/record-group/states/context/
 import { emptyRecordGroupByIdComponentFamilyState } from '@/object-record/record-group/states/emptyRecordGroupByIdComponentFamilyState';
 import { recordIndexRecordIdsByGroupComponentFamilyState } from '@/object-record/record-index/states/recordIndexRecordIdsByGroupComponentFamilyState';
 import { NO_RECORD_GROUP_FAMILY_KEY } from '@/object-record/record-index/states/selectors/recordIndexAllRecordIdsComponentSelector';
-import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useUpsertRecordsInStore';
+import { useUpsertRecordIndexRecordsInStore } from '@/object-record/record-index/hooks/useUpsertRecordIndexRecordsInStore';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { useSetAtomComponentFamilyState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentFamilyState';
 
@@ -23,7 +23,8 @@ export const RecordListRecordsEffect = ({
   const { recordGroupId } = useContext(RecordGroupContext);
   const recordGroupFamilyKey = recordGroupId ?? NO_RECORD_GROUP_FAMILY_KEY;
 
-  const { upsertRecordsInStore } = useUpsertRecordsInStore();
+  const { upsertRecordIndexRecordsInStore } =
+    useUpsertRecordIndexRecordsInStore();
 
   const setRecordIndexRecordIdsByGroup = useSetAtomComponentFamilyState(
     recordIndexRecordIdsByGroupComponentFamilyState,
@@ -36,7 +37,7 @@ export const RecordListRecordsEffect = ({
   );
 
   useEffect(() => {
-    upsertRecordsInStore({ partialRecords: records });
+    upsertRecordIndexRecordsInStore(records);
 
     if (loading || isDefined(error)) {
       return;
@@ -50,7 +51,7 @@ export const RecordListRecordsEffect = ({
     records,
     setEmptyRecordGroupById,
     setRecordIndexRecordIdsByGroup,
-    upsertRecordsInStore,
+    upsertRecordIndexRecordsInStore,
   ]);
 
   return null;

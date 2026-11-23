@@ -17,6 +17,13 @@ export default defineView({
     {
       universalIdentifier: 'ffd602cc-eb4d-4e53-a7ea-5c0166145b34',
       fieldMetadataUniversalIdentifier: BOOKING_FIELDS.status,
+      position: 100,
+      isVisible: false,
+      size: 130,
+    },
+    {
+      universalIdentifier: '736134ed-61b8-5353-9d8c-7a8e99058de4',
+      fieldMetadataUniversalIdentifier: '6057941f-52cb-5fc1-a9ec-a8587a8c1441',
       position: 1,
       isVisible: true,
       size: 130,

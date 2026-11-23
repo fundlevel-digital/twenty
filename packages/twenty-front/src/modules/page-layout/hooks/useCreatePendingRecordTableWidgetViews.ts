@@ -84,6 +84,11 @@ export const useCreatePendingRecordTableWidgetViews = () => {
 
         const { view } = widgetViewDraft;
 
+        // A previous save may have created the view before the layout failed.
+        if (existingViewIds.has(view.id)) {
+          continue;
+        }
+
         const result = await performViewApiCreate(
           {
             input: {
@@ -120,6 +125,8 @@ export const useCreatePendingRecordTableWidgetViews = () => {
             ),
           );
         }
+
+        existingViewIds.add(view.id);
       }
 
       for (const [widgetId, viewId] of persistedRecordTableWidgets) {

@@ -1,3 +1,4 @@
+import { isRelationNestedFieldDateKind } from 'src/modules/dashboard/chart-data/utils/is-relation-nested-field-date-kind.util';
 import {
   type ObjectRecordGroupByDateGranularity,
   type ObjectRecordOrderByForCompositeField,
@@ -64,11 +65,18 @@ export const getFieldOrderBy = ({
   }
 
   if (isMorphOrRelationFlatFieldMetadata(groupByFieldMetadata)) {
+    const isNestedDateField = isRelationNestedFieldDateKind({
+      relationFieldMetadata: groupByFieldMetadata,
+      relationNestedFieldName: groupBySubFieldName ?? undefined,
+      flatObjectMetadataMaps,
+      flatFieldMetadataMaps,
+    });
     return getRelationFieldOrderBy({
       groupByFieldMetadata,
       groupBySubFieldName,
       direction,
-      dateGranularity,
+      isNestedDateField,
+      dateGranularity: isNestedDateField ? dateGranularity : undefined,
       flatObjectMetadataMaps,
       flatFieldMetadataMaps,
     });

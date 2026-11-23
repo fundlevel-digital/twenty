@@ -13,6 +13,15 @@
 - [Attio Backup And Outreach Audit](handoffs/2026-11-22-attio-outreach-backup-audit.md): latest located Drive export and 265 influencers with missing historical send evidence despite retained POC emails.
 
 - [Influencer Outreach Dashboard](handoffs/2026-11-22-influencer-outreach-dashboard.md): live native influencer/POC coverage, email usage, verified counts and source-history limits.
+- [Influencer Enrichment VM Preview](handoffs/2026-11-23-influencer-enrichment-preview.md): copied influencer/contact/social data and a draft containing only a manual trigger.
+
+- [Platform Related Fields And Grouping](handoffs/2026-11-23-platform-related-fields.md): shared record-view/widget grouping, related display fields and nested chart dimensions.
+
+- [Dashboard Relation Grouping Preview](handoffs/2026-11-23-dashboard-relation-grouping.md): single-value relation paths, nested grouping and preview verification.
+
+- [Dashboard Related Fields Preview](handoffs/2026-11-23-dashboard-related-fields-preview.md): related-field picker and synthetic Contracts → Production → Deal filter.
+
+- [Record Table Widget Save Failure](handoffs/2026-11-23-record-table-widget-save.md): duplicate view creation on retry, local fix and verification limits.
 
 - [Better Lists Live Release](handoffs/2026-11-22-better-lists-live-release.md): pinned core deployment, SDK app installation, preserved workspace data and offsite backups.
 
@@ -34,6 +43,9 @@
 
 - [Influencer YouTube Channel Migration](handoffs/2026-11-22-influencer-youtube-channels.md): live channel links, migrated details/analytics, preserved pricing and API verification.
 
+- [NanoInfluencer Live Release](handoffs/2026-11-22-nano-influencer-live-release.md): pinned core rollout, native app installation, enum backfills and live verification.
+- [NanoInfluencer App And VM Preview](handoffs/2026-11-22-nano-influencer-preview.md): native list/creator sync, search-history imports, enrichment, grouped views and isolated VM verification.
+
 - [Cal.com OAuth App And Release](handoffs/2026-11-21-cal-com-preview.md): implementation, isolated preview, live installation and OAuth verification status.
 
 - [Live CRM Rollout](handoffs/2026-11-21-live-crm-rollout.md): deployed core/apps, migration recovery, PlusVibe reconciliation and pending LinkedIn/Slack activation.
@@ -49,3 +61,13 @@ Product and operational documentation that belongs to a package remains with tha
 package. Decision records are centralized under this directory.
 
 - [2026-11-22: TwitterAPI.io App And Preview](handoffs/2026-11-22-twitter-analytics.md)
+
+- [2026-11-22: Sunny Preview](handoffs/2026-11-22-sunny-preview.md): live-state clone, isolated runtime, sign-in and verification.
+
+- [Google Channel App Runtime Verification](handoffs/2026-11-22-google-channel-app-verification.md): app-only native channels, two-member messaging/privacy checks and the limits of Google verification.
+
+- [Google Groups App Preview](handoffs/2026-11-22-google-groups-preview.md): installable app, owner-supplied logo, configuration checklist and preview verification.
+
+- [Fundlevel Google Groups Preview](handoffs/2026-11-22-fundlevel-google-groups-preview.md): separate Fundlevel snapshot, completed history import, native inbox views and preserved Sunny setup.
+
+- [Google Groups Live Release](handoffs/2026-11-23-google-groups-live-release.md): merged app installation, preservation checks and Google configuration still required.

@@ -1,3 +1,5 @@
+import { isGroupByRelationField } from 'src/engine/api/common/common-query-runners/utils/is-group-by-relation-field.util';
+import { getGroupByDefinitions } from 'src/engine/api/common/common-query-runners/utils/get-group-by-definitions.util';
 import { isObject } from 'class-validator';
 import {
   type AggregateOrderByWithGroupByField,
@@ -10,7 +12,7 @@ import {
   OrderByDirection,
   type OrderByWithGroupBy,
 } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isPlainObject } from 'twenty-shared/utils';
 
 import {
   type GroupByDateField,
@@ -525,6 +527,62 @@ export class CommonQueryOrderGroupByParser {
     orderByArg: ObjectRecordOrderByForRelationField;
     fieldMetadata: OrmFlatFieldMetadata;
   }): Record<string, OrderByClause> | null => {
+    const nestedCandidates = groupByFields
+      .filter(isGroupByRelationField)
+      .filter((group) => group.fieldMetadata.id === fieldMetadata.id);
+    if (
+      nestedCandidates.some(
+        (group) =>
+          (group.relationPathFieldMetadata?.length ?? 1) > 1 ||
+          group.fieldMetadata.name === this.objectAlias,
+      )
+    ) {
+      const path: string[] = [];
+      let value: unknown = orderByArg;
+      while (isPlainObject(value) && !('orderBy' in value)) {
+        const entries = Object.entries(value);
+        if (entries.length !== 1) {
+          throw new UserInputError(
+            'Order fields must be provided one at a time.',
+          );
+        }
+        path.push(entries[0][0]);
+        value = entries[0][1];
+      }
+      const granularity = isPlainObject(value) ? value.granularity : undefined;
+      const direction = isPlainObject(value) ? value.orderBy : value;
+      const group = nestedCandidates.find(
+        (candidate) =>
+          [
+            ...(
+              candidate.relationPathFieldMetadata ?? [candidate.fieldMetadata]
+            ).map((field) => field.name),
+            candidate.nestedFieldMetadata.name,
+            ...(candidate.nestedSubFieldName
+              ? [candidate.nestedSubFieldName]
+              : []),
+          ].join('.') === path.join('.') &&
+          candidate.dateGranularity === granularity,
+      );
+      if (
+        !group ||
+        !Object.values(OrderByDirection).some((item) => item === direction)
+      ) {
+        throw new UserInputError(
+          'Order field must match a grouping dimension.',
+        );
+      }
+      const definition = getGroupByDefinitions({
+        groupByFields: [group],
+        objectMetadataNameSingular: this.objectAlias,
+      })[0];
+      return {
+        [getGroupByOrderExpression({
+          groupByField: group,
+          columnNameWithQuotes: definition.columnNameWithQuotes,
+        })]: convertOrderByToFindOptionsOrder(direction as OrderByDirection),
+      };
+    }
     const {
       associatedGroupByField,
       nestedFieldMetadata,

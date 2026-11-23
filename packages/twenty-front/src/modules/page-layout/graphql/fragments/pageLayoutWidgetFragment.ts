@@ -217,6 +217,8 @@ export const PAGE_LAYOUT_WIDGET_FRAGMENT = gql`
         configurationType
       }
       ... on RecordTableConfiguration {
+        groupByFieldMetadataIds
+        groupBySubFieldName
         configurationType
         viewId
         recordLimit

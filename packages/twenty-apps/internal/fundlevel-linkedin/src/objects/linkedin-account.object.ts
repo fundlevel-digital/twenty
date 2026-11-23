@@ -301,7 +301,7 @@ export default defineObject({
       universalIdentifier: ACCOUNT_FIELD.PROXY_PROTOCOL,
       type: FieldType.TEXT,
       name: 'proxyProtocol',
-      label: 'Proxy Protocol',
+      label: 'Proxy Protocol (Raw)',
       icon: 'IconServer',
       description:
         'Protocol of the proxy Unipile uses for this account (for example http or socks5).',
@@ -329,7 +329,7 @@ export default defineObject({
       universalIdentifier: ACCOUNT_FIELD.CONNECTION_METHOD,
       type: FieldType.TEXT,
       name: 'connectionMethod',
-      label: 'Connection Method',
+      label: 'Connection Method (Raw)',
       icon: 'IconPlug',
       description:
         'How the account was connected to Unipile (for example cookie or credentials).',

@@ -40,7 +40,7 @@ export const isRelationNestedFieldDateKind = ({
     return false;
   }
 
-  const nestedFieldName = relationNestedFieldName.split('.')[0];
+  const [nestedFieldName, ...remaining] = relationNestedFieldName.split('.');
 
   const targetFieldIds = targetObjectMetadata.fieldIds;
 
@@ -60,5 +60,13 @@ export const isRelationNestedFieldDateKind = ({
     return false;
   }
 
-  return isFieldMetadataDateKind(nestedFieldMetadata.type);
+  return remaining.length > 0 &&
+    isMorphOrRelationFlatFieldMetadata(nestedFieldMetadata)
+    ? isRelationNestedFieldDateKind({
+        relationFieldMetadata: nestedFieldMetadata,
+        relationNestedFieldName: remaining.join('.'),
+        flatObjectMetadataMaps,
+        flatFieldMetadataMaps,
+      })
+    : isFieldMetadataDateKind(nestedFieldMetadata.type);
 };

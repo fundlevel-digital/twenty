@@ -26,6 +26,7 @@ import {
   isStandaloneVariableString,
 } from 'twenty-shared/workflow';
 import { useLingui } from '@lingui/react/macro';
+import { WorkflowApplicationConnectionField } from '@/workflow/workflow-steps/workflow-actions/code-action/components/WorkflowApplicationConnectionField';
 
 type WorkflowEditActionCodeFieldLeafProps = {
   label: string;
@@ -48,6 +49,19 @@ export const WorkflowEditActionCodeFieldLeaf = ({
   const { objectMetadataItems } = useObjectMetadataItems();
 
   const leafKind = getWorkflowCodeFieldsLeafKind(schemaProperty);
+
+  if (isDefined(schemaProperty?.connectionProvider)) {
+    return (
+      <WorkflowApplicationConnectionField
+        label={label}
+        inputValue={inputValue}
+        connectionProvider={schemaProperty.connectionProvider}
+        readonly={readonly}
+        onChange={onChange}
+        VariablePicker={VariablePicker}
+      />
+    );
+  }
 
   if (leafKind === 'record' || leafKind === 'record-array') {
     const objectUniversalIdentifier =

@@ -1,3 +1,4 @@
+import { RecordWidgetRelatedFieldsDropdown } from '@/side-panel/pages/page-layout/components/record-table-settings/RecordWidgetRelatedFieldsDropdown';
 import { DraggableListRow } from '@/ui/layout/draggable-list/components/DraggableListRow';
 import { ApplicationStackIcon } from '@/applications/components/ApplicationStackIcon';
 import { useRecordTableWidgetViewFieldItems } from '@/page-layout/widgets/record-table/hooks/useRecordTableWidgetViewFieldItems';
@@ -86,6 +87,11 @@ export const RecordTableSettingsFieldVisibility = ({
 
   return (
     <StyledFieldListContainer>
+      <RecordWidgetRelatedFieldsDropdown
+        viewId={viewId}
+        widgetId={widgetId}
+        pageLayoutId={pageLayoutId}
+      />
       <StyledSectionLabel>{t`Visible`}</StyledSectionLabel>
       {visibleFieldItems.length > 0 && (
         <DraggableList

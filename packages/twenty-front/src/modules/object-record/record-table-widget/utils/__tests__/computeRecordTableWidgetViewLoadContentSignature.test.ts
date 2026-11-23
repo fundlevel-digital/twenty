@@ -1,3 +1,4 @@
+import { ViewFilterOperand } from 'twenty-shared/types';
 import { AggregateOperations } from '@/object-record/record-table/constants/AggregateOperations';
 import { computeRecordTableWidgetViewLoadContentSignature } from '@/object-record/record-table-widget/utils/computeRecordTableWidgetViewLoadContentSignature';
 import { type View } from '@/views/types/View';
@@ -29,6 +30,29 @@ describe('computeRecordTableWidgetViewLoadContentSignature', () => {
       ),
     ).not.toEqual(
       computeRecordTableWidgetViewLoadContentSignature(makeView(null)),
+    );
+  });
+
+  it('reloads when only the related filter target changes', () => {
+    const view = {
+      ...makeView(null),
+      viewFilters: [
+        {
+          id: 'filter',
+          fieldMetadataId: 'production',
+          relationTargetFieldMetadataId: 'deal',
+          operand: ViewFilterOperand.IS,
+          value: '[]',
+        },
+      ],
+    };
+    expect(computeRecordTableWidgetViewLoadContentSignature(view)).not.toEqual(
+      computeRecordTableWidgetViewLoadContentSignature({
+        ...view,
+        viewFilters: [
+          { ...view.viewFilters[0], relationTargetFieldMetadataId: 'owner' },
+        ],
+      }),
     );
   });
 

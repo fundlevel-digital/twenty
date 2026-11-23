@@ -1,4 +1,4 @@
-# 0009. Install Matt Pocock's Grilling Skill
+# 0013. Install Matt Pocock's Grilling Skill
 
 - Date: 2026-11-23
 - Status: accepted
@@ -38,3 +38,6 @@ repository's skill layout.
   `abeeaf95660ba9e8b7c753eb38f441ca707a8823`.
 - Verified upstream skill/agent file hashes and both aliases.
 - Installation is in this working tree; no merge or push is claimed.
+
+The branch-local number was 0009; merging main renumbered this record to 0013
+to preserve main’s dashboard-save decision. The decision is unchanged.

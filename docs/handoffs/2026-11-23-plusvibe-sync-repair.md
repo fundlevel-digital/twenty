@@ -127,3 +127,17 @@ entity's schema. The corrected operator passes Python compilation in the cloud;
 delivery to the Mac and transaction execution remain unverified because the
 client bridge is not responding. The SQL retains the all-1,480-rows guard and
 single transaction. No further app deployment occurred during this retry.
+
+## Main Integration For PR 39
+
+Merged `origin/main` at `786932d149` into the outreach branch. Resolved four
+conflicts by retaining both documentation sets and both PlusVibe sync imports.
+Main's native enum normalization remains alongside source outreach evidence,
+owned-inbox checks, provider identity handling and rate-limit recovery. The
+branch-local grilling decision moved from 0009 to 0013 to preserve main's
+existing dashboard-save record; its decision and owner quote are unchanged.
+
+Verification after reconciliation: 168 PlusVibe tests across 22 files, direct
+TypeScript check, source Oxlint, preview production build, Python helper
+compilation and diff whitespace checks passed. This integration does not perform
+a deployment or change the outstanding live-history repair status above.

@@ -1,3 +1,4 @@
+import { RecordTableWidgetFilterContext } from '@/page-layout/widgets/record-table/components/RecordTableWidgetFilterContext';
 import { useNumberFormat } from '@/localization/hooks/useNumberFormat';
 import { flattenedFieldMetadataItemsSelector } from '@/object-metadata/states/flattenedFieldMetadataItemsSelector';
 import { useAggregateRecords } from '@/object-record/hooks/useAggregateRecords';
@@ -57,6 +58,7 @@ export const useAggregateRecordsForRecordTableColumnFooter = (
 
   const { filterValueDependencies } = useFilterValueDependencies();
 
+  const widgetFilter = useContext(RecordTableWidgetFilterContext);
   const requestFilters = computeRecordGqlOperationFilter({
     fieldMetadataItems: flattenedFieldMetadataItems,
     filterValueDependencies,
@@ -119,7 +121,12 @@ export const useAggregateRecordsForRecordTableColumnFooter = (
   const { data, loading, refetch } = useAggregateRecords({
     objectNameSingular: objectMetadataItem.nameSingular,
     recordGqlFieldsAggregate,
-    filter: combineFilters([requestFilters, recordGroupFilter, anyFieldFilter]),
+    filter: combineFilters([
+      widgetFilter ?? {},
+      requestFilters,
+      recordGroupFilter,
+      anyFieldFilter,
+    ]),
     skip: !isDefined(aggregateOperationForViewField),
   });
 

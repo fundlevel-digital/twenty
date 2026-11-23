@@ -13,7 +13,8 @@ import { isDeeplyEqual } from '~/utils/isDeeplyEqual';
 
 export const useSaveCurrentViewGroups = () => {
   const { canPersistChanges } = useCanPersistViewChanges();
-  const { performViewGroupApiUpdate } = usePerformViewGroupApiPersist();
+  const { performViewGroupApiUpdate, performViewGroupApiCreate } =
+    usePerformViewGroupApiPersist();
 
   const { getViewFromState } = useGetViewFromState();
 
@@ -49,6 +50,9 @@ export const useSaveCurrentViewGroups = () => {
       );
 
       if (!isDefined(existingField)) {
+        await performViewGroupApiCreate({
+          inputs: [{ ...viewGroupToSave, viewId: currentViewId }],
+        });
         return;
       }
 
@@ -86,6 +90,7 @@ export const useSaveCurrentViewGroups = () => {
       currentViewIdCallbackState,
       getViewFromState,
       performViewGroupApiUpdate,
+      performViewGroupApiCreate,
     ],
   );
 
@@ -108,6 +113,21 @@ export const useSaveCurrentViewGroups = () => {
       }
 
       const currentViewGroups = view.viewGroups;
+
+      const viewGroupsToCreate = viewGroupsToSave.filter(
+        (group) =>
+          !currentViewGroups.some(
+            (existing) => existing.fieldValue === group.fieldValue,
+          ),
+      );
+      if (viewGroupsToCreate.length > 0) {
+        await performViewGroupApiCreate({
+          inputs: viewGroupsToCreate.map((group) => ({
+            ...group,
+            viewId: currentViewId,
+          })),
+        });
+      }
 
       const viewGroupInputsToUpdate = viewGroupsToSave
         .map((viewGroupToSave) => {
@@ -152,7 +172,9 @@ export const useSaveCurrentViewGroups = () => {
         );
       }
 
-      await performViewGroupApiUpdate({ inputs: viewGroupInputsToUpdate });
+      if (viewGroupInputsToUpdate.length > 0) {
+        await performViewGroupApiUpdate({ inputs: viewGroupInputsToUpdate });
+      }
     },
     [
       store,
@@ -160,6 +182,7 @@ export const useSaveCurrentViewGroups = () => {
       currentViewIdCallbackState,
       getViewFromState,
       performViewGroupApiUpdate,
+      performViewGroupApiCreate,
     ],
   );
 

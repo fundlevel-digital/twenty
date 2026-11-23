@@ -6,7 +6,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { useLazyFindManyRecordsWithOffset } from '@/object-record/hooks/useLazyFindManyRecordsWithOffset';
 import { recordIndexRecordIdsByGroupComponentFamilyState } from '@/object-record/record-index/states/recordIndexRecordIdsByGroupComponentFamilyState';
 import { NO_RECORD_GROUP_FAMILY_KEY } from '@/object-record/record-index/states/selectors/recordIndexAllRecordIdsComponentSelector';
-import { useUpsertRecordTableRecordsInStore } from '@/object-record/record-table/hooks/internal/useUpsertRecordTableRecordsInStore';
+import { useUpsertRecordIndexRecordsInStore } from '@/object-record/record-index/hooks/useUpsertRecordIndexRecordsInStore';
 import { useRecordTableContextOrThrow } from '@/object-record/record-table/contexts/RecordTableContext';
 import { TABLE_VIRTUALIZATION_NUMBER_OF_RECORDS_PER_PAGE } from '@/object-record/record-table/virtualization/constants/TableVirtualizationNumberOfRecordsPerPage';
 import { useLoadRecordsAtRowIndexes } from '@/object-record/record-table/virtualization/hooks/useLoadRecordsAtRowIndexes';
@@ -29,8 +29,8 @@ export const useTriggerFetchPages = () => {
   const { getScrollWrapperElement } = useScrollWrapperHTMLElement();
   const store = useStore();
 
-  const { upsertRecordTableRecordsInStore } =
-    useUpsertRecordTableRecordsInStore();
+  const { upsertRecordIndexRecordsInStore } =
+    useUpsertRecordIndexRecordsInStore();
   const { loadRecordsAtRowIndexes } = useLoadRecordsAtRowIndexes();
 
   const { findManyRecordsLazyWithOffset } = useLazyFindManyRecordsWithOffset({
@@ -132,7 +132,7 @@ export const useTriggerFetchPages = () => {
             sliceStart + PAGING_FOR_UI_UPDATE,
           );
 
-          upsertRecordTableRecordsInStore(recordsSlice);
+          upsertRecordIndexRecordsInStore(recordsSlice);
 
           loadRecordsAtRowIndexes({
             records: recordsSlice,
@@ -156,7 +156,7 @@ export const useTriggerFetchPages = () => {
       getScrollWrapperElement,
       store,
       totalNumberOfRowsCallbackState,
-      upsertRecordTableRecordsInStore,
+      upsertRecordIndexRecordsInStore,
     ],
   );
 

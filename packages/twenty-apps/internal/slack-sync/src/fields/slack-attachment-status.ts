@@ -10,7 +10,7 @@ export default defineField({
   objectUniversalIdentifier:
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.message.universalIdentifier,
   name: 'slackAttachmentStatus',
-  label: 'Slack Attachment Status',
+  label: 'Slack Attachment Status (Raw)',
   type: FieldType.TEXT,
   isNullable: true,
   isUIEditable: false,

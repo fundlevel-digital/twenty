@@ -1,6 +1,6 @@
 # Decisions: Related Columns
 
-Showing attributes of related records in existing table views.
+Related attributes and single-value grouping across CRM views, widgets and charts.
 
 | # | Date | Decision | Status |
 | --- | --- | --- | --- |
@@ -11,3 +11,8 @@ Showing attributes of related records in existing table views.
 | [0005](0005-open-the-reviewed-workspace-pull-request.md) | 2026-11-22 | Commit the reviewed workspace and open a pull request against main | accepted |
 | [0006](0006-deploy-the-merged-related-columns-release.md) | 2026-11-22 | Deploy the merged PR #21 release to the live Twenty stack | accepted |
 | [0007](0007-publish-the-production-deployment-record.md) | 2026-11-22 | Open a PR for the completed production deployment record | accepted |
+| [0008](0008-dashboard-related-fields-and-filters.md) | 2026-11-23 | Add related-field selection to dashboard tables and verify relation-to-relation filtering | accepted |
+| [0009](0009-single-value-relation-grouping.md) | 2026-11-23 | Group dashboard tables by single-value relation paths and scalar subfields | accepted |
+| [0010](0010-platform-wide-related-fields-and-grouping.md) | 2026-11-23 | Make related fields and single-value relation grouping available across the platform | accepted |
+| [0011](0011-publish-platform-related-fields-pr.md) | 2026-11-23 | Publish the reviewed workspace PR and export the session to Glen | accepted |
+| [0012](0012-merge-main-and-export-full-session.md) | 2026-11-23 | Merge main into the feature branch and export the full visible session | accepted |

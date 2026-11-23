@@ -174,6 +174,7 @@ const VIEW_MANIFEST: ViewManifest = {
   visibility: ViewVisibility.UNLISTED,
   openRecordIn: ViewOpenRecordIn.RECORD_PAGE,
   mainGroupByFieldMetadataUniversalIdentifier: FIELD_UID,
+  mainGroupBySubFieldName: 'name',
   shouldHideEmptyGroups: true,
   groupLoadLimit: 25,
   anyFieldFilterValue: 'acme',
