@@ -50,10 +50,7 @@ const task: BotAssignedTask = {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.stubEnv('OPENBOT_CONNECTIONS', JSON.stringify([bot]));
-  vi.stubEnv(
-    'OPENBOT_REPLY_URL',
-    'https://crm.example.test/s/openbot/reply',
-  );
+  vi.stubEnv('OPENBOT_REPLY_URL', 'https://crm.example.test/s/openbot/reply');
 });
 it('warns only inside the configured window and emits due when reached', () => {
   expect(taskEventsForBot(task, bot, due - 31 * 60000, false)).toEqual([]);

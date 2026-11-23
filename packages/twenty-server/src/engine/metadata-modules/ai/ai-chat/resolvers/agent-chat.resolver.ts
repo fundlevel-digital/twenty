@@ -161,6 +161,11 @@ export class AgentChatResolver {
       nullable: true,
     })
     recipientWorkspaceMemberIds?: string[] | null,
+    @Args('mentionedExternalAssistantIds', {
+      type: () => [UUIDScalarType],
+      nullable: true,
+    })
+    mentionedExternalAssistantIds?: string[] | null,
   ): Promise<SendChatMessageResultDTO> {
     const result = await this.memberMessageSenderService.sendMemberMessage({
       actor: { workspaceId: workspace.id, workspaceMemberId, userWorkspaceId },
@@ -171,12 +176,14 @@ export class AgentChatResolver {
         attachments: fileAttachments ?? undefined,
       },
       addressing: {
+        mentionedExternalAssistantIds: mentionedExternalAssistantIds ?? [],
         mentionedWorkspaceMemberIds: mentionedWorkspaceMemberIds ?? [],
         initialRecipientWorkspaceMemberIds: recipientWorkspaceMemberIds ?? [],
       },
       assistant: {
         isMentioned: isAssistantMentioned ?? false,
-        isInitiallyIncluded: isAssistantParticipant ?? true,
+        isInitiallyIncluded:
+          isAssistantParticipant ?? !mentionedExternalAssistantIds?.length,
         isReplyRequested: shouldAssistantReply ?? true,
       },
       execution: { modelId, browsingContext: browsingContext ?? null },
@@ -194,6 +201,7 @@ export class AgentChatResolver {
     return {
       messageId: result.messageId,
       queued: result.isQueued,
+      externalAssistantDeliveryFailed: result.externalAssistantDeliveryFailed,
       streamId: result.streamId,
       mentionedParticipantWorkspaceMemberIds:
         result.delivery.deliveredMentionWorkspaceMemberIds,

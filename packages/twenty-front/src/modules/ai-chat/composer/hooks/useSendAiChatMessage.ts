@@ -1,3 +1,4 @@
+import { getExternalAssistantMentionIds } from '@/ai-chat/external-assistants/getExternalAssistantMentionIds';
 import { refetchAiChatThreadMessages } from '@/ai-chat/utils/refetchAiChatThreadMessages';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersState';
@@ -95,6 +96,7 @@ type AiChatMessageToSend = Pick<
   participantMentions: AiChatParticipantMention[];
   initialRecipients: AiChatParticipantMention[];
   isAssistantMentioned: boolean;
+  mentionedExternalAssistantIds?: string[];
   channelId: string | null | undefined;
   quotedMessageId: string | null;
 };
@@ -134,6 +136,7 @@ export const useSendAiChatMessage = () => {
       participantMentions,
       initialRecipients,
       isAssistantMentioned,
+      mentionedExternalAssistantIds = [],
       channelId,
       quotedMessageId,
       instanceId,
@@ -262,6 +265,9 @@ export const useSendAiChatMessage = () => {
             isAssistantParticipant:
               newInboxChatRecipients?.isAssistantParticipant,
             isAssistantMentioned,
+            mentionedExternalAssistantIds: mentionedExternalAssistantIds.length
+              ? mentionedExternalAssistantIds
+              : undefined,
             recipientWorkspaceMemberIds: isDefined(newInboxChatRecipients)
               ? initialRecipients.map(
                   ({ workspaceMemberId }) => workspaceMemberId,
@@ -270,6 +276,16 @@ export const useSendAiChatMessage = () => {
           },
         });
 
+        if (
+          data?.sendChatMessage &&
+          'externalAssistantDeliveryFailed' in data.sendChatMessage &&
+          data.sendChatMessage.externalAssistantDeliveryFailed
+        ) {
+          enqueueToast({
+            status: 'error',
+            children: t`Message saved, but an assistant could not be reached. Mention it again to retry.`,
+          });
+        }
         const isAssistantReplying =
           data?.sendChatMessage.queued ||
           isDefined(data?.sendChatMessage.streamId);
@@ -390,6 +406,7 @@ export const useSendAiChatMessage = () => {
       applyOptimisticRestore,
       attachChatThreadToRecord,
       warnAboutParticipantMentionsNotAdded,
+      enqueueToast,
     ],
   );
 
@@ -485,7 +502,12 @@ export const useSendAiChatMessage = () => {
           newInboxChatRecipients?.recipientWorkspaceMemberIds ?? [],
         workspaceMembers: store.get(currentWorkspaceMembersState.atom),
       });
+      const mentionedExternalAssistantIds = isDirectMessage
+        ? []
+        : getExternalAssistantMentionIds(serializedContentToSend);
+      const hasExternalAssistant = mentionedExternalAssistantIds.length > 0;
       const hasRecipients =
+        hasExternalAssistant ||
         newInboxChatRecipients?.isAssistantParticipant ||
         isAssistantMentioned ||
         isNonEmptyArray(initialRecipients) ||
@@ -594,6 +616,7 @@ export const useSendAiChatMessage = () => {
         participantMentions,
         initialRecipients,
         isAssistantMentioned,
+        mentionedExternalAssistantIds,
         channelId,
         quotedMessageId,
         instanceId,

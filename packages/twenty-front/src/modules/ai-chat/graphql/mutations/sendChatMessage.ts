@@ -8,6 +8,7 @@ export const SEND_CHAT_MESSAGE = gql`
     $browsingContext: JSON
     $modelId: String
     $fileAttachments: [FileAttachmentInput!]
+    $mentionedExternalAssistantIds: [UUID!]
     $mentionedWorkspaceMemberIds: [UUID!]
     $channelId: UUID
     $shouldAssistantReply: Boolean
@@ -22,6 +23,7 @@ export const SEND_CHAT_MESSAGE = gql`
       browsingContext: $browsingContext
       modelId: $modelId
       fileAttachments: $fileAttachments
+      mentionedExternalAssistantIds: $mentionedExternalAssistantIds
       mentionedWorkspaceMemberIds: $mentionedWorkspaceMemberIds
       channelId: $channelId
       shouldAssistantReply: $shouldAssistantReply
@@ -31,6 +33,7 @@ export const SEND_CHAT_MESSAGE = gql`
     ) {
       messageId
       queued
+      externalAssistantDeliveryFailed
       streamId
       mentionedParticipantWorkspaceMemberIds
       recipientParticipantWorkspaceMemberIds

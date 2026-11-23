@@ -1,3 +1,4 @@
+import { type ExternalAssistantIdentity } from 'twenty-shared/ai';
 import { INBOX_SENDER_NAME_MAX_LENGTH } from 'src/engine/metadata-modules/ai/ai-chat/constants/inbox-sender-name-max-length.constant';
 import { type AgentInboxSender } from 'src/engine/metadata-modules/ai/ai-chat/types/agent-inbox-sender.type';
 import { sanitizePromptContextLine } from 'src/utils/sanitize-prompt-context-line.util';
@@ -6,6 +7,7 @@ type AgentInboxSenderDetails = {
   key: string;
   applicationId: string | null;
   description: string;
+  externalAssistant?: ExternalAssistantIdentity;
 };
 
 // The description opens the conversation as a system message, so a name can
@@ -26,6 +28,9 @@ export const getAgentInboxSenderDetails = (
         key: `application:${sender.application.id}`,
         applicationId: sender.application.id,
         description: `The ${quoteSenderName(sender.application.name)} application`,
+        ...(sender.externalAssistant
+          ? { externalAssistant: sender.externalAssistant }
+          : {}),
       }
     : {
         key: `workflow:${sender.workflowId}`,

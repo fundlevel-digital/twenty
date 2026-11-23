@@ -11,6 +11,9 @@ export class SendChatMessageResultDTO {
   @Field(() => Boolean)
   queued: boolean;
 
+  @Field(() => Boolean, { nullable: true })
+  externalAssistantDeliveryFailed?: boolean;
+
   @Field(() => String, { nullable: true })
   streamId?: string;
 

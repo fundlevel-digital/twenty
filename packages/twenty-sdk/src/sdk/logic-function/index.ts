@@ -141,3 +141,15 @@ export { Response } from '@/sdk/logic-function/response';
 export type { ResponseInit } from '@/sdk/logic-function/response';
 
 export { updateMessages } from './messaging/update-messages';
+
+export {
+  registerExternalAssistant,
+  getExternalAssistantRequest,
+  replyToExternalAssistant,
+  listOwnExternalAssistants,
+} from './external-assistants/external-assistants';
+export type {
+  ExternalAssistantProfile,
+  ExternalAssistantRequest,
+  RegisterExternalAssistantInput,
+} from './external-assistants/external-assistants';

@@ -15,6 +15,7 @@ type CommentForOpenBot = {
   body: string;
   parentId: string | null;
   authorId: string;
+  inboxRequestId?: string;
   authorKind?: string | null;
   targetObject: string;
   targetRecordId: string;
@@ -31,7 +32,7 @@ export const queueOpenBotMentions = async (
     ...new Set(
       mentions
         .filter(({ objectName }) =>
-          ['bot', 'openbotAgent'].includes(objectName),
+          ['bot', 'openbotAgent', 'externalAssistant'].includes(objectName),
         )
         .map(({ id }) => id),
     ),
@@ -44,26 +45,29 @@ export const queueOpenBotMentions = async (
       'Configure the HTTPS OpenBot reply URL before mentioning agents',
     );
   }
-  const deliveries = selected.map((connection): OpenBotDelivery => ({
-    id: getOpenBotDeliveryId(comment.id, connection.id),
-    status: 'pending',
-    expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    task: {
-      agentId: connection.id,
-      commentId: comment.id,
-      threadId: comment.parentId ?? comment.id,
-      objectName: comment.targetObject,
-      recordId: comment.targetRecordId,
-      recordLabel,
-      requestedBy: comment.authorId,
-      text: comment.body,
-      replyUrl,
-    },
-  }));
+  const deliveries = selected.map(
+    (connection): OpenBotDelivery => ({
+      id: getOpenBotDeliveryId(comment.id, connection.id),
+      status: 'pending',
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      task: {
+        inboxRequestId: comment.inboxRequestId,
+        agentId: connection.id,
+        commentId: comment.id,
+        threadId: comment.parentId ?? comment.id,
+        objectName: comment.targetObject,
+        recordId: comment.targetRecordId,
+        recordLabel,
+        requestedBy: comment.authorId,
+        text: comment.body,
+        replyUrl,
+      },
+    }),
+  );
   for (const delivery of deliveries) {
     if (!(await kv.get(openBotDeliveryKey(delivery.id))))
       await kv.set(openBotDeliveryKey(delivery.id), delivery);
-    await rememberRequest(delivery);
+    if (!delivery.task.inboxRequestId) await rememberRequest(delivery);
   }
   await new MetadataApiClient({ runAs: 'application' }).mutation({
     enqueueJobs: {

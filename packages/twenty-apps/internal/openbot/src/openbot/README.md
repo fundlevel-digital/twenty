@@ -30,6 +30,42 @@ secret on its configuration page to change routines. Rotating a secret also
 invalidates outstanding callbacks signed using the old secret. Manage the
 corresponding routine manually in OpenBot.
 
+## Native Inbox Assistants
+
+Saving a bot registers its stable identity with Twenty's native assistant
+registry. It appears under **Teammates** as **Assistant · OpenBot** in the `@`
+picker. Select its chip, enter a request and send. The app delivers
+`crm.inbox.mentioned` to the configured webhook; the signed callback writes the
+answer into the same conversation under that bot's name/avatar.
+No Twenty model provider is required for an external-only request.
+
+Only the selected message text is shared. Conversation history and attachments
+are excluded. Quoted/code-only references and copied plain references do not
+select recipients. A message can address up to five external assistants.
+Existing human direct messages do not admit bots. Replies do not trigger bots.
+
+Settings changes synchronize immediately. A minute reconciliation repairs
+partial failures and changes made through advanced application variables.
+Disabled/removed bots leave discovery and cannot receive requests or reply;
+renames preserve identity. Re-enrollment with the same ID retains identity.
+Uninstalled applications leave the directory. Historical answers retain their
+saved author name/avatar.
+
+The host owns request grants, source-member access checks, expiry and atomic
+reply insertion. OpenBot owns credentials and webhook retries. Grants contain a
+source-text digest; native requests do not create public Bot Request receipts.
+The host rechecks the source and its permissions on each request read/reply.
+Normal task/record notifications use the same bot identity in Inbox.
+
+The repository SDK exports `registerExternalAssistant`,
+`listOwnExternalAssistants`, `getExternalAssistantRequest` and
+`replyToExternalAssistant` from `twenty-sdk/logic-function`. Registration requires
+an app-owned logic-function handler and AI permission. The handler receives only
+`requestId`, then fetches the authorized request using app identity. OpenBot is
+pinned to published SDK 2.59.0, so its adapter calls the equivalent metadata API
+until those helpers are published. Installing only the app on an older host is
+insufficient; this feature requires the host changes in this branch.
+
 ## Assign Tasks And Set Reminders
 
 A saved Task's native **Assignee** picker includes a **Bots** section. Select multiple
@@ -100,7 +136,7 @@ the per-bot overdue policy to avoid overlapping policies.
 ## Routine Payload And Signatures
 
 Configure a routine to accept the events it needs, or all events. Mentions use
-`crm.comment.mentioned`; task notifications use the event names above. Each
+`crm.comment.mentioned`; native Inbox mentions use `crm.inbox.mentioned`; task notifications use the event names above. Each
 request includes `data.agentId`, `text`, source record/thread IDs, `deliveryId`
 and `reply: { url, secret }`. Task events also include `data.taskEvent`, with
 its task ID, due date, event type and reminder cycle. Bot routines receive no
@@ -166,7 +202,7 @@ boundary for a future adapter such as Grok. Bots have no passwords or login
 sessions and do not impersonate workspace members.
 
 Request sources, reply bodies and delivery state stay in OpenBot's private KV.
-Bot Request records contain opaque IDs and scope hashes, with HMAC reply claims
+For record/task requests, Bot Request records contain opaque IDs and scope hashes, with HMAC reply claims
 for concurrency, rather than request text or credentials. Record access is
 checked before the integration returns private content. The request index is
 readable metadata, so it is not a private audit log.
@@ -190,4 +226,4 @@ The isolated VM uses local demo bots and a local HTTPS callback. Its server and
 worker reject non-loopback HTTP destinations during verification. No live
 OpenBot access, routine changes, paid model calls or production deployment are
 part of this work. The maintained verification handoff is
-[OpenBot Comments Preview](../../../../../../docs/handoffs/2026-11-22-openbot-comments-preview.md).
+[Native Assistants Preview](../../../../../../docs/handoffs/2026-11-23-openbot-native-assistants.md).

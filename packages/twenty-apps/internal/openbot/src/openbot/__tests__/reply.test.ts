@@ -1,3 +1,8 @@
+import { NativeAssistantApiError } from '../native-assistants';
+vi.mock('../native-assistants', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../native-assistants')>()),
+  replyToNativeAssistant: mocks.replyNative,
+}));
 vi.mock('../../utils/can-attach-record-to-inbox', () => ({
   canAttachRecordToInbox: mocks.canAttach,
 }));
@@ -12,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   send: vi.fn(),
   attach: vi.fn(),
   canAttach: vi.fn(),
+  replyNative: vi.fn(),
 }));
 vi.mock('twenty-sdk/define', () => ({
   defineLogicFunction: (configuration: unknown) => configuration,
@@ -181,4 +187,34 @@ it('saves the reply and notification when the target cannot hold an Inbox record
     `openbot:delivery:${deliveryId}`,
     expect.objectContaining({ status: 'replied' }),
   );
+});
+
+it('routes an Inbox grant reply to the existing native conversation without creating another notification thread', async () => {
+  mocks.get.mockImplementation(async (key) =>
+    key.startsWith('openbot:delivery:')
+      ? { ...delivery, task: { ...delivery.task, inboxRequestId: 'grant' } }
+      : key.startsWith('openbot:source:')
+        ? parent
+        : null,
+  );
+  expect((await openBotReplyHandler(request(), context)).status).toBe(200);
+  expect(mocks.replyNative).toHaveBeenCalledWith('grant', 'Research complete');
+  expect(mocks.graphql).not.toHaveBeenCalled();
+  expect(mocks.send).not.toHaveBeenCalled();
+});
+
+it('returns a conflict and does not persist a reply when its native grant was revoked', async () => {
+  mocks.get.mockImplementation(async (key) =>
+    key.startsWith('openbot:delivery:')
+      ? { ...delivery, task: { ...delivery.task, inboxRequestId: 'grant' } }
+      : key.startsWith('openbot:source:')
+        ? parent
+        : null,
+  );
+  mocks.replyNative.mockRejectedValue(
+    new NativeAssistantApiError('Gone', 'NOT_FOUND'),
+  );
+  expect((await openBotReplyHandler(request(), context)).status).toBe(409);
+  expect(mocks.graphql).not.toHaveBeenCalled();
+  expect(mocks.set).not.toHaveBeenCalled();
 });

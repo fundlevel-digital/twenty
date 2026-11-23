@@ -8,7 +8,9 @@ export const sendOpenBotTask = async (
 ): Promise<void> => {
   const deliveryId = `${task.commentId}:${task.agentId}`;
   const body = JSON.stringify({
-    type: task.taskEvent?.type ?? 'crm.comment.mentioned',
+    type:
+      task.taskEvent?.type ??
+      (task.inboxRequestId ? 'crm.inbox.mentioned' : 'crm.comment.mentioned'),
     data: {
       ...task,
       deliveryId,

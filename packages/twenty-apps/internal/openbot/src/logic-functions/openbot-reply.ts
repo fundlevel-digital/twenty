@@ -1,3 +1,7 @@
+import {
+  NativeAssistantApiError,
+  replyToNativeAssistant,
+} from '../openbot/native-assistants';
 import { createHmac } from 'node:crypto';
 import { isNonEmptyString, isString, isObject } from '@sniptt/guards';
 import { MetadataApiClient } from 'twenty-client-sdk/metadata';
@@ -130,45 +134,65 @@ export const openBotReplyHandler = async (
   ) {
     return response(409, 'This task already has a different reply');
   }
+  if (task.inboxRequestId) {
+    try {
+      await replyToNativeAssistant(task.inboxRequestId, body.text.trim());
+    } catch (error) {
+      if (
+        error instanceof NativeAssistantApiError &&
+        error.errorCode &&
+        ['BAD_USER_INPUT', 'NOT_FOUND', 'FORBIDDEN', 'CONFLICT'].includes(
+          error.errorCode,
+        )
+      )
+        return response(
+          409,
+          'The Inbox request is unavailable or already answered',
+        );
+      throw error;
+    }
+  }
   if (!existingReply) {
-    const digest = createHmac(
-      'sha256',
-      getOpenBotReplySecret(connection, context.workspaceId, delivery.id),
-    )
-      .update(body.text.trim())
-      .digest('hex');
-    const loadClaim = async () => {
-      const { botRequests } = await graphql<{
-        botRequests: { edges: { node: { name: string } }[] };
-      }>(
-        'query($id:UUID!){botRequests(filter:{id:{eq:$id}},first:1){edges{node{name}}}}',
-        { id: replyId },
-        true,
-      );
-      return botRequests.edges[0]?.node;
-    };
-    let claim = await loadClaim();
-    if (!claim) {
-      try {
-        await graphql(
-          'mutation($data:BotRequestCreateInput!){createBotRequest(data:$data){id}}',
-          {
-            data: {
-              id: replyId,
-              name: digest,
-              scopeKey: 'reply',
-              deliveryId: `reply:${delivery.id}`,
-            },
-          },
+    if (!task.inboxRequestId) {
+      const digest = createHmac(
+        'sha256',
+        getOpenBotReplySecret(connection, context.workspaceId, delivery.id),
+      )
+        .update(body.text.trim())
+        .digest('hex');
+      const loadClaim = async () => {
+        const { botRequests } = await graphql<{
+          botRequests: { edges: { node: { name: string } }[] };
+        }>(
+          'query($id:UUID!){botRequests(filter:{id:{eq:$id}},first:1){edges{node{name}}}}',
+          { id: replyId },
           true,
         );
-      } catch (error) {
-        claim = await loadClaim();
-        if (!claim) throw error;
+        return botRequests.edges[0]?.node;
+      };
+      let claim = await loadClaim();
+      if (!claim) {
+        try {
+          await graphql(
+            'mutation($data:BotRequestCreateInput!){createBotRequest(data:$data){id}}',
+            {
+              data: {
+                id: replyId,
+                name: digest,
+                scopeKey: 'reply',
+                deliveryId: `reply:${delivery.id}`,
+              },
+            },
+            true,
+          );
+        } catch (error) {
+          claim = await loadClaim();
+          if (!claim) throw error;
+        }
       }
+      if (claim && claim.name !== digest)
+        return response(409, 'This task already has a different reply');
     }
-    if (claim && claim.name !== digest)
-      return response(409, 'This task already has a different reply');
     await kv.set(replyKey(delivery.id), {
       id: replyId,
       body: body.text.trim(),
@@ -185,20 +209,22 @@ export const openBotReplyHandler = async (
     });
   }
   // Receipt claims and Inbox idempotency keys cover simultaneous callback retries.
-  if (task.requestedBy) {
+  if (task.requestedBy && !task.inboxRequestId) {
     const metadataClient = new MetadataApiClient({ runAs: 'application' });
+    const notificationInput = {
+      externalAssistantId: connection.id,
+      workspaceMemberIds: [task.requestedBy],
+      threadKey: `openbot:${task.threadId}`,
+      idempotencyKey: replyId,
+      title: `${connection.name} replied · ${task.recordLabel}`,
+      text: body.text.trim(),
+    };
     const {
       sendInboxMessage: { threadId },
     } = await metadataClient.mutation({
       sendInboxMessage: {
         __args: {
-          input: {
-            workspaceMemberIds: [task.requestedBy],
-            threadKey: `openbot:${task.threadId}`,
-            idempotencyKey: replyId,
-            title: `${connection.name} replied · ${task.recordLabel}`,
-            text: body.text.trim(),
-          },
+          input: notificationInput,
         },
         threadId: true,
       },

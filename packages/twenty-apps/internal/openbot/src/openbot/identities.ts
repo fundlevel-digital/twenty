@@ -1,6 +1,8 @@
+import { registerNativeAssistant } from './native-assistants';
 import { graphql } from '../utils/graphql';
 import { type OpenBotConnection } from './types';
 export const syncBotIdentity = async (bot: OpenBotConnection) => {
+  await registerNativeAssistant(bot);
   const { bots } = await graphql<{
     bots: { edges: { node: { id: string } }[] };
   }>(

@@ -1,3 +1,4 @@
+import { type ExternalAssistantIdentity } from '@/ai/types/ExternalAssistantIdentity';
 import { type DataMessagePart } from '@/ai/types/DataMessagePart';
 import { type Nullable } from '@/types';
 import { type UIMessage } from 'ai';
@@ -21,6 +22,7 @@ type Metadata = {
   finishedAt?: string;
   senderWorkspaceMemberId?: string | null;
   senderApplicationId?: string | null;
+  externalAssistant?: ExternalAssistantIdentity;
   agentId?: string | null;
   isBuiltInAssistant?: boolean;
   turnId?: string | null;

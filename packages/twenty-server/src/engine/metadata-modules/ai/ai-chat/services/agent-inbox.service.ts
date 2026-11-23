@@ -165,7 +165,19 @@ export class AgentInboxService {
       senderDescription: senderDetails.description,
     });
 
-    const parts: ExtendedUIMessagePart[] = [{ type: 'text', text: input.text }];
+    const parts: ExtendedUIMessagePart[] = [
+      {
+        type: 'text',
+        text: input.text,
+        ...(senderDetails.externalAssistant
+          ? {
+              providerMetadata: {
+                externalAssistant: senderDetails.externalAssistant,
+              },
+            }
+          : {}),
+      },
+    ];
 
     if (isDefined(toolCallPart)) {
       parts.push(toolCallPart.part);

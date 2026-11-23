@@ -1,3 +1,4 @@
+import { ExternalAssistantService } from '../external-assistants/external-assistant.service';
 import {
   UseFilters,
   UseGuards,
@@ -45,6 +46,7 @@ import { AccessPolicyGuard } from 'src/engine/guards/access-policy.guard';
 @MetadataResolver()
 export class AgentInboxResolver {
   constructor(
+    private readonly externalAssistants: ExternalAssistantService,
     private readonly agentInboxService: AgentInboxService,
     private readonly agentInboxProposalService: AgentInboxProposalService,
     private readonly inboxAccessService: AgentInboxAccessService,
@@ -57,9 +59,16 @@ export class AgentInboxResolver {
     @AuthWorkspace() workspace: FlatWorkspace,
     @AuthApplication() application: FlatApplication,
   ): Promise<SendInboxMessageResultDTO> {
+    const externalAssistant = input.externalAssistantId
+      ? await this.externalAssistants.ownedIdentity(
+          workspace.id,
+          application.id,
+          input.externalAssistantId,
+        )
+      : undefined;
     return this.agentInboxService.sendMessage({
       workspaceId: workspace.id,
-      sender: { type: 'application', application },
+      sender: { type: 'application', application, externalAssistant },
       input,
       resolveProposal: (proposeToolCallInput) =>
         this.agentInboxProposalService.resolveApplicationProposal({

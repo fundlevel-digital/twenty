@@ -2648,6 +2648,26 @@ export type ExecuteOneLogicFunctionInput = {
   payload: Scalars['JSON']['input'];
 };
 
+export type ExternalAssistant = {
+  __typename?: 'ExternalAssistant';
+  applicationId: Scalars['UUID']['output'];
+  applicationName: Scalars['String']['output'];
+  avatarUrl?: Maybe<Scalars['String']['output']>;
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['UUID']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type ExternalAssistantRequest = {
+  __typename?: 'ExternalAssistantRequest';
+  assistantId: Scalars['UUID']['output'];
+  id: Scalars['UUID']['output'];
+  messageId: Scalars['UUID']['output'];
+  text: Scalars['String']['output'];
+  threadId: Scalars['UUID']['output'];
+  workspaceMemberId: Scalars['UUID']['output'];
+};
+
 export type FeatureFlag = {
   __typename?: 'FeatureFlag';
   key: FeatureFlagKey;
@@ -3923,6 +3943,7 @@ export type Mutation = {
   openDirectMessage: Scalars['UUID']['output'];
   prepareGettingStartedWorkflow: GettingStartedWorkflow;
   refreshEnterpriseValidityToken: Scalars['Boolean']['output'];
+  registerExternalAssistant: ExternalAssistant;
   releaseEnterpriseServerBinding: EnterpriseLicenseInfoDto;
   removeAgentChatMessageReaction: Array<AgentMessageReactionSummary>;
   removeQueryFromEventStream: Scalars['Boolean']['output'];
@@ -3931,6 +3952,7 @@ export type Mutation = {
   renewApplicationToken: ApplicationTokenPair;
   renewToken: AuthTokens;
   reopenAgentChatThreadInChannel: Scalars['Boolean']['output'];
+  replyToExternalAssistant: Scalars['Boolean']['output'];
   reportAppConnectionAuthFailure: Scalars['Boolean']['output'];
   resendEmailVerificationToken: ResendEmailVerificationToken;
   resendWorkspaceInvitation: SendInvitations;
@@ -4898,6 +4920,11 @@ export type MutationPrepareGettingStartedWorkflowArgs = {
 };
 
 
+export type MutationRegisterExternalAssistantArgs = {
+  input: Scalars['JSON']['input'];
+};
+
+
 export type MutationRemoveAgentChatMessageReactionArgs = {
   emoji: Scalars['String']['input'];
   messageId: Scalars['UUID']['input'];
@@ -4932,6 +4959,12 @@ export type MutationRenewTokenArgs = {
 
 export type MutationReopenAgentChatThreadInChannelArgs = {
   threadId: Scalars['UUID']['input'];
+};
+
+
+export type MutationReplyToExternalAssistantArgs = {
+  requestId: Scalars['UUID']['input'];
+  text: Scalars['String']['input'];
 };
 
 
@@ -5046,6 +5079,7 @@ export type MutationSendChatMessageArgs = {
   fileAttachments?: InputMaybe<Array<FileAttachmentInput>>;
   isAssistantMentioned?: InputMaybe<Scalars['Boolean']['input']>;
   isAssistantParticipant?: InputMaybe<Scalars['Boolean']['input']>;
+  mentionedExternalAssistantIds?: InputMaybe<Array<Scalars['UUID']['input']>>;
   mentionedWorkspaceMemberIds?: InputMaybe<Array<Scalars['UUID']['input']>>;
   messageId: Scalars['UUID']['input'];
   modelId?: InputMaybe<Scalars['String']['input']>;
@@ -6289,6 +6323,8 @@ export type Query = {
   enterpriseSubscriptionStatus?: Maybe<EnterpriseSubscriptionStatusDto>;
   eventLogs: EventLogQueryResult;
   exportApplication: ApplicationExport;
+  externalAssistantRequest: ExternalAssistantRequest;
+  externalAssistants: Array<ExternalAssistant>;
   field: Field;
   fields: FieldConnection;
   findApplicationRegistrationByClientId?: Maybe<PublicApplicationRegistration>;
@@ -6382,6 +6418,7 @@ export type Query = {
   object: Object;
   objectRecordCounts: Array<ObjectRecordCount>;
   objects: ObjectConnection;
+  ownExternalAssistants: Array<ExternalAssistant>;
   pieChartData: PieChartData;
   previewMessageCampaignAudience: CampaignAudiencePreviewDto;
   previewMessageCampaignSend: PreviewMessageCampaignSendOutputDto;
@@ -6566,6 +6603,11 @@ export type QueryExportApplicationArgs = {
   shouldIncludeSourceDependencies?: InputMaybe<Scalars['Boolean']['input']>;
   shouldIncludeSourceFiles?: InputMaybe<Scalars['Boolean']['input']>;
   universalIdentifier: Scalars['UUID']['input'];
+};
+
+
+export type QueryExternalAssistantRequestArgs = {
+  requestId: Scalars['UUID']['input'];
 };
 
 
@@ -7399,6 +7441,7 @@ export type SendAppChannelMessageOutput = {
 
 export type SendChatMessageResult = {
   __typename?: 'SendChatMessageResult';
+  externalAssistantDeliveryFailed?: Maybe<Scalars['Boolean']['output']>;
   mentionedParticipantWorkspaceMemberIds?: Maybe<Array<Scalars['UUID']['output']>>;
   messageId?: Maybe<Scalars['String']['output']>;
   queued: Scalars['Boolean']['output'];
@@ -7443,6 +7486,7 @@ export type SendEmailViaDomainOutput = {
 };
 
 export type SendInboxMessageInput = {
+  externalAssistantId?: InputMaybe<Scalars['UUID']['input']>;
   idempotencyKey: Scalars['String']['input'];
   text: Scalars['String']['input'];
   threadKey: Scalars['String']['input'];

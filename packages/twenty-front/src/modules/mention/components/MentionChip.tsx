@@ -1,3 +1,4 @@
+import { ExternalAssistantMentionChip } from '@/ai-chat/external-assistants/ExternalAssistantMentionChip';
 import { type NodeViewProps } from '@tiptap/core';
 import { NodeViewWrapper } from '@tiptap/react';
 import { isAgentChatAssistantReference } from 'twenty-shared/ai';
@@ -12,6 +13,21 @@ export const MentionChip = ({ node }: MentionChipProps) => {
   const objectNameSingular = node.attrs.objectNameSingular as string;
   const label = node.attrs.label as string;
   const imageUrl = (node.attrs.imageUrl as string) ?? '';
+
+  if (objectNameSingular === 'externalAssistant') {
+    return (
+      <NodeViewWrapper
+        as="span"
+        style={{ display: 'inline-flex', verticalAlign: 'middle' }}
+      >
+        <ExternalAssistantMentionChip
+          id={recordId}
+          name={label}
+          avatarUrl={imageUrl}
+        />
+      </NodeViewWrapper>
+    );
+  }
 
   if (
     isAgentChatAssistantReference({

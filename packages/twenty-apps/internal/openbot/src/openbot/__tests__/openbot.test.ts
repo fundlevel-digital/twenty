@@ -171,3 +171,17 @@ describe('OpenBot replies', () => {
     );
   });
 });
+
+it('distinguishes native Inbox requests in the signed routine event', async () => {
+  const fetchMock = vi.fn<typeof fetch>(
+    async () => new Response(null, { status: 202 }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  await sendOpenBotTask(
+    connection,
+    { ...task, inboxRequestId: 'grant' },
+    'reply-secret',
+  );
+  const options = fetchMock.mock.calls[0][1] as RequestInit;
+  expect(JSON.parse(options.body as string).type).toBe('crm.inbox.mentioned');
+});

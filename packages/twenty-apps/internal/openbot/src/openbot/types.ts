@@ -19,6 +19,7 @@ export type OpenBotConnection = OpenBotAgent & {
 };
 
 export type OpenBotTask = {
+  inboxRequestId?: string;
   agentId: string;
   commentId: string;
   threadId: string;

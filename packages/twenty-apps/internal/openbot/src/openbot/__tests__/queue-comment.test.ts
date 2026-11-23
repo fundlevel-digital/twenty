@@ -58,3 +58,15 @@ it('does not queue a bot-authored reply or create a bot loop', async () => {
   expect(mocks.set).not.toHaveBeenCalled();
   expect(mocks.mutation).not.toHaveBeenCalled();
 });
+
+it('keeps private Inbox requests out of the public record receipt index', async () => {
+  expect(
+    await queueOpenBotMentions(
+      { ...comment, inboxRequestId: 'grant' },
+      [{ id: bot.id, objectName: 'externalAssistant' }],
+      'Inbox Conversation',
+    ),
+  ).toBe(true);
+  expect(mocks.remember).not.toHaveBeenCalled();
+  expect(mocks.set).toHaveBeenCalled();
+});

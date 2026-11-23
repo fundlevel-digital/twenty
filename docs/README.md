@@ -76,3 +76,5 @@ package. Decision records are centralized under this directory.
 - [Google Groups Live Release](handoffs/2026-11-23-google-groups-live-release.md): merged app installation, preservation checks and Google configuration still required.
 
 - [Standalone OpenBot App And VM Preview](handoffs/2026-11-22-openbot-standalone-preview.md)
+
+- [OpenBot Native Assistants](handoffs/2026-11-23-openbot-native-assistants.md): standalone app enrollment, native Inbox mentions and attributed webhook replies.
