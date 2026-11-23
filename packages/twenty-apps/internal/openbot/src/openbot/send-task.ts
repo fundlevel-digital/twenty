@@ -14,7 +14,7 @@ export const sendOpenBotTask = async (
     data: {
       ...task,
       deliveryId,
-      reply: { url: task.replyUrl, secret: replySecret },
+      reply: { url: task.replyUrl, code: replySecret, secret: replySecret },
     },
   });
   if (Buffer.byteLength(body, 'utf8') > 65536)

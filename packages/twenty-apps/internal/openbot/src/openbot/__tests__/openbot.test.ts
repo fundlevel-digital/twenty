@@ -89,7 +89,7 @@ describe('OpenBot requests', () => {
       type: 'crm.comment.mentioned',
       data: {
         threadId: task.threadId,
-        reply: { secret: 'task-specific-secret' },
+        reply: { code: 'task-specific-secret', secret: 'task-specific-secret' },
       },
     });
     expect(options.redirect).toBe('error');

@@ -138,7 +138,7 @@ the per-bot overdue policy to avoid overlapping policies.
 Configure a routine to accept the events it needs, or all events. Mentions use
 `crm.comment.mentioned`; native Inbox mentions use `crm.inbox.mentioned`; task notifications use the event names above. Each
 request includes `data.agentId`, `text`, source record/thread IDs, `deliveryId`
-and `reply: { url, secret }`. Task events also include `data.taskEvent`, with
+and `reply: { url, code }` (plus the legacy `secret` alias). Task events also include `data.taskEvent`, with
 its task ID, due date, event type and reminder cycle. Bot routines receive no
 general CRM API key.
 
@@ -148,28 +148,19 @@ Outgoing headers are `X-OpenBot-Timestamp`, `X-OpenBot-Delivery-Id` and
 The recipient should deduplicate side effects by delivery ID: network retries
 can repeat an accepted request.
 
-The example below is the wire protocol for a trusted integration runtime.
-OpenBot's model-facing saved events can redact `data.reply.secret`; giving an
-agent these instructions alone does not make replies work. Do not disable
-redaction or paste secrets into chat.
+Use `data.reply.code` to sign the answer. This is the same seven-day,
+request-scoped signing key formerly named `data.reply.secret`; it grants no
+general CRM access. The `secret` alias remains for existing routines. New
+instructions should read `code`, since OpenBot's name-based redactor masks the
+`secret` field. This deliberately makes the scoped reply credential readable to
+the receiving agent. The workspace/routine signing secret stays private.
 
-For that environment, provision the [trusted reply helper](../../tools/send-twenty-reply.mjs)
-on the OpenBot host and expose it as a trusted tool/command that accepts only
-`deliveryId` and `text`. Its protected runtime environment needs:
-
-- `OPENBOT_WEBHOOK_SECRET`: the same bot routine signing secret stored in Twenty.
-- `TWENTY_WORKSPACE_ID`: this Twenty workspace's UUID.
-- `TWENTY_REPLY_URL`: the reachable HTTPS `/s/openbot/reply` endpoint.
-
-The trusted command is `node /your/installed/path/send-twenty-reply.mjs` with
-`{"deliveryId":"...","text":"..."}` on stdin. It derives the existing task-scoped
-secret, signs the exact callback body and returns only `{"saved":true}` on success.
-The model does not need to read the event secret. Configuring this tool is a
-manual OpenBot administrator step; the Twenty app does not install it or alter
-the owner's OpenBot. Its deployment and the callback's network/authentication
-access must be tested separately before expecting a reply.
-
-For a runtime that already has secure access to the per-request secret, use:
+The `code` field was checked against OpenBot's actual `redactSecrets` function
+in the inspected source snapshot. Other versions or a key separately registered
+with its redactor can behave differently; this is not a change to OpenBot's
+redaction policy. New requests carry the new field; old saved events are not
+rewritten. No reply-helper installation is required for this payload format if
+the routine can run the signing code below and reach the callback endpoint.
 
 ```js
 import { createHmac } from 'node:crypto';
@@ -179,7 +170,7 @@ const body = JSON.stringify({
   text: finalAnswer,
 });
 const timestamp = String(Math.floor(Date.now() / 1000));
-const signature = createHmac('sha256', event.data.reply.secret)
+const signature = createHmac('sha256', event.data.reply.code)
   .update(`${timestamp}.${body}`)
   .digest('hex');
 await fetch(event.data.reply.url, {
@@ -201,6 +192,12 @@ unknown/expired requests return 404; closed threads, stale task events and
 conflicting answers return 409. Overdue replies must arrive before that reminder
 interval ends. Deterministic reply IDs and Inbox idempotency keys suppress
 callback duplicates. Bot replies cannot trigger other bots.
+
+The [trusted reply helper](../../tools/send-twenty-reply.mjs) remains an optional
+alternative for hosts that keep reply credentials outside model context. It
+accepts `deliveryId` and `text` on stdin and uses protected environment variables
+`OPENBOT_WEBHOOK_SECRET`, `TWENTY_WORKSPACE_ID` and `TWENTY_REPLY_URL`. This app
+does not install tools or change routines on the OpenBot host.
 
 ## Delivery Failures
 

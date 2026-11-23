@@ -1,7 +1,7 @@
 # 0009. Complete Bot Selection And Correct Reply Setup
 
 - Date: 2026-11-23
-- Status: accepted
+- Status: superseded in default reply setup by [0010](0010-readable-request-reply-code.md)
 - Decided by: Kareem
 - Area: OpenBot
 - Related: [Native Assistants](0008-native-external-assistants.md)

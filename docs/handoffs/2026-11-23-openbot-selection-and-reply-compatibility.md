@@ -1,5 +1,10 @@
 # OpenBot Selection And Reply Compatibility — 2026-11-23
 
+Update: [decision 0010](../decisions/openbot/0010-readable-request-reply-code.md)
+changes the default payload to `reply.code`, tested against OpenBot's redactor.
+The helper below remains optional; its historical setup requirement is superseded.
+The Conductor callback gate remains a separate issue.
+
 [Decision](../decisions/openbot/0009-recipient-and-task-creation-gaps.md)
 records the owner's preview reports and the boundaries of this correction.
 
