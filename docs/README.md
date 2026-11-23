@@ -1,5 +1,7 @@
 # Twenty Engineering Notes
 
+- [Influencer Reply Workflow](handoffs/2026-11-23-influencer-reply-workflow.md): active native workflow, verified email-thread lookup, AI drafting correction and first provider draft test.
+
 - [Influencer Enrichment VM Preview](handoffs/2026-11-23-influencer-enrichment-preview.md): copied influencer/contact/social data and a draft containing only a manual trigger.
 
 - [Platform Related Fields And Grouping](handoffs/2026-11-23-platform-related-fields.md): shared record-view/widget grouping, related display fields and nested chart dimensions.

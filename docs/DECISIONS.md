@@ -7,6 +7,7 @@ supersession. Operational instructions stay with their package or skill.
 
 | Area | Index | Implementation And Handoff |
 | --- | --- | --- |
+| Email Sequences | [Decisions](decisions/email-sequences/DECISIONS.md) | [Workflow Source](../packages/twenty-docker/operations/workflows/influencer-reply/README.md), [Handoff](handoffs/2026-11-23-influencer-reply-workflow.md) |
 | Contracts | [Decisions](decisions/contracts/DECISIONS.md) | Live amendment relationship labels and descriptions |
 | Influencer Enrichment | [Decisions](decisions/influencer-enrichment/DECISIONS.md) | [VM Preview](handoffs/2026-11-23-influencer-enrichment-preview.md) |
 | Better Lists | [Decisions](decisions/better-lists/DECISIONS.md) | [App README](../packages/twenty-apps/internal/better-lists/README.md), [Handoff](handoffs/2026-11-22-better-lists.md), [Live release](handoffs/2026-11-22-better-lists-live-release.md) |
