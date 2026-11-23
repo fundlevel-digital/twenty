@@ -105,3 +105,21 @@ it('renders the human assignee alongside the selected bot in the shared overflow
   expect(screen.getByText('Tim Apple')).toBeInTheDocument();
   expect(screen.getByText('Research Bot')).toBeInTheDocument();
 });
+
+it('edits an unsaved task draft without issuing a record update', async () => {
+  const onChange = jest.fn();
+  render(
+    <I18nProvider i18n={i18n}>
+      <OpenBotTaskAssignees
+        recordId=""
+        mode="picker"
+        draft={{ selected: ['research'], onChange }}
+      />
+    </I18nProvider>,
+  );
+  await userEvent
+    .setup()
+    .click(screen.getByRole('checkbox', { name: 'Review Bot' }));
+  expect(onChange).toHaveBeenCalledWith(['research', 'review']);
+  expect(updateOneRecord).not.toHaveBeenCalled();
+});

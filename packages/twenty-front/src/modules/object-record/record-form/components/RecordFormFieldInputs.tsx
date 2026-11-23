@@ -1,3 +1,6 @@
+import { OpenBotTaskAssigneeFormInput } from '@/openbot/components/OpenBotTaskAssigneeFormInput';
+import { useObjectPermissionsForObject } from '@/object-record/hooks/useObjectPermissionsForObject';
+import { getFieldPermissions } from '@/object-metadata/utils/getFieldPermissions';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { formatFieldMetadataItemAsFieldDefinition } from '@/object-metadata/utils/formatFieldMetadataItemAsFieldDefinition';
@@ -44,6 +47,24 @@ export const RecordFormFieldInputs = ({
   onFieldValueClear,
   formInstanceId,
 }: RecordFormFieldInputsProps) => {
+  const objectPermissions = useObjectPermissionsForObject(
+    objectMetadataItem.id,
+  );
+  const botField =
+    objectMetadataItem.nameSingular === 'task'
+      ? objectMetadataItem.fields.find(
+          (field) =>
+            field.name === 'botAssignees' &&
+            field.universalIdentifier ===
+              '14b5cb89-458f-5958-a7e4-59b4b1f3d237',
+        )
+      : undefined;
+  const canAssignBots =
+    botField &&
+    getFieldPermissions({ objectPermissions, fieldMetadataId: botField.id })
+      .canUpdateField &&
+    getFieldPermissions({ objectPermissions, fieldMetadataId: botField.id })
+      .canReadField;
   return (
     <>
       <RecordFormFieldInputsEffect
@@ -69,27 +90,44 @@ export const RecordFormFieldInputs = ({
               }}
             >
               <Field.Root>
-                <RecordFormFieldInput
-                  field={formatFieldMetadataItemAsFieldDefinition({
-                    field: fieldMetadataItem,
-                    objectMetadataItem,
-                    showLabel: true,
-                  })}
-                  defaultValue={
-                    Object.hasOwn(draftRecord, gqlFieldName)
-                      ? draftRecord[gqlFieldName]
-                      : (getRecordFormCurrencyFieldDefaultValue(
-                          fieldMetadataItem,
-                        ) ??
-                        getRecordFormBooleanFieldDefaultValue(
-                          fieldMetadataItem,
-                        ))
-                  }
-                  onChange={(value) => onFieldValueChange(gqlFieldName, value)}
-                  onClear={() => onFieldValueClear(gqlFieldName)}
-                  placeholder={placeholder}
-                  subFieldPlaceholders={subFieldPlaceholders}
-                />
+                {canAssignBots && fieldMetadataItem.name === 'assignee' ? (
+                  <OpenBotTaskAssigneeFormInput
+                    label={fieldMetadataItem.label}
+                    humanAssignee={draftRecord[gqlFieldName]}
+                    botAssignees={draftRecord.botAssignees}
+                    onHumanChange={(value) =>
+                      onFieldValueChange(gqlFieldName, value)
+                    }
+                    onHumanClear={() => onFieldValueClear(gqlFieldName)}
+                    onBotsChange={(ids) =>
+                      onFieldValueChange('botAssignees', ids)
+                    }
+                  />
+                ) : (
+                  <RecordFormFieldInput
+                    field={formatFieldMetadataItemAsFieldDefinition({
+                      field: fieldMetadataItem,
+                      objectMetadataItem,
+                      showLabel: true,
+                    })}
+                    defaultValue={
+                      Object.hasOwn(draftRecord, gqlFieldName)
+                        ? draftRecord[gqlFieldName]
+                        : (getRecordFormCurrencyFieldDefaultValue(
+                            fieldMetadataItem,
+                          ) ??
+                          getRecordFormBooleanFieldDefaultValue(
+                            fieldMetadataItem,
+                          ))
+                    }
+                    onChange={(value) =>
+                      onFieldValueChange(gqlFieldName, value)
+                    }
+                    onClear={() => onFieldValueClear(gqlFieldName)}
+                    placeholder={placeholder}
+                    subFieldPlaceholders={subFieldPlaceholders}
+                  />
+                )}
                 {(
                   validationRuleViolationsByFieldMetadataId[
                     fieldMetadataItem.id

@@ -148,8 +148,28 @@ Outgoing headers are `X-OpenBot-Timestamp`, `X-OpenBot-Delivery-Id` and
 The recipient should deduplicate side effects by delivery ID: network retries
 can repeat an accepted request.
 
-Give the routine instructions to complete the requested work and send its final
-answer to `data.reply.url` using the task-scoped secret:
+The example below is the wire protocol for a trusted integration runtime.
+OpenBot's model-facing saved events can redact `data.reply.secret`; giving an
+agent these instructions alone does not make replies work. Do not disable
+redaction or paste secrets into chat.
+
+For that environment, provision the [trusted reply helper](../../tools/send-twenty-reply.mjs)
+on the OpenBot host and expose it as a trusted tool/command that accepts only
+`deliveryId` and `text`. Its protected runtime environment needs:
+
+- `OPENBOT_WEBHOOK_SECRET`: the same bot routine signing secret stored in Twenty.
+- `TWENTY_WORKSPACE_ID`: this Twenty workspace's UUID.
+- `TWENTY_REPLY_URL`: the reachable HTTPS `/s/openbot/reply` endpoint.
+
+The trusted command is `node /your/installed/path/send-twenty-reply.mjs` with
+`{"deliveryId":"...","text":"..."}` on stdin. It derives the existing task-scoped
+secret, signs the exact callback body and returns only `{"saved":true}` on success.
+The model does not need to read the event secret. Configuring this tool is a
+manual OpenBot administrator step; the Twenty app does not install it or alter
+the owner's OpenBot. Its deployment and the callback's network/authentication
+access must be tested separately before expecting a reply.
+
+For a runtime that already has secure access to the per-request secret, use:
 
 ```js
 import { createHmac } from 'node:crypto';

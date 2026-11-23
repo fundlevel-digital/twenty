@@ -15,6 +15,7 @@ import { Text } from 'twenty-ui/primitives/typography';
 
 type OpenBotTaskAssigneesProps = {
   recordId: string;
+  draft?: { selected: string[]; onChange: (ids: string[]) => void };
   mode: 'picker' | 'display';
   searchFilter?: string;
   emptyLabel?: string;
@@ -23,6 +24,7 @@ type OpenBotTaskAssigneesProps = {
 
 export const OpenBotTaskAssignees = ({
   recordId,
+  draft,
   mode,
   searchFilter = '',
   emptyLabel,
@@ -37,14 +39,23 @@ export const OpenBotTaskAssignees = ({
   } = useFindOneRecord({
     objectNameSingular: 'task',
     objectRecordId: recordId,
+    skip: !!draft,
     recordGqlFields: { id: true, botAssignees: true },
   });
   const { updateOneRecord } = useUpdateOneRecord();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
-  const selected = getOpenBotAssigneeIds(record?.botAssignees);
+  const selected =
+    draft?.selected ?? getOpenBotAssigneeIds(record?.botAssignees);
   const chooseBot = async (id: string) => {
     if (saving) {
+      return;
+    }
+    const nextSelected = selected.includes(id)
+      ? selected.filter((value) => value !== id)
+      : [...selected, id];
+    if (draft) {
+      draft.onChange(nextSelected);
       return;
     }
     setSaving(true);
@@ -54,9 +65,7 @@ export const OpenBotTaskAssignees = ({
         objectNameSingular: 'task',
         idToUpdate: recordId,
         updateOneRecordInput: {
-          botAssignees: selected.includes(id)
-            ? selected.filter((value) => value !== id)
-            : [...selected, id],
+          botAssignees: nextSelected,
         },
         recordGqlFields: { id: true, botAssignees: true },
       });
@@ -111,7 +120,7 @@ export const OpenBotTaskAssignees = ({
   return (
     <DropdownMenuItemsContainer hasMaxHeight>
       <DropdownMenuSectionLabel label={t`Bots`} />
-      {loading || recordLoading ? (
+      {loading || (!draft && recordLoading) ? (
         <Text>{t`Loading Bots…`}</Text>
       ) : recordError || directoryError ? (
         <Text>{t`Could Not Load Bots`}</Text>

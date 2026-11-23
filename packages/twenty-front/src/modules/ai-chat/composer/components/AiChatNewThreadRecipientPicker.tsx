@@ -1,3 +1,5 @@
+import { type MentionSearchResult } from '@/mention/types/MentionSearchResult';
+import { AssistantAvatar } from 'twenty-ui/components/data-display';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
@@ -28,6 +30,7 @@ const StyledShowMoreSuggestionsTrigger = styled.div`
 `;
 
 type AiChatNewThreadRecipientPickerProps = {
+  suggestedExternalAssistants?: MentionSearchResult[];
   isAssistantSuggested: boolean;
   suggestedWorkspaceMembers: PartialWorkspaceMember[];
   suggestedChannels: AiChatChannel[];
@@ -37,6 +40,7 @@ type AiChatNewThreadRecipientPickerProps = {
 };
 
 export const AiChatNewThreadRecipientPicker = ({
+  suggestedExternalAssistants = [],
   isAssistantSuggested,
   suggestedWorkspaceMembers,
   suggestedChannels,
@@ -90,6 +94,40 @@ export const AiChatNewThreadRecipientPicker = ({
             {assistantName}
           </Autocomplete.Item>
         )}
+        {suggestedExternalAssistants.map((assistant) => (
+          <Autocomplete.Item
+            key={assistant.recordId}
+            value={assistant.recordId}
+            startIcon={
+              assistant.imageUrl ? (
+                <Avatar
+                  name={assistant.label}
+                  src={assistant.imageUrl}
+                  size="sm"
+                />
+              ) : (
+                <AssistantAvatar size={16} />
+              )
+            }
+            description={assistant.objectLabelSingular}
+            onClick={() => {
+              setAiChatComposerNewThreadRecipients((current) => ({
+                ...current,
+                externalAssistants: [
+                  ...(current.externalAssistants ?? []),
+                  {
+                    id: assistant.recordId,
+                    name: assistant.label,
+                    avatarUrl: assistant.imageUrl || null,
+                  },
+                ],
+              }));
+              onPick();
+            }}
+          >
+            {assistant.label}
+          </Autocomplete.Item>
+        ))}
         {suggestedWorkspaceMembers.map((workspaceMember) => {
           const label = getWorkspaceMemberNameOrEmail(workspaceMember);
 

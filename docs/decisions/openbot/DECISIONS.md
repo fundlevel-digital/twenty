@@ -12,3 +12,4 @@ Standalone OpenBot app, bot identities and optional CRM integrations.
 | [0006](0006-bot-settings-and-task-assignment.md)         | 2026-11-22 | Build bot settings, task assignees and configurable task reminder workflows                                  | superseded in app ownership by 0007 |
 | [0007](0007-standalone-app-and-shared-bot-identities.md) | 2026-11-22 | Make OpenBot a standalone app, with optional Comments integration and reusable bot identities                | accepted                            |
 | [0008](0008-native-external-assistants.md)               | 2026-11-23 | Add native external assistant registration, mentions and attributed replies while keeping OpenBot standalone | accepted                            |
+| [0009](0009-recipient-and-task-creation-gaps.md)         | 2026-11-23 | Complete bot recipients and draft Task assignment; correct secret-redacted reply setup                       | accepted                            |

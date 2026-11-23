@@ -1259,3 +1259,34 @@ describe('useAiChat', () => {
     },
   );
 });
+
+it('addresses a selected external recipient without a body mention or native model and keeps it out of human DMs', async () => {
+  const botId = '20202020-0000-4000-8000-000000000099';
+  const result = renderAiChat({
+    persistedDrafts: {
+      [THREAD_ID]:
+        serializePlainTextAsAdvancedTextEditorDocument('Please review this'),
+    },
+    sendChatMessageOutcomes: ['sent'],
+    hasAiModels: false,
+    isAiChatInboxEnabled: true,
+    isDirectMessageIdentityEnabled: true,
+    newThreadRecipients: {
+      isAssistantParticipant: false,
+      channelId: null,
+      recipientWorkspaceMemberIds: [RECIPIENT_ID],
+      externalAssistants: [
+        { id: botId, name: 'Research Bot', avatarUrl: null },
+      ],
+    },
+  });
+  await send(result);
+  expect(sentMessageVariables).toHaveBeenCalledWith(
+    expect.objectContaining({
+      mentionedExternalAssistantIds: [botId],
+      text: `[[record:externalAssistant:${botId}:Research Bot]] Please review this`,
+      isAssistantMentioned: false,
+      isAssistantParticipant: false,
+    }),
+  );
+});

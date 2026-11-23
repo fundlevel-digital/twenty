@@ -7,7 +7,10 @@ import { isUndefined } from '@sniptt/guards';
 import { t } from '@lingui/core/macro';
 import { useStore } from 'jotai';
 import { useCallback } from 'react';
-import { type ExtendedUIMessage } from 'twenty-shared/ai';
+import {
+  formatRecordReference,
+  type ExtendedUIMessage,
+} from 'twenty-shared/ai';
 import {
   isDefined,
   isNonEmptyArray,
@@ -471,7 +474,7 @@ export const useSendAiChatMessage = () => {
             }),
           })
         : null;
-      const contentToSend = isDefined(quotedMessageSource)
+      const unaddressedContent = isDefined(quotedMessageSource)
         ? prependAiChatQuoteToText({
             text: draftText,
             authorName: quotedMessageSource.author.name,
@@ -479,6 +482,18 @@ export const useSendAiChatMessage = () => {
           })
         : draftText;
 
+      const selectedAssistants =
+        newInboxChatRecipients?.externalAssistants ?? [];
+      const contentToSend = [
+        ...selectedAssistants.map(({ id, name }) =>
+          formatRecordReference({
+            objectNameSingular: 'externalAssistant',
+            recordId: id,
+            displayName: name,
+          }),
+        ),
+        unaddressedContent,
+      ].join(' ');
       const currentWorkspaceMemberId = store.get(
         currentWorkspaceMemberState.atom,
       )?.id;
@@ -504,7 +519,12 @@ export const useSendAiChatMessage = () => {
       });
       const mentionedExternalAssistantIds = isDirectMessage
         ? []
-        : getExternalAssistantMentionIds(serializedContentToSend);
+        : [
+            ...new Set([
+              ...selectedAssistants.map(({ id }) => id),
+              ...getExternalAssistantMentionIds(serializedContentToSend),
+            ]),
+          ];
       const hasExternalAssistant = mentionedExternalAssistantIds.length > 0;
       const hasRecipients =
         hasExternalAssistant ||
@@ -537,6 +557,7 @@ export const useSendAiChatMessage = () => {
           isDirectMessageIdentityEnabled,
           newInboxChatRecipients,
           isAssistantMentioned,
+          hasExternalAssistant,
           channelId,
           initialRecipients,
           participantMentions,
