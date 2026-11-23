@@ -7,6 +7,7 @@ supersession. Operational instructions stay with their package or skill.
 
 | Area | Index | Implementation And Handoff |
 | --- | --- | --- |
+| Influencer Outreach | [Decisions](decisions/influencer-outreach/DECISIONS.md) | Stage definitions and dashboard requirements under discussion |
 | Email Sequences | [Decisions](decisions/email-sequences/DECISIONS.md) | [Workflow Source](../packages/twenty-docker/operations/workflows/influencer-reply/README.md), [Handoff](handoffs/2026-11-23-influencer-reply-workflow.md) |
 | Contracts | [Decisions](decisions/contracts/DECISIONS.md) | Live amendment relationship labels and descriptions |
 | Influencer Enrichment | [Decisions](decisions/influencer-enrichment/DECISIONS.md) | [VM Preview](handoffs/2026-11-23-influencer-enrichment-preview.md) |
@@ -45,5 +46,6 @@ identify scope, decisions, implementation and verification limits.
 | [0010](decisions/0010-sunny-live-state-vm-preview.md) | 2026-11-22 | Seed Sunny’s isolated VM preview from current live CRM state | accepted |
 | [0011](decisions/0011-install-plusvibe-and-cal-com-in-sunny-preview.md) | 2026-11-22 | Install PlusVibe and Cal.com in Sunny’s VM preview | accepted |
 | [0012](decisions/0012-verify-google-channel-app-feasibility.md) | 2026-11-22 | Verify shared-channel app feasibility in the running preview | accepted |
+| [0013](decisions/0013-install-matt-pocock-grilling-skill.md) | 2026-11-23 | Install Matt Pocock's Grilling Skill | accepted |
 
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).

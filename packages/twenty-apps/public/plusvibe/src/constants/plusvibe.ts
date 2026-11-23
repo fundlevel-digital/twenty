@@ -48,6 +48,8 @@ export type PlusvibeImportState = {
     | 'awaitingConnection'
     | 'complete'
     | 'failed';
+  failedPhase?: string;
+  error?: string;
   cursor?: string;
   processed: number;
   updatedAt: string;

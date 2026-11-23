@@ -137,9 +137,14 @@ labels are categorized as Other.
 
 ## Import and live updates
 
-Campaigns, Unibox messages, archived messages, and leads import in checkpointed
-pages, in that order. Conversations appear before the full lead directory has
-been scanned. Each lead queues an import of its campaign-sent email history.
+Campaigns, leads, Unibox messages and archived messages import in checkpointed
+pages, in that order. Each lead queues an import of its campaign-sent email history.
+Lead directory discovery runs before Unibox and archived-message history, so
+message failures cannot prevent importing the source directory. Full lead
+refreshes retain source last-send dates, workspace last-send dates, latest sent
+step, reply count, completion and send evidence. A sent step is not a lifetime
+message count. Partial webhooks preserve these full-source fields.
+
 History jobs are spaced out, and background requests back off on provider rate
 limits. Bodies are converted to plain text and quoted reply history is removed for
 Twenty’s native email renderer. Signatures and quote-only forwards are preserved. Imported bodies are capped at Twenty's 262,144-character ingestion
@@ -242,6 +247,86 @@ that connection's owner. No full history refresh was started. Legacy fields rema
 available for reconciliation; this supersedes the earlier preview-only deployment
 status in this README, while its source-history and pruning cautions remain.
 
+## Influencer Outreach Dashboard
+
+The administrator helper configures native calculations, workspace views and
+three tabs on an existing dashboard. It discovers metadata IDs by name and
+resumes partially completed setup. Run with a current saved CLI session:
+
+```sh
+python3 scripts/configure-influencer-dashboard.py \
+  --remote <remote-name> --dashboard-id <dashboard-id>
+```
+
+It creates workspace metadata through the authenticated Twenty API, independently
+of app installation. It does not send emails, create source Leads, change Person
+relations or refresh provider history. Existing fields with different definitions
+cause an error. Existing widgets and view settings are preserved on reruns.
+
+**Outreach Coverage** includes every influencer, related POC counts, imported
+lead coverage, recorded sends/replies and last recorded send. **POC Coverage**
+shows all POC addresses alongside related source Lead emails/status, with views
+for missing leads and sends. **Email Usage** groups actual PlusVibe recipient
+addresses by send count and includes message details. Normal table views provide
+the full indexes in addition to dashboard tables.
+
+Calculations reflect visible imported CRM records. No recorded lead/send does
+not prove an address was never used in PlusVibe. Person counts span all their
+addresses; a Person with a Lead on one address may have other addresses without
+Leads. Email usage counts To/Cc/Bcc recipient records, excluding drafts and
+Reply-To headers. Shared POC activity appears on every related influencer and
+does not establish which influencer a campaign targeted. Tables use native
+pagination without a configured record cap. The native bar chart shows up to
+100 addresses; the send details table includes all matching recipient records.
+Ranking and waterfall rounds remain outside this view.
+
+After installing the source-outreach fields, run
+`scripts/configure-source-coverage.py --remote <remote-name> --dashboard-id <dashboard-id>`
+to update existing coverage indicators and add source metrics. This administrator
+operation changes workspace metadata. Source send evidence and recorded native
+replies can confirm outreach even when message bodies are incomplete. The app's
+`plusvibe-refresh-leads` function accepts a selected workspace and up to ten
+exact email addresses for a bounded recovery from the provider, using real source
+IDs and the normal Person-matching rules. `plusvibe-refresh-history` imports one
+Unibox page and reports individual failures and the next cursor; operator tools
+must retain and reconcile those failures rather than reporting a complete import.
+
+## Owned Inbox Attribution And Recovery
+
+PlusVibe Senders contains only organization-side current and historical inboxes.
+An incoming external From address never establishes inbox ownership. Explicit
+provider account evidence and registered historical inboxes remain valid when an
+old account is no longer connected. Incoming recipient headers without ownership
+evidence are not enough. Known owned From evidence corrects historical Unibox
+rows whose incoming flag is wrong.
+
+Messages with missing ownership remain available under Unresolved Historical
+Inbox, with an empty PlusVibe Sender relation and Inbox Resolution = Unresolved.
+This prevents a missing sender from terminating a history page or creating a
+creator as one of our inboxes. Unresolved outbound messages use an opaque native
+channel identity rather than an invented email address.
+
+Native REST rate limits retry with bounded backoff before propagating a failed
+message to its job or repair checkpoint. Recovery operators should pace source
+records and inventory existing associations before retrying partial batches.
+
+Provider record IDs take precedence over RFC message IDs because distinct
+PlusVibe records can share an RFC ID. Replays reuse an existing native channel
+for a source record, including when campaign-history and Unibox paths overlap.
+
+The `plusvibe-repair-page` function is restricted to application managers and
+selected workspaces. Export operations are read-only. Ownership registration,
+channel preparation, bounded ingestion, guarded history resumption and paced
+history scheduling are explicit maintenance operations. Resume requires the
+expected current run ID, retains the old checkpoint privately in app KV and
+starts at Unibox history only after directory coverage has been verified.
+Enqueued campaign history is not proof that all history has imported.
+
+Public API permissions prohibit native association writes. Existing-message
+identity or channel migrations require the server maintenance connection and a
+workspace-scoped transaction with before snapshots, count guards and content
+verification. See the [2026-11-23 repair handoff](../../../../docs/handoffs/2026-11-23-plusvibe-sync-repair.md)
+for the deployed safeguards and remaining live work.
 ## Native Enum Field Upgrade
 
 Categorical attributes use native Select/Multi-Select fields. This upgrade adds

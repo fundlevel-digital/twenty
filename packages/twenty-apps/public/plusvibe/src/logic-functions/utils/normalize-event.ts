@@ -51,6 +51,7 @@ const EVENT_SCHEMA = LEAD_SCHEMA.extend({
   email_account_name: OPTIONAL_TEXT,
   sender_email: OPTIONAL_TEXT,
   eaccount: OPTIONAL_TEXT,
+  actual_replied_from: OPTIONAL_TEXT,
   to: OPTIONAL_TEXT,
 });
 
@@ -94,9 +95,10 @@ export const normalizeEvent = (body: unknown, workspaceId: string) => {
     return null;
   }
   const email = firstText(
+    isReply ? event.actual_replied_from : undefined,
+    isReply ? event.from_email : undefined,
     event.email,
     event.lead_email,
-    isReply ? event.from_email : undefined,
   )
     ?.trim()
     .toLowerCase();
@@ -125,18 +127,23 @@ export const normalizeEvent = (body: unknown, workspaceId: string) => {
       : (messageId ?? new Date(occurredAt).toISOString()),
   ];
   const threadId = firstText(event.thread_id, event.last_thread_id);
+  const account = firstText(event.email_account_name, event.eaccount);
+  const ownedAccount =
+    isReply &&
+    account?.trim().toLowerCase() === event.from_email?.trim().toLowerCase()
+      ? undefined
+      : account;
   const senderHeader = firstText(
-    event.email_account_name,
-    event.eaccount,
-    event.sender_email,
+    ownedAccount,
     isReply ? event.to : event.from_email,
+    isReply ? undefined : event.sender_email,
   );
   const sender = senderHeader?.match(/<([^<>]+)>/)?.[1] ?? senderHeader;
   const externalMessageId = firstText(
-    event.message_id,
     event.source_message_id,
     event.sent_email_id,
     event.last_email_id,
+    event.message_id,
   );
   const threadLink = new URL('https://app.plusvibe.ai/v2/unibox/inbox/');
   threadLink.searchParams.set('workspace_id', workspaceId);
@@ -148,6 +155,11 @@ export const normalizeEvent = (body: unknown, workspaceId: string) => {
       .digest('hex'),
     workspaceId,
     sender: sender?.trim().toLowerCase(),
+    senderEvidence: ownedAccount
+      ? ('PROVIDER_ACCOUNT' as const)
+      : isReply
+        ? ('RECIPIENT_HEADER' as const)
+        : ('OUTBOUND_HEADER' as const),
     direction: isReply ? ('IN' as const) : ('OUT' as const),
     messageId: externalMessageId
       ? normalizeMessageId(externalMessageId)

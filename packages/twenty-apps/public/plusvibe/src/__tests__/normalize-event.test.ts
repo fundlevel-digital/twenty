@@ -19,6 +19,27 @@ const BASE_EVENT = {
 };
 
 describe('PlusVibe webhook normalization', () => {
+  it('takes the owned reply inbox from the recipient rather than the external sender', () => {
+    expect(
+      normalizeEvent(
+        {
+          ...BASE_EVENT,
+          sender_email: 'lead@example.com',
+          to: 'historical-inbox@example.com',
+        },
+        WORKSPACE_ID,
+      )?.sender,
+    ).toBe('historical-inbox@example.com');
+  });
+
+  it('leaves a reply without owned inbox evidence unresolved', () => {
+    expect(
+      normalizeEvent(
+        { ...BASE_EVENT, sender_email: 'lead@example.com' },
+        WORKSPACE_ID,
+      )?.sender,
+    ).toBeUndefined();
+  });
   it('verifies the published PlusVibe HMAC test vector', () => {
     expect(
       verifySignature(
