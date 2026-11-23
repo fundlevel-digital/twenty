@@ -215,7 +215,9 @@ and signature. Successful saves return 200; invalid signatures return 401;
 unknown/expired requests return 404; closed threads, stale task events and
 conflicting answers return 409. Overdue replies must arrive before that reminder
 interval ends. Deterministic reply IDs and Inbox idempotency keys suppress
-callback duplicates. Bot replies cannot trigger other bots.
+callback duplicates. Bot replies cannot trigger other bots. Only HTTP 200 marks
+a callback as delivered; retain failed callbacks for retry without repeating the
+original work. A local receipt for a 403 must not suppress callback retries.
 
 The [trusted reply helper](../../tools/send-twenty-reply.mjs) remains an optional
 alternative for hosts that keep reply credentials outside model context. It
@@ -271,3 +273,8 @@ that application subprocesses cannot reach external destinations. No live
 OpenBot access, routine changes, paid model calls or production deployment are
 part of this work. See the [native Agent handoff](../../../../../../docs/handoffs/2026-11-23-openbot-native-agent-runtime.md)
 for the callback edge-gate limitation and verified runtime boundaries.
+
+The preview’s Conductor URL rejects external callback POSTs before Twenty. A
+separate callback-only URL is configured in the VM; see the [public callback
+follow-up](../../../../../../docs/handoffs/2026-11-23-openbot-public-preview-callback.md).
+New events carry that URL; old saved events retain the old address.

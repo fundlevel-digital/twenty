@@ -61,6 +61,10 @@ Comments adapter remain available. See the [app operating guide](../../packages/
   persisted replies and the **Agent · OpenBot** mention picker passed with no
   browser page errors.
 
+The [public callback follow-up](2026-11-23-openbot-public-preview-callback.md)
+subsequently verifies a separate callback-only HTTPS ingress. The original
+Conductor preview URL still rejects external callback POSTs.
+
 ## Preview And Limits
 
 Preview: <https://fundlevel-w928.conductor.show/>. Open the standalone app’s Bots
