@@ -26,3 +26,5 @@ Current setup and implementation: [PlusVibe README](../../../../../../packages/t
 Record 0005 explicitly identifies an unresolved interpretation of the second
 thread endpoint. Records 0001 and 0007 preserve the pending production migration
 boundary. Record 0009 refines the creation controls introduced under 0007.
+
+[Repository decision 0008](../../../../0008-install-plusvibe-and-cal-com-in-sunny-preview.md) authorizes installing PlusVibe and Cal.com in Sunny’s isolated VM preview on 2026-11-22.

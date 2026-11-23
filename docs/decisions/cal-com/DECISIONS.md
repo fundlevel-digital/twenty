@@ -8,3 +8,5 @@ Owner decisions for the Cal.com integration app.
 | [0002](0002-preview-and-oauth-registration-details.md) | 2026-11-21 | Prepare the isolated preview and OAuth registration parameters | accepted |
 | [0003](0003-per-connection-sync-preferences.md) | 2026-11-21 | Add per-account watched links, import, contacts, answers and sync controls | accepted |
 | [0004](0004-merge-and-deploy-to-live-crm.md) | 2026-11-21 | Merge the Cal.com app and deploy it to the live CRM | accepted |
+
+[Repository decision 0008](../0008-install-plusvibe-and-cal-com-in-sunny-preview.md) authorizes installing PlusVibe and Cal.com in Sunny’s isolated VM preview on 2026-11-22.

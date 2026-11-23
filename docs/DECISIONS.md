@@ -13,6 +13,7 @@ supersession. Operational instructions stay with their package or skill.
 | YouTube Analytics | [Decisions](decisions/youtube-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/youtube-analytics/README.md), [handoff](../packages/twenty-apps/internal/youtube-analytics/HANDOFF.md) |
 | Twitter Analytics | [Decisions](decisions/twitter-analytics/DECISIONS.md) | [App README](../packages/twenty-apps/internal/twitter-analytics/README.md), [handoff](handoffs/2026-11-22-twitter-analytics.md) |
 | PlusVibe | [Decisions](decisions/packages/twenty-apps/public/plusvibe/DECISIONS.md) | [App README](../packages/twenty-apps/public/plusvibe/README.md) |
+| Google Groups | [Decisions](decisions/google-groups/DECISIONS.md) | [App README](../packages/twenty-apps/public/google-groups/README.md), [preview](handoffs/2026-11-22-google-groups-preview.md) |
 
 This repository uses the centralized layout from
 [fundlevel-digital/mono](https://github.com/fundlevel-digital/mono/blob/main/.agents/skills/decisions/SKILL.md).
@@ -29,5 +30,8 @@ identify scope, decisions, implementation and verification limits.
 | [0004](decisions/0004-defer-production-deployment.md) | 2026-11-21 | Defer production deployment after merging PR #8 | superseded by 0005 |
 | [0005](decisions/0005-roll-out-six-sessions-to-live-crm.md) | 2026-11-21 | Roll out the six merged sessions to the live CRM | accepted |
 | [0006](decisions/0006-connect-linkedin-after-the-rollout.md) | 2026-11-21 | Leave LinkedIn connection and dependent history migration for later | accepted |
+| [0007](decisions/0007-sunny-live-state-vm-preview.md) | 2026-11-22 | Seed Sunny’s isolated VM preview from current live CRM state | accepted |
+| [0008](decisions/0008-install-plusvibe-and-cal-com-in-sunny-preview.md) | 2026-11-22 | Install PlusVibe and Cal.com in Sunny’s VM preview | accepted |
+| [0009](decisions/0009-verify-google-channel-app-feasibility.md) | 2026-11-22 | Verify shared-channel app feasibility in the running preview | accepted |
 
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).
