@@ -241,3 +241,12 @@ was created after its fingerprint matched the existing mail connection, retainin
 that connection's owner. No full history refresh was started. Legacy fields remain
 available for reconciliation; this supersedes the earlier preview-only deployment
 status in this README, while its source-history and pruning cautions remain.
+
+## Native Enum Field Upgrade
+
+Categorical attributes use native Select/Multi-Select fields. This upgrade adds
+typed fields for earlier text categories and keeps the old raw values and field
+identifiers for compatibility. Imports populate the typed values; the shared
+[backfill CLI](../../operations/README.md) fills existing records without provider
+calls or overwriting selections. Review a dry run after installing the updated
+metadata. Source/preview verification does not imply production deployment.

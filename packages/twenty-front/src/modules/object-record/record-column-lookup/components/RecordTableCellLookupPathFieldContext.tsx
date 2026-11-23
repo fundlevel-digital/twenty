@@ -1,7 +1,8 @@
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
-import { LookupLeafRecordIdsContext } from '@/object-record/record-column-lookup/contexts/LookupLeafRecordIdsContext';
+import { LookupValueRecordsContext } from '@/object-record/record-column-lookup/contexts/LookupValueRecordsContext';
 import { canReadLookupRelationPath } from '@/object-record/record-column-lookup/utils/canReadLookupRelationPath';
-import { getLookupLeafRecords } from '@/object-record/record-column-lookup/utils/getLookupLeafRecords';
+import { getLookupRecordEntries } from '@/object-record/record-column-lookup/utils/getLookupRecordEntries';
+import { getLookupSourceHopIndex } from '@/object-record/record-column-lookup/utils/getLookupSourceHopIndex';
 import { type RecordFieldLookupTarget } from '@/object-record/record-column-lookup/utils/getRecordFieldLookupTarget';
 import { FieldContext } from '@/object-record/record-field/ui/contexts/FieldContext';
 import { RecordFieldComponentInstanceContext } from '@/object-record/record-field/ui/states/contexts/RecordFieldComponentInstanceContext';
@@ -46,20 +47,24 @@ export const RecordTableCellLookupPathFieldContext = ({
     fieldDefinitionByFieldMetadataItemId[fieldMetadataItem.id],
   );
 
-  const leafRecordIds = useMemo(
+  const sourceHopIndex = getLookupSourceHopIndex(relationHops);
+  const entries = useMemo(
     () =>
-      getLookupLeafRecords({ relationValue, relationHops })
-        .filter(
-          (leafRecord) =>
-            !isFieldValueEmpty({
-              fieldDefinition,
-              fieldValue: leafRecord[lookupTargetFieldMetadataItem.name],
-            }),
-        )
-        .map(({ id }) => id),
+      getLookupRecordEntries({
+        relationValue,
+        relationHops,
+        sourceHopIndex,
+      }).filter(
+        ({ leafRecord }) =>
+          !isFieldValueEmpty({
+            fieldDefinition,
+            fieldValue: leafRecord[lookupTargetFieldMetadataItem.name],
+          }),
+      ),
     [
       relationValue,
       relationHops,
+      sourceHopIndex,
       fieldDefinition,
       lookupTargetFieldMetadataItem,
     ],
@@ -71,7 +76,9 @@ export const RecordTableCellLookupPathFieldContext = ({
     objectPermissionsByObjectMetadataId,
   });
 
-  const singleLeafRecordId = leafRecordIds[0] ?? '';
+  const singleLeafRecordId = entries[0]?.leafRecord.id ?? '';
+  const sourceObjectNameSingular =
+    relationHops[sourceHopIndex].targetObjectMetadataItem.nameSingular;
 
   return (
     <RecordFieldComponentInstanceContext.Provider
@@ -94,11 +101,13 @@ export const RecordTableCellLookupPathFieldContext = ({
           isForbidden,
         }}
       >
-        <LookupLeafRecordIdsContext.Provider
-          value={isMultiValued ? leafRecordIds : undefined}
+        <LookupValueRecordsContext.Provider
+          value={
+            isMultiValued ? { entries, sourceObjectNameSingular } : undefined
+          }
         >
           {children}
-        </LookupLeafRecordIdsContext.Provider>
+        </LookupValueRecordsContext.Provider>
       </FieldContext.Provider>
     </RecordFieldComponentInstanceContext.Provider>
   );

@@ -28,9 +28,11 @@ Out of scope: the website, the docs site and marketing visuals. They use other f
 
 ## Overview
 
-Twenty should feel like one calm, unified workspace, closer to Notion than to Salesforce. Apps contribute objects, fields, commands and widgets to that workspace; they never become separate rooms with their own navigation.
+Twenty should feel like one calm, unified workspace, closer to Notion than to Salesforce. Apps contribute objects, fields, commands and widgets to that workspace; they never become separate rooms with their own navigation. App setup and authentication screens follow the same shared-component and spacing rules. External setup actions use the shared Button’s link behavior. Normal app settings show connection status and connection actions; OAuth client registration and callback configuration belong in developer settings and technical documentation.
 
 The bar for any new screen is **native**: it looks like it shipped with the product. Native comes from reuse. Build from existing twenty-ui and twenty-front components, copy the **sibling** (the closest screen already doing the same job), and add a new pattern only when no sibling exists.
+
+This applies to SDK app front components as well as the host CRM. When a Twenty component supports the required behavior, use it instead of a browser-native control, custom lookalike or third-party alternative. Use new/custom UI only when existing components cannot support what is being built, and briefly identify the missing capability. Check the installed package's exports and APIs for SDK apps; the source checkout can be ahead of the published version.
 
 - Dense but quiet. 13px Inter, neutral grays, one blue accent. Hierarchy comes from weight and gray steps before size or color.
 - Keyboard-first. Every action is a command reachable from ⌘K.
@@ -141,7 +143,7 @@ Tabler icons, imported from `twenty-ui/icon`. Product concepts (objects, views, 
 Reuse is the first rule. Before writing a styled component, find what the sibling uses.
 
 1. **Copy the sibling.** Use the same component with the same props, size and variant as the control next to it or the screen doing the same job. Model composite patterns (pickers, selects, forms) on a production usage, not on a twenty-ui story. Where the sibling breaks a rule in this file, follow the rule.
-2. **Use shared components as they are,** without overriding their styles from a feature. When one lacks something, use its closest existing variant (gray for tags) and flag the gap. Changing a shared component, or adding a prop or variant to a primitive, waits for the design owner's request.
+2. **Use shared components as they are,** without overriding their styles from a feature. When one lacks something, use its closest existing variant (gray for tags) and flag the gap. Changing a shared component, or adding a prop or variant to a primitive, waits for the design owner's request. Do not replace shared selects with browser `<select>` controls to work around integration problems. Fix the shared component’s theme, portal or positioning integration.
 3. **One component per concept.** Variants become properties, look-alike components merge, and a component made for one screen is a fork to avoid.
 4. **Verify in the real parent.** Render the change inside its actual page or panel, in light and dark mode and in every state (collapsed sidebar, edit mode, side panel open, empty, loading, long content), and compare icon size, stroke, color and spacing with the neighbours. An isolated story hides mismatches.
 5. **Fix the cause, then look for repeats.** Fix a visual bug at its root cause rather than with a local override, and find the other places with the same problem. Fix those within the same feature and list the rest in the PR description. When a shared component does change (rule 2), check every place it reaches.

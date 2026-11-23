@@ -6,6 +6,7 @@ import { type RefreshTwitterAnalyticsRouteBody } from 'src/logic-functions/types
 
 export type RefreshTwitterAnalyticsPayload =
   | CronPayload
+  | { profileIds: string[] }
   | RoutePayload<RefreshTwitterAnalyticsRouteBody>;
 
 const isRoutePayload = (
@@ -20,6 +21,8 @@ const toIds = (value: unknown): string[] =>
 export const toAnalyticsEntrySelection = (
   payload: RefreshTwitterAnalyticsPayload,
 ): AnalyticsEntrySelection => {
+  if ('profileIds' in payload)
+    return { kind: 'records', profileIds: toIds(payload.profileIds) };
   if (!isRoutePayload(payload)) {
     return { kind: 'calculationsEnabled' };
   }

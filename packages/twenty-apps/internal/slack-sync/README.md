@@ -68,3 +68,12 @@ Contact preferences belong to the signed-in member and apply to that member's Sl
 Full members of the installing Slack workspace, connected Slack accounts, and matched Twenty workspace members never become new leads. Slack guests remain eligible unless another exclusion applies. Employee email domains additionally exclude teammates in other workspaces, including subdomains. Bots, deactivated users, users without email, and users with unknown Slack workspace membership are not offered for creation. Existing People matches remain linked.
 
 Native ingestion accepts an optional participant contactEmail independently of its Slack handle. Channel preferences control Person/Company creation through the existing email pipeline, preserving duplicate handling, company reuse, restored contacts, and name enrichment. The Slack handle remains the message participant identity. Ambiguous email matches are not attached. Native email imports retain their existing queued creation path.
+
+## Native Enum Field Upgrade
+
+Categorical attributes use native Select/Multi-Select fields. This upgrade adds
+typed fields for earlier text categories and keeps the old raw values and field
+identifiers for compatibility. Imports populate the typed values; the shared
+[backfill CLI](../../operations/README.md) fills existing records without provider
+calls or overwriting selections. Review a dry run after installing the updated
+metadata. Source/preview verification does not imply production deployment.

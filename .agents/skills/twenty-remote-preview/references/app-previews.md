@@ -50,6 +50,19 @@ Verify download, PUT upload, completion, record binding and a loaded image.
 An analytics refresh can succeed while a separately caught avatar import fails;
 inspect both the execution logs and the saved avatar field.
 
+The embedded host fetch policy deliberately omits page cookies for `/s` routes,
+whose handlers receive request headers. An authenticated Conductor browser can
+therefore load native tables while app function requests receive the access
+gate's plain-text 401. CRM sign-in cannot fix this; distinguish it from a JSON
+CRM authentication error. Test the cookie gate itself, not just a local TLS
+origin that bypasses it.
+
+The Twitter preview uses a narrow `/rest` alias proxy so the access gate receives
+its cookie, then strips cookies and proxy identity headers before forwarding to
+an allowlisted function route. Preserve bearer authentication and method checks;
+do not enable ambient cookies for all `/s` handlers. See the maintained
+[preview proxy and checks](../../../../packages/twenty-apps/internal/twitter-analytics/preview/README.md).
+
 CLI auth may accept a user bearer token for GraphQL but classify a manually
 registered token as an API key and refuse `app exec`. In that case, use the
 authenticated app route or metadata execution mutation with the same user
@@ -103,3 +116,32 @@ YouTube Channels table and record page, and the Refresh Analytics action.
 Use the public demo record only with authorized YouTube quota use. Do not run
 the production 90-channel batch as a preview test. Refer to the app README for
 calculation semantics rather than duplicating them in this skill.
+
+## App Commands Returning 401 At The Preview Edge
+
+The renderer deliberately omits page cookies for `/s/...` requests. An app bearer
+can therefore be valid while Conductor rejects the request for lacking its
+preview cookie. A host-mapped VM browser bypasses that gate and cannot rule this
+out. Check the request path and cookie presence without logging cookie values.
+Do not change Nano credentials or weaken the production renderer cookie policy
+in response to an edge 401.
+
+The Nano preview on 2026-11-22 uses an ignored gateway at
+`.context/nano-preview/preview-gateway.cjs`, listening on port 3003 and forwarding
+to Twenty on port 3002. Only the ignored app fixture changes command URLs to
+`/rest/nano-preview/<action>`; the renderer sends page cookies for this native
+API prefix. The gateway permits only the known POST actions, removes cookies,
+the session opt-in and proxy identity headers, then forwards to the original
+`/s/nano-influencer/<action>` route with its bearer intact. Unknown actions and
+non-POST requests return 404. This is a preview transport adapter, not a new
+Twenty REST endpoint or a production app feature.
+
+Keep the public preview on the gateway port, retain `SERVER_INTERNAL_URL` on
+the backend port, and start the gateway as a detached process with private logs.
+The local TLS test proxy must also forward to the gateway. Verify cookie presence
+through a simulated edge, successful authenticated execution, and rejection
+without a bearer even when page cookies are present. A simulated gate does not
+verify the owner's actual Conductor browser session. Preserve the currently
+authorized transport and all existing records/connections during this repair. The later live Nano import retained the same gateway but
+replaced the mock transport with restricted list/membership reads; consult the
+latest preview handoff before reusing that fixture.

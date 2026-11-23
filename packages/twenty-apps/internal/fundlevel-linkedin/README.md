@@ -178,3 +178,12 @@ Archive URL/token variables and the manual privacy-readiness toggle were removed
 from production. Readiness is an internal app KV value, set only after native
 permission setup and verification; an old True environment flag is ignored.
 See [decision 0010](../../../../docs/decisions/linkedin/0010-automatic-webhook-and-internal-configuration.md).
+
+## Native Enum Field Upgrade
+
+Categorical attributes use native Select/Multi-Select fields. This upgrade adds
+typed fields for earlier text categories and keeps the old raw values and field
+identifiers for compatibility. Imports populate the typed values; the shared
+[backfill CLI](../../operations/README.md) fills existing records without provider
+calls or overwriting selections. Review a dry run after installing the updated
+metadata. Source/preview verification does not imply production deployment.

@@ -1,5 +1,30 @@
 # Twenty Engineering Notes
 
+- [Record Table Widget Save Failure](handoffs/2026-11-23-record-table-widget-save.md): duplicate view creation on retry, local fix and verification limits.
+
+- [Better Lists Live Release](handoffs/2026-11-22-better-lists-live-release.md): pinned core deployment, SDK app installation, preserved workspace data and offsite backups.
+
+- [GitHub Profiles Live Release](handoffs/2026-11-22-github-profiles-live-release.md): installed native app, preserved applications, verified defaults/runtime and remaining production OAuth setup.
+
+- [Better Lists Implementation and Preview](handoffs/2026-11-22-better-lists.md): native lists, membership filters, verification and preview limits.
+
+- [GitHub Profiles Preview](handoffs/2026-11-22-github-profiles-preview.md): native app, influencer and many-to-many People/Company relations, configurable workflows/backfills, pooled authentication and owner-authorized preview population.
+
+- [Comments Live Release](handoffs/2026-11-22-comments-live-release.md): deployed core image and workspace app, preserved services, offsite backups and verification limits.
+
+- [Related Columns Live Release](handoffs/2026-11-22-related-columns-live-release.md): pinned production image, coordinated offsite backups and live verification.
+
+- [Related Value Chips](handoffs/2026-11-22-related-value-chips.md): source avatars, distinct value chips and overflow in related columns.
+
+- [Multi-step Related Column Preview](handoffs/2026-11-22-multistep-related-columns.md): relationship navigation, cutoff rules and synthetic preview cases.
+
+- [Related Attribute Columns Preview](handoffs/2026-11-22-related-columns-preview.md): one-to-many and junction attribute columns, synthetic fixture and isolated VM runtime.
+
+- [Influencer YouTube Channel Migration](handoffs/2026-11-22-influencer-youtube-channels.md): live channel links, migrated details/analytics, preserved pricing and API verification.
+
+- [NanoInfluencer Live Release](handoffs/2026-11-22-nano-influencer-live-release.md): pinned core rollout, native app installation, enum backfills and live verification.
+- [NanoInfluencer App And VM Preview](handoffs/2026-11-22-nano-influencer-preview.md): native list/creator sync, search-history imports, enrichment, grouped views and isolated VM verification.
+
 - [Cal.com OAuth App And Release](handoffs/2026-11-21-cal-com-preview.md): implementation, isolated preview, live installation and OAuth verification status.
 
 - [Live CRM Rollout](handoffs/2026-11-21-live-crm-rollout.md): deployed core/apps, migration recovery, PlusVibe reconciliation and pending LinkedIn/Slack activation.

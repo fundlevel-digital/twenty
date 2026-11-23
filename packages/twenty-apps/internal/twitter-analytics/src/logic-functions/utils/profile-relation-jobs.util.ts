@@ -1,5 +1,12 @@
 import { type WorkspaceGraphqlClient } from 'src/logic-functions/utils/workspace-graphql-client.util';
 import {
+  createManagedRelationCursor,
+  getClearedManagedRelationSources,
+  isManagedRelationCursor,
+  populatedRelationSourceFilter,
+  type RelationSourceConnection,
+} from 'src/logic-functions/utils/profile-relation-candidates.util';
+import {
   chooseRelationSourceField,
   emptyProfileRelationResult,
   getProfileRelationSettings,
@@ -50,14 +57,44 @@ export const runProfileRelationJob = async ({
       : sourceField.name;
   const nameSelection =
     kind === 'person' ? 'name { firstName lastName }' : 'name';
-  const response = await client.request<{
-    [key: string]: {
-      edges: { node: { id: string; [key: string]: unknown } }[];
-      pageInfo: { hasNextPage: boolean; endCursor: string | null };
+  if (!recordId && isManagedRelationCursor(after)) {
+    if (settings.linkMode !== 'SYNC_MANAGED')
+      throw new Error(
+        'Relation preferences changed. Preview the backfill again.',
+      );
+    const page = await getClearedManagedRelationSources({
+      client,
+      kind,
+      sourceField,
+      selection: `${nameSelection} ${selection}`,
+      cursor: after,
+    });
+    return {
+      ...(await relateSourceRecords({
+        client,
+        kind,
+        sourceField,
+        settings,
+        mode: selectedMode,
+        dryRun,
+        records: page.records,
+      })),
+      nextCursor: page.nextCursor,
     };
+  }
+  const populated = populatedRelationSourceFilter(sourceField);
+  const response = await client.request<{
+    [key: string]: RelationSourceConnection;
   }>(
     `query SourceRecords($after: String, $filter: ${kind === 'person' ? 'Person' : 'Company'}FilterInput) { ${plural}(first: 100, after: $after, filter: $filter) { edges { node { id ${nameSelection} ${selection} } } pageInfo { hasNextPage endCursor } } }`,
-    { after, filter: recordId ? { id: { eq: recordId } } : {} },
+    {
+      after,
+      filter: recordId
+        ? settings.linkMode === 'SYNC_MANAGED'
+          ? { id: { eq: recordId } }
+          : { and: [{ id: { eq: recordId } }, populated] }
+        : populated,
+    },
   );
   const connection = response[plural];
   const result = await relateSourceRecords({
@@ -79,5 +116,11 @@ export const runProfileRelationJob = async ({
     (!nextCursor || nextCursor === after)
   )
     throw new Error('Source record pagination did not advance');
-  return { ...result, nextCursor };
+  return {
+    ...result,
+    nextCursor:
+      !recordId && !nextCursor && settings.linkMode === 'SYNC_MANAGED'
+        ? createManagedRelationCursor()
+        : nextCursor,
+  };
 };

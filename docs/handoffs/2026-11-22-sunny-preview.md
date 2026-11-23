@@ -1,6 +1,6 @@
 # Sunny Preview — 2026-11-22
 
-[Decision 0007](../decisions/0007-sunny-live-state-vm-preview.md) authorizes copying Sunny’s current live CRM state into this VM and using the preview for subsequent work.
+[Decision 0010](../decisions/0010-sunny-live-state-vm-preview.md) authorizes copying Sunny’s current live CRM state into this VM and using the preview for subsequent work.
 
 ## Running Preview
 
@@ -37,7 +37,7 @@ Temporary production SSH access was removed after transfer and verification. No 
 
 ## Follow-Up: PlusVibe And Cal.com Installed
 
-[Decision 0008](../decisions/0008-install-plusvibe-and-cal-com-in-sunny-preview.md) records Kareem’s installation request. Both apps were installed successfully from this checkout through the dedicated `sunny-vm-preview` CLI remote at the local backend. The registrations copied from the shared instance were unowned after removal of Fundlevel; the native claim-ownership mutation assigned these preview registrations to Sunny before installation. Production registrations were untouched.
+[Decision 0011](../decisions/0011-install-plusvibe-and-cal-com-in-sunny-preview.md) records Kareem’s installation request. Both apps were installed successfully from this checkout through the dedicated `sunny-vm-preview` CLI remote at the local backend. The registrations copied from the shared instance were unowned after removal of Fundlevel; the native claim-ownership mutation assigned these preview registrations to Sunny before installation. Production registrations were untouched.
 
 Cal.com applied 137 creates and uploaded 47 files. PlusVibe applied 861 creates and uploaded 60 files. Both used `--no-prune`, with zero updates or deletions. Database checks confirm both installations and their objects, including Cal.com Bookings and all twelve PlusVibe source/link objects. The restricted worker remains active for metadata work.
 

@@ -13,6 +13,20 @@ describe('getWorkflowCodeFieldsEnumSelectOptions', () => {
     ]);
   });
 
+  it('displays human-readable enum labels without changing saved values', () => {
+    expect(
+      getWorkflowCodeFieldsEnumSelectOptions({
+        type: 'string',
+        enum: ['US', 'GB', 'CA'],
+        enumLabels: { US: 'United States', GB: 'United Kingdom' },
+      }),
+    ).toEqual([
+      { value: 'US', label: 'United States' },
+      { value: 'GB', label: 'United Kingdom' },
+      { value: 'CA', label: 'CA' },
+    ]);
+  });
+
   it('should return empty array when property has no enum', () => {
     expect(getWorkflowCodeFieldsEnumSelectOptions({ type: 'string' })).toEqual(
       [],

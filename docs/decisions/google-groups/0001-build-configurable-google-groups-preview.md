@@ -4,7 +4,7 @@
 - Status: accepted
 - Decided by: Kareem
 - Area: Google Groups
-- Related: [Runtime verification decision](../0009-verify-google-channel-app-feasibility.md)
+- Related: [Runtime verification decision](../0012-verify-google-channel-app-feasibility.md)
 
 ## Context
 

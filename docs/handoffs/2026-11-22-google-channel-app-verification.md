@@ -1,6 +1,6 @@
 # App-Only Shared Messaging Verification — 2026-11-22
 
-Kareem requested runtime verification after the agent gave conflicting feasibility answers. [Decision 0009](../decisions/0009-verify-google-channel-app-feasibility.md) records the correction and scope.
+Kareem requested runtime verification after the agent gave conflicting feasibility answers. [Decision 0012](../decisions/0012-verify-google-channel-app-feasibility.md) records the correction and scope.
 
 ## Conclusion And Boundaries
 

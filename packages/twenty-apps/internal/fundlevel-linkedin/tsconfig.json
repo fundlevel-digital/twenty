@@ -23,6 +23,7 @@
     "skipDefaultLibCheck": true,
     "resolveJsonModule": true,
     "noUncheckedSideEffectImports": false,
+    "rewriteRelativeImportExtensions": true,
     "paths": {
       "src/*": ["./src/*"],
       "~/*": ["./*"]

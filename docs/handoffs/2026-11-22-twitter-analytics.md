@@ -1,8 +1,169 @@
 # TwitterAPI.io App And Isolated Preview
 
-Date: 2026-11-22. Implemented in the current workspace; not merged or deployed to
-production. See the [owner decision](../decisions/twitter-analytics/0001-native-twitter-profiles-and-preview.md)
+Date: 2026-11-22. Merged in [PR #19](https://github.com/fundlevel-digital/twenty/pull/19)
+at commit c0899348c83d013de78db921d1b82e4183e1544e, installed on the live CRM,
+and backfilled with 235 related Twitter Profiles. The final production audit is below. See the [owner decision](../decisions/twitter-analytics/0001-native-twitter-profiles-and-preview.md)
 and [app README](../../packages/twenty-apps/internal/twitter-analytics/README.md).
+
+## Follow-Up: Preview Only
+
+Kareem corrected the scope on 2026-11-22: the additional workflow scope should
+have remained on preview. See [decision 0004](../decisions/twitter-analytics/0004-preview-scope-and-backfill-explanations.md).
+The following changes are local to the continuation branch and installed only on
+the isolated preview; they are not merged or deployed to production:
+
+- Setting-specific explanations cover automatic modes, relation replacement,
+  manual relation preservation, one-time backfills and analytics spending.
+  Explanations change with the selected mode and are associated with controls
+  through accessible descriptions. Preview counts describe proposed changes;
+  completed-run counts describe applied changes.
+- Source queries exclude null and empty Text values and empty primary/secondary
+  Links values before processing. Secondary-only X links remain eligible.
+- Replacement mode adds a separate paginated managed-membership pass for cleared
+  X fields. It deduplicates sources within and across pages, preserves manual
+  memberships and excludes unrelated empty records. Successful cleanup is not
+  counted as skipped. Single-record workflow events still handle cleared fields.
+- App unit suite: 127 tests across 14 files pass. Direct TypeScript checking,
+  oxlint and SDK preview build/plan/apply pass. Plans contain updates only, with no
+  destructive operations.
+- Native preview verification selected two populated Companies in one request.
+  A secondary-only link and an invalid link were correctly included; unrelated
+  blank records were excluded. Replacement preview and apply each found and
+  removed 103 stale managed memberships across multiple pages, preserving the
+  manual membership and the populated memberships. Temporary test records were
+  removed and original preview preferences restored; no TwitterAPI.io calls ran.
+- Browser checks verified dynamic descriptions, the two-record preview summary,
+  and preview-before-apply gating with no page errors. The browser used the exact
+  preview origin through a local TLS proxy, bypassing Conductor's edge. The public
+  edge returned its expected anonymous sign-in gate; host frontend source was
+  not changed.
+
+Kareem also asked about CRM-wide grouping by the Companies/People relations.
+Current record-view grouping permits Select and Many-to-One fields; the shared
+grouping guard explicitly excludes One-to-Many fields. The app's Companies and
+People relations use join objects. Supporting these groups requires shared
+relation-path queries and consistent multi-group record identity, counts,
+pagination and drag-and-drop semantics. This was assessed but not implemented.
+
+The Hindsight service was unavailable in this workspace (private profile/repo
+metadata missing), so verified findings and the owner correction are retained
+in this handoff and decision 0004 instead.
+
+### Profile Relations Loading Failure
+
+On 2026-11-22 Kareem supplied a screenshot showing "Could not load profile
+relations. Reload this page to try again." The screenshot omitted its origin.
+Read-only diagnostics found the live settings function successful, its HTTP GET
+route returning 200 with both source configurations, and the app identification
+query successful. The isolated preview route and browser also loaded correctly.
+The original failure was not reproduced; a session, permission or temporary
+request failure remains possible, not a verified root cause.
+
+The continuation adds an inline **Retry** button and separates settings-request,
+app-identification, session and permission messages. Retrying reloads the two
+read-only requests without a full page refresh. Responses from earlier attempts
+or unmounted components are ignored, and missing response data becomes a
+recoverable error instead of a component exception. Raw server errors are not
+displayed. The change is installed only in preview; live configuration and
+records were not changed.
+
+The unit suite now has 134 passing tests across 15 files, with direct TypeScript
+checking and oxlint passing. SDK plan/apply updated one front component with zero
+creates, deletes or destructive actions. Browser tests inject a settings 503,
+settings 403, expired session, metadata permission error, missing app details and
+malformed settings response, then restore the requests and verify recovery with
+**Retry**, with no page errors. These use the existing preview host through the
+local TLS proxy and do not verify Conductor's public edge. No TwitterAPI.io calls
+or backfills are involved.
+
+### Confirmed Preview Access Failure And Resolution
+
+Kareem confirmed "Preview" and reported "relogging-indoesn't workeither" and
+"Like it doesn't fix it" after the new message incorrectly suggested an expired
+CRM session. See [decision 0005](../decisions/twitter-analytics/0005-fix-the-protected-preview-path.md).
+
+The root cause is the renderer's host fetch policy: cookies are deliberately
+omitted for `/s` routes because function handlers receive request headers.
+Conductor requires its access cookie, so the function request receives the
+gate's plain-text 401 before reaching Twenty. The earlier local TLS tests
+bypassed that gate and did not establish public-preview success. This was not
+resolved by refreshing CRM credentials; the earlier generic 401 classification
+was misleading.
+
+The isolated preview now has `twitter-preview-gateway`, a supervised container
+with restart policy `unless-stopped`, listening on port 3002 and forwarding to
+the existing host on port 3000. Conductor's preview port is 3002, with the same
+public URL. Four method-restricted aliases under
+`/rest/twitter-preview-functions/twitter-analytics/` let the renderer send page
+cookies through the gate. Only Authorization, Content-Type, Accept, Origin and
+Host are forwarded from these aliases to their original `/s` routes. Cookies
+and access-proxy identity headers are excluded from function handlers. The host's
+other HTTP routes and upgraded connections continue through the proxy.
+
+Only the ignored preview app copy rewrites settings, backfill, Influencer import
+and refresh request paths. Production source paths, backend triggers and app
+permissions are unchanged. The maintained operational helper and tests are in
+the app's [preview directory](../../packages/twenty-apps/internal/twitter-analytics/preview/README.md).
+The app now identifies Conductor's plain-text access denial separately from a
+CRM session failure.
+
+Verification on 2026-11-22:
+
+- A TLS browser proxy enforcing a test access cookie reproduced the old path's
+  two 401 responses, including the client's unsuccessful CRM-token refresh.
+- The same cookie-gated browser loaded the fixed settings and previewed a
+  two-record Company backfill with HTTP 200 responses and no page errors.
+- A dedicated tab in the owner's existing authenticated Mac browser loaded the
+  actual public URL. Gateway diagnostics recorded its settings GET returning
+  200 at 16:51:44 UTC, with the access cookie present at the proxy. This check
+  did not bypass Conductor's edge or copy/extract cookies or tokens. It verifies
+  the public request, not an accessibility inspection of the rendered form.
+- Proxy tests verify native bearer forwarding, exclusion of cookies and proxy
+  identity headers, route and method restrictions, and upgraded connections.
+  The app has 135 passing unit tests; typecheck and lint pass. SDK preview
+  plan/apply updated three front components with zero destructive operations.
+- No production changes, Influencer/Company/Person backfill writes or
+  TwitterAPI.io calls occurred during this fix. The browser backfill was a
+  preview only.
+
+### Native UI Preference And Relation Controls
+
+On 2026-11-22 Kareem requested that existing native Twenty CRM components always
+be used when available, with new/custom UI only for capabilities existing
+components cannot support. He explicitly requested saving this as rules/skills.
+[Repository decision 0008](../decisions/0008-reuse-native-twenty-ui-components.md)
+contains his exact instruction and the implementation scope.
+
+The canonical Ruler source and design guide now explicitly cover SDK app front
+components. Ruler regenerated `AGENTS.md` and `CLAUDE.md`. A validated shared
+`twenty-native-ui` skill has committed Claude/Pi aliases, while the existing
+Claude-only UI design skill is preserved and links to it. The Hindsight service
+remains unavailable; these tracked rules, skill and decision provide the durable
+repository record.
+
+The app replaces its HTML selects with the published Twenty UI 2.59.0 compound
+Select: four controls per Company/Person section, eight in total. Its composition
+uses native labels, triggers, values, icons, popups, options and indicators. An
+explicit positioned portal container keeps popup coordinates within the embedded
+panel. A small compatibility handler supplies the missing `nativeEvent` alias on
+keyboard-generated clicks from older hosts; it does not replace the control's
+selection or keyboard implementation.
+
+Cookie-gated browser verification passed for option selection, the empty Detect
+value, keyboard navigation and Enter selection, mode-specific help, preserved
+accessible descriptions and the read-only backfill preview. The popup's left
+edge and width matched its trigger, and there were no page errors. Typechecking,
+oxlint, skill validation and SDK build/plan/apply passed. Metadata plans updated
+one front component with no destructive actions. Preview preferences were not
+saved or changed, and no source records, memberships or analytics were written.
+Production is unchanged.
+
+Kareem also asked whether Keep Existing Relations still relates the new X link.
+Confirmed from the existing logic: with saved Create Missing Profiles and Relate
+preferences, a record update reuses or creates the new profile and adds its
+membership while preserving old memberships. Relate Existing Profiles Only skips
+missing profiles; Off disables automatic processing. This behavior was explained
+and not changed by the UI work.
 
 ## Delivered
 
@@ -20,7 +181,7 @@ and [app README](../../packages/twenty-apps/internal/twitter-analytics/README.md
   cursor pagination, key rotation, retry handling and per-key 5.1-second pacing
   for the provider's free tier. Failed refreshes retain previous metric values.
 
-## Verified
+## Initial Preview Verification
 
 - 108 unit tests, direct TypeScript typechecking, oxlint and SDK app builds pass.
 - Native app plan/apply installed and updated the app in the isolated preview.
@@ -75,12 +236,12 @@ Restart existing containers after starting the Docker daemon if necessary; do
 not reseed or reset the database to restore this preview. No Conductor wake action
 was configured, and survival across a VM shutdown is not claimed.
 
-## Limits And Remaining Work
+## Initial Preview Limits
 
-Production Influencer records were not copied. Mac access timed out, and the
-preview uses neutral Influencer demo records plus one real public Twitter profile.
-The import action is ready for existing Influencer data when installed in the
-intended workspace. Production deployment and migration were not performed.
+At the initial preview handoff, production Influencer records had not been
+copied. Mac access timed out, so that preview used neutral demo records plus one
+real public profile. Subsequent owner approval and production rollout are recorded
+below; production CRM records were never copied into the isolated preview.
 
 The Hindsight CLI profile is unavailable in this VM (`Missing/invalid repo
 metadata or private profile`); both recall and retention were unavailable. The
@@ -114,9 +275,8 @@ responses remain ignored under `.context/twitter-api-*-response.json`; abridged
 public examples are documented in the app's API.md. No customer records or keys
 are in those documents.
 
-PR #19 remains the source PR until the expanded version is merged. Live app
-installation and the Influencer relation backfill follow the source merge; preview
-installation alone is not a production rollout.
+PR #19 merged before installation, as requested. The source commit and live
+installation are verified separately below.
 
 Additional workflow verification covered clearing and restoring an X field: the
 managed membership is soft-deleted and restored when the same handle returns.
@@ -132,3 +292,167 @@ and completed both preview and application across all 601 preview Companies:
 and no browser page errors. Unit coverage now totals 122 passing tests, including
 native metadata field discovery, independent many-to-many memberships, managed
 membership restoration/manual-deletion preservation and the multi-key waterfall.
+
+
+## Final Production Rollout
+
+- Source: [merged PR #19](https://github.com/fundlevel-digital/twenty/pull/19),
+  commit c0899348c83d013de78db921d1b82e4183e1544e.
+- Installed the exact merged source using CLI 2.59.0, remote fundlevel, and
+  app apply --create --no-prune from an isolated Mac worktree. Content hash:
+  7186e820623263dbb29f93dfeee089cd80348f86ea8390d7d7a4745d5540cf8d.
+- Installation completed all build/registration/installation/upload/sync phases:
+  **286 entities created, zero updates, zero deletions, zero destructive actions**.
+- Read all **479 Influencers** with cursor pagination and imported their existing
+  xUrl values in ten resumable batches. Created **235 Twitter Profiles**, all
+  related to an existing Influencer; no duplicate normalized handles.
+- The source audit found **214 empty URLs**, **26 invalid URLs** and **239 valid
+  account claims representing 235 distinct handles**. The four additional shared
+  claims were skipped to preserve the profile's existing Influencer parent and
+  the agreed Influencer Has Many model. No parent was silently reassigned.
+- All **235 imported profiles have Calculations Enabled off**. No paid Twitter
+  batch was run as part of backfilling relations.
+- Live Profile Relations exposes the existing PDL X / Twitter and legacy Twitter
+  fields for Companies and People. Both automatic modes remain **Off**, relation
+  changes default to **Keep Existing Relations**, and their backfills remain
+  optional through the preview/run controls.
+- Connected the supplied API key through the normal authenticated native CRM
+  form. The endpoint rejected CLI OAuth (PERMISSION_DENIED), and browser
+  JavaScript automation was unavailable. Existing native accessibility controls
+  completed the form; no browser security setting was changed. Temporary key
+  transport was encrypted, no key appeared in command arguments/logs, and the
+  temporary plaintext/RSA transport files were removed.
+- Independent native metadata audit confirms **one usable WORKSPACE connection**
+  with no authentication failure or archival flag. An explicit empty-selection
+  refresh initialized **36 managed metric columns**. That CLI command timed out
+  waiting for its HTTP result; the subsequent metadata audit verified the saved
+  connection and all 36 fields. No source profiles were selected for that check.
+- Source validation: **122 tests pass**, direct typecheck, lint and SDK build pass.
+  Preview browser/workflow checks are described above. Production verification
+  used native metadata, authenticated app routes, a native browser connection form
+  and source/record audits; no production analytics batch was triggered.
+
+Private progress, record IDs and audit outputs remain only in the isolated Mac
+release directory, referenced by the local repository's ignored
+.context/twitter-live-w930-release-dir. They are not copied into these docs or
+into the cloud preview. The separate preview retains neutral demo records and
+its own native connection.
+
+
+## Configurable Refresh And Enrollment: Preview Only
+
+Kareem requested configurable timing, a command and workflow for immediate
+refreshes, and a profile attribute for scheduled enrollment. See
+[decision 0006](../decisions/twitter-analytics/0006-configurable-refresh-and-profile-enrollment.md).
+These changes extend draft [PR #26](https://github.com/fundlevel-digital/twenty/pull/26)
+on `conductor/untitled-v5`; they are installed on preview, not merged or live.
+
+- App Preferences → TwitterAPI.io → Analytics now offers Off, Hourly, Daily and
+  Weekly schedules, with native Twenty Select controls for UTC time and weekday.
+  Daily 05:00 UTC remains the default. Saving temporarily disables scheduling,
+  saves all preferences and then enables the chosen frequency; partial failures
+  report that scheduling may remain off.
+- The existing `calculationsEnabled` boolean keeps its identifier, values and
+  defaults. Its label is **Scheduled Calculations** and it is visible in the
+  app's default profile view. Imported/automatic profiles remain disenrolled;
+  manually created profiles retain their existing default enrollment.
+- **Refresh Profile and Analytics** remains the selected-record command.
+  **Refresh Twitter Profile and Analytics** is a new active single-record native
+  workflow and reusable workflow action accepting a Twitter Profile ID. Both
+  bypass scheduling and enrollment and reuse the existing refresh and key pool.
+  Unsuccessful refreshes fail the workflow step.
+- The source cron dispatches each minute, determines the latest configured UTC
+  window, and records an attempted window before API work. Initial configuration
+  avoids retroactive refreshes; a changed schedule clears its cursor. Ordinary
+  later ticks skip a claimed window. Claims are not an atomic distributed lock;
+  a failed claimed refresh waits for the next window or an explicit manual retry.
+  Already-running work can finish after scheduling/enrollment changes.
+- SDK plan: ten creates, four updates, no deletes or destructive operations.
+  Native preview apply succeeded. The preview copy deliberately omits cron,
+  preserving protected-route aliases and its avatar upload adaptation.
+- Native function execution verifies Off skips, initialization saves a window,
+  and repeated execution reads that saved marker and skips. Enrollment filtering
+  reflects on/off changes to the same field. A manual refresh selected exactly
+  one disenrolled temporary profile and used zero provider requests.
+- The native core workflow is active and was executed with the same temporary
+  profile. Its missing-identity failure is expected: it proves the selected ID
+  reaches the refresh step and propagates the refresh error, without paid calls.
+  Unit tests cover successful workflow results. Temporary data was removed and
+  original preferences and the schedule cursor were restored.
+- Browser verification exercised Off/Hourly/Weekly conditional fields, saved
+  Thursday 13:17 UTC, reloaded and confirmed saved values in both UI and native
+  metadata. The profile table and record detail both show Scheduled Calculations.
+  All controls have helper descriptions; no browser errors occurred.
+  Screenshot: `.context/twitter-refresh-schedule-verified.png`. This test used
+  the exact public origin through local TLS and a simulated access gate; it did
+  not traverse Conductor's authenticated public edge. The published host UI
+  serves the app; no host frontend source changes are claimed.
+
+Validation: 160 unit tests across 19 files, two preview proxy tests, direct
+TypeScript checking, oxlint and the SDK preview build/install. No TwitterAPI.io
+requests or production changes were made for this follow-up. Preview settings
+are available at https://fundlevel-w930.conductor.show/settings/app-preferences;
+its containers restart within the running VM, not across VM destruction.
+Hindsight remains unavailable because workspace repo/private-profile metadata
+is missing; these verified findings are retained in tracked documentation.
+
+### Main Branch Integration
+
+On 2026-11-22 Kareem requested: "Merge the remote branch (main) into your branch and resolve conflicts. Then, commit and push your changes."
+Integrated `origin/main` at `ea0a75d756` into `conductor/untitled-v5`.
+The conflicts were limited to the Ruler source, generated agent instructions and
+root decision index. Resolution preserves both the app-only boundary from main
+and this branch's native Twenty UI rule; Ruler regenerated AGENTS.md and
+CLAUDE.md. Main's existing decision 0007 remains unchanged, and this branch's
+native UI decision moves to 0008 with all references updated to avoid the
+number collision. Twitter app source merged without conflicts.
+
+Post-merge verification: 160 app unit tests, two preview proxy tests, direct
+TypeScript checking and oxlint pass. This is repository integration only; no
+preview reinstall, paid API calls or production deployment occurred.
+
+
+## Merged Follow-Up Deployed To Live
+
+On 2026-11-22 Kareem authorized live deployment, requested a rebase first, and
+clarified: "When u merge, u can deploy to the live CRM". See
+[decision 0007](../decisions/twitter-analytics/0007-deploy-merged-refresh-controls.md).
+PR #26 merged as `eb4afbe5b2f19d920a4b8ca60b1ca81ef490d1be`; the continuation
+branch rebased cleanly onto main at `998de330d9` before installation. These
+merged follow-ups are now live, superseding the earlier preview-only status for
+the same changes. This was an app upgrade, not a host image rollout.
+
+The isolated Mac release worktree checked out that exact main commit. Native CLI
+2.59.0 used the existing authenticated Fundlevel remote, with deletion inference
+disabled and no destructive approval. Build content hash:
+`5053dc140b1aba1809d894bbca45a0d08b0634febdeff74810965005094bc9e9`.
+The reviewed plan contained **10 creates, 7 updates, zero deletes, destructive
+actions or cascades**. Apply succeeded and uploaded 86 files. The optional cover
+image generation reported missing `sharp`; the existing app favicon/logo was
+retained, and installation succeeded.
+
+Live verification:
+
+- All 235 profile IDs, enrollment flags, Influencer links and last-calculated
+  timestamps match the pre-install audit. All existing application preferences
+  match. None of the profiles are enrolled; no paid analytics batch or additional
+  relation backfill was triggered for deployment verification.
+- Native metadata exposes the new manual workflow command and renamed refresh
+  command. **Refresh Twitter Profile and Analytics** is ACTIVE with a published
+  core workflow version. The refresh logic function has minute dispatch metadata;
+  saved defaults remain Daily, 05:00 UTC, Monday as the unused weekly default.
+- The saved schedule window became initialized by the automatic dispatcher after
+  installation, without manual function execution. This verifies scheduler
+  activity; it does not claim a fresh profile calculation.
+- Authenticated relation-settings GET returned HTTP 200. Shared-login and public
+  workspace health endpoints returned HTTP 200.
+- Fresh SDK post-install plan reports **zero changes**. Installed frontend and
+  logic-function checksums therefore match the release artifact.
+
+No production browser interaction or live paid profile refresh is claimed. The
+native UI controls and selected-record workflow were exercised on the isolated
+preview before merge; the 160 unit tests, two proxy tests, direct typecheck and
+lint passed before the merge. Private before/after snapshots and CLI logs remain
+in the release worktree's ignored `.context/twitter-follow-up` directory on the
+Mac. Hindsight remains unavailable in the cloud workspace; verified results and
+owner authorization are retained here instead.

@@ -1,3 +1,4 @@
+import { parseBetterList } from '@/better-lists/utils/betterListMetadata';
 import { WorkspaceRouteUnavailable } from '@/ui/layout/page/components/WorkspaceRouteUnavailable';
 import { useFilteredObjectMetadataItems } from '@/object-metadata/hooks/useFilteredObjectMetadataItems';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
@@ -40,6 +41,9 @@ export const SettingsObjectNewFieldSelect = () => {
       FieldMetadataType.NUMERIC,
       FieldMetadataType.ACTOR,
       FieldMetadataType.UUID,
+      ...(isDefined(parseBetterList(activeObjectMetadataItem?.description))
+        ? [FieldMetadataType.RELATION, FieldMetadataType.MORPH_RELATION]
+        : []),
     ] as const
   ).filter(isDefined);
 

@@ -9,6 +9,13 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isPlainObject } from 'twenty-shared/utils';
 import { type FunctionInput, type InputSchema } from 'twenty-shared/workflow';
 import { themeCssVariables } from 'twenty-ui/theme';
+import { Text } from 'twenty-ui/primitives/typography';
+
+const StyledField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[2]};
+`;
 
 const StyledContainer = styled.div<{ fullWidth?: boolean }>`
   display: flex;
@@ -25,7 +32,7 @@ type WorkflowEditActionCodeFieldsProps = {
   functionInput: FunctionInput;
   path?: string[];
   readonly?: boolean;
-  onInputChange?: (value: any, path: string[]) => void | Promise<void>;
+  onInputChange?: (value: unknown, path: string[]) => void | Promise<void>;
   VariablePicker?: VariablePickerComponent;
   fullWidth?: boolean;
   inputSchema?: InputSchema;
@@ -50,6 +57,8 @@ export const WorkflowEditActionCodeFields = ({
           inputSchema,
           currentPath,
         );
+        if (schemaProperty?.hidden === true) return null;
+
         const displayLabel = isNonEmptyString(schemaProperty?.label)
           ? schemaProperty.label
           : inputKey;
@@ -62,8 +71,13 @@ export const WorkflowEditActionCodeFields = ({
 
         if (isNestedObject) {
           return (
-            <div key={pathKey}>
+            <StyledField key={pathKey}>
               <InputLabel>{displayLabel}</InputLabel>
+              {isNonEmptyString(schemaProperty?.description) && (
+                <Text size="sm" color="secondary">
+                  {schemaProperty.description}
+                </Text>
+              )}
               <FormNestedFieldInputContainer>
                 <WorkflowEditActionCodeFields
                   functionInput={inputValue}
@@ -75,20 +89,26 @@ export const WorkflowEditActionCodeFields = ({
                   inputSchema={inputSchema}
                 />
               </FormNestedFieldInputContainer>
-            </div>
+            </StyledField>
           );
         }
 
         return (
-          <WorkflowEditActionCodeFieldLeaf
-            key={pathKey}
-            label={displayLabel}
-            inputValue={inputValue}
-            schemaProperty={schemaProperty}
-            readonly={readonly}
-            onChange={(value) => onInputChange?.(value, currentPath)}
-            VariablePicker={VariablePicker}
-          />
+          <StyledField key={pathKey}>
+            <WorkflowEditActionCodeFieldLeaf
+              label={displayLabel}
+              inputValue={inputValue}
+              schemaProperty={schemaProperty}
+              readonly={readonly}
+              onChange={(value) => onInputChange?.(value, currentPath)}
+              VariablePicker={VariablePicker}
+            />
+            {isNonEmptyString(schemaProperty?.description) && (
+              <Text size="sm" color="secondary">
+                {schemaProperty.description}
+              </Text>
+            )}
+          </StyledField>
         );
       })}
     </StyledContainer>

@@ -179,3 +179,22 @@ workflow execution remain unverified; the app does not add a dedicated Group
 email workflow trigger. The PR request does not authorize merging or production
 deployment. Memory recall remains unavailable because the private profile is
 missing; no retention is claimed.
+
+## Main Integration — 2026-11-23
+
+Kareem requested: "Merge the remote branch (main) into your branch and resolve conflicts. Then, commit and push your changes."
+The integration brings `origin/main` at `41415c827b` into
+`conductor/twenty-crm-sunny-setup` for PR #37. Three decision-index conflicts were
+resolved by preserving both branches' entries. This branch's repository records
+were renumbered from 0007–0009 to 0010–0012 to avoid incoming collisions; their
+content and linked decisions remain the same. References were updated throughout
+the affected records and handoffs, including corrected enum-record links in the
+Cal.com and PlusVibe indexes. All 132 local documentation links checked resolve.
+
+The Google Groups app had no source conflicts and is unchanged by this merge.
+Fresh verification passed 61 tests, direct package typecheck, lint and app build.
+Nx's shared-package build stalled in barrel generation and was stopped; the
+shared package's actual Vite build, declaration emit and alias-rewrite commands
+then completed successfully before the app typecheck/build. No generated source
+changes were retained. This integrates main into the PR branch; it does not
+merge the PR into main or deploy production. Memory remains unavailable.

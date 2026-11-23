@@ -25,6 +25,7 @@ import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/use
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { type AiChatChannel } from '@/ai-chat/threads/types/AiChatChannel';
 import { isInboxPath } from '~/utils/isInboxPath';
+import { isCommentsInboxView } from '@/inbox/utils/isCommentsInboxView';
 
 const StyledIconPickerTrigger = styled.div`
   align-items: center;
@@ -149,6 +150,7 @@ export const NavigationDrawerInboxChannelItem = ({
         channelView={inboxSelectedChannelView}
         isActive={
           isInboxPath(location.pathname) &&
+          !isCommentsInboxView(location) &&
           !isInboxShowingDirectMessage &&
           inboxSelectedChannelView?.channelId === channel.id
         }

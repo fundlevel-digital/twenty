@@ -184,6 +184,7 @@ describe('Native Slack attachments', () => {
           expect.objectContaining({
             applicationFields: {
               message: {
+                '0ef0a237-15a4-5d8b-a617-b9b6c058a4ed': 'UNAVAILABLE',
                 '66bb3f6c-b420-454b-8b96-1359711283f8':
                   expect.stringContaining('403'),
               },

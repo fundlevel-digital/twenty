@@ -16,6 +16,14 @@ export type InputSchemaProperty = {
   properties?: Properties;
   multiline?: boolean;
   label?: string;
+  description?: string;
+  hidden?: boolean;
+  enumLabels?: Record<string, string>;
+  connectionProvider?: {
+    applicationUniversalIdentifier: string;
+    providerName: string;
+    scope: 'WORKSPACE' | 'USER';
+  };
   objectUniversalIdentifier?: string;
 };
 

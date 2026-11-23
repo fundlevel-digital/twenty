@@ -42,7 +42,7 @@ export default defineObject({
     {
       universalIdentifier: BOOKING_FIELDS.status,
       name: 'status',
-      label: 'Status',
+      label: 'Status (Raw)',
       type: FieldType.TEXT,
       icon: 'IconStatusChange',
       isNullable: true,

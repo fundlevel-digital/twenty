@@ -12,6 +12,6 @@ export const getWorkflowCodeFieldsEnumSelectOptions = (
 
   return property.enum.map((value) => ({
     value,
-    label: value,
+    label: property.enumLabels?.[value] ?? value,
   }));
 };

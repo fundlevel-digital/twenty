@@ -1,0 +1,111 @@
+import { defineView } from 'twenty-sdk/define';
+import { IDENTIFIERS } from '../constants/identifiers';
+
+export default defineView({
+  universalIdentifier: '78714d1d-fdcc-5a15-8d63-db3a5a64e727',
+  name: 'All Nano Creators',
+  icon: 'IconUser',
+  objectUniversalIdentifier: '60893d01-3a14-5663-a7b2-679ee538a60e',
+  type: 'TABLE',
+  fields: [
+    {
+      universalIdentifier: '9f25113a-e80f-44c1-8f9a-f510439c1335',
+      fieldMetadataUniversalIdentifier: IDENTIFIERS.creatorEmailAvailability,
+      position: 9,
+      isVisible: false,
+      size: 180,
+    },
+    {
+      universalIdentifier: 'c6ed5052-b01f-4e2e-936d-7d10fac37e68',
+      fieldMetadataUniversalIdentifier: IDENTIFIERS.creatorCountry,
+      position: 3,
+      isVisible: true,
+      size: 160,
+    },
+    {
+      universalIdentifier: '1a986c98-103c-4ee3-b341-bf85e049bfa8',
+      fieldMetadataUniversalIdentifier: IDENTIFIERS.creatorPerson,
+      position: 6,
+      isVisible: true,
+      size: 220,
+    },
+    {
+      universalIdentifier: '6366e3a0-ae36-4f0c-afbb-29481d6b694e',
+      fieldMetadataUniversalIdentifier: IDENTIFIERS.creatorRawProfile,
+      position: 10,
+      isVisible: false,
+      size: 220,
+    },
+    {
+      universalIdentifier: '1a9bf6e3-b21e-4512-85f4-b523210fd9a8',
+      fieldMetadataUniversalIdentifier: IDENTIFIERS.creatorEnrichmentResults,
+      position: 11,
+      isVisible: false,
+      size: 220,
+    },
+
+    {
+      universalIdentifier: '747b77f9-44e2-52a8-9415-98dad211f605',
+      fieldMetadataUniversalIdentifier: '4a39d35e-18cd-5640-87ea-70aa58af95e7',
+      position: 0,
+      isVisible: true,
+      size: 220,
+    },
+    {
+      universalIdentifier: '6f4a0469-dbf2-595d-a576-721bcedb4a01',
+      fieldMetadataUniversalIdentifier: '34ffc85b-711f-50ae-8fae-12962945547f',
+      position: 100,
+      isVisible: false,
+      size: 140,
+    },
+    {
+      universalIdentifier: '210379cd-a9ca-50b7-aad2-2c1dcafe6ee9',
+      fieldMetadataUniversalIdentifier: 'eb5b82a0-ed9d-53a3-9d8a-91ee76dbc252',
+      position: 1,
+      isVisible: true,
+      size: 140,
+    },
+    {
+      universalIdentifier: '14ebacee-bea4-5eb3-b743-ea9632bc6cb0',
+      fieldMetadataUniversalIdentifier: 'c75be839-0fd9-54c1-ac09-a03b002965f9',
+      position: 2,
+      isVisible: true,
+      size: 140,
+    },
+    {
+      universalIdentifier: 'f2bf4466-4a42-5701-951c-8afb01e0c83a',
+      fieldMetadataUniversalIdentifier: '2accd650-0db4-5e71-b8a9-ceb00e7c4ce2',
+      position: 101,
+      isVisible: false,
+      size: 140,
+    },
+    {
+      universalIdentifier: '881c0ac2-ec9f-5a87-b6dc-f7dd1ee9ebbd',
+      fieldMetadataUniversalIdentifier: 'd0cbe69c-00d3-58a1-8c64-96a2aa8d2571',
+      position: 4,
+      isVisible: true,
+      size: 220,
+    },
+    {
+      universalIdentifier: '8cf90678-068f-5490-b946-16485968001e',
+      fieldMetadataUniversalIdentifier: '05a3fcb9-9746-51cd-b81e-6b25d840d583',
+      position: 5,
+      isVisible: true,
+      size: 220,
+    },
+    {
+      universalIdentifier: '15271031-09f2-5cd2-be2c-11255231b97f',
+      fieldMetadataUniversalIdentifier: '73b9cfdd-ab21-50a5-afbb-cfb0ae5b4690',
+      position: 6,
+      isVisible: false,
+      size: 180,
+    },
+    {
+      universalIdentifier: '70c163b8-67c0-50ac-a439-4d061b356e68',
+      fieldMetadataUniversalIdentifier: '77c57e29-aeca-56a6-b332-9d67f8a11e36',
+      position: 7,
+      isVisible: false,
+      size: 180,
+    },
+  ],
+});

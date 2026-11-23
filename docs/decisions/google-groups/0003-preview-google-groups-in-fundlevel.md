@@ -4,7 +4,7 @@
 - Status: accepted
 - Decided by: Kareem
 - Area: Google Groups; workspace previews
-- Related: [Initial Sunny copy](../0007-sunny-live-state-vm-preview.md), [Fundlevel handoff](../../handoffs/2026-11-22-fundlevel-google-groups-preview.md)
+- Related: [Initial Sunny copy](../0010-sunny-live-state-vm-preview.md), [Fundlevel handoff](../../handoffs/2026-11-22-fundlevel-google-groups-preview.md)
 
 ## Context
 

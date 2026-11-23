@@ -250,7 +250,9 @@ export default defineObject({
       universalIdentifier:
         TWITTER_PROFILE_FIELD_UNIVERSAL_IDENTIFIERS.calculationsEnabled,
       name: 'calculationsEnabled',
-      label: 'Calculations Enabled',
+      label: 'Scheduled Calculations',
+      description:
+        'Enroll this profile in scheduled profile and analytics refreshes. Turn off to disenroll. Manual refreshes remain available.',
       type: FieldType.BOOLEAN,
       icon: 'IconCalculator',
       defaultValue: true,

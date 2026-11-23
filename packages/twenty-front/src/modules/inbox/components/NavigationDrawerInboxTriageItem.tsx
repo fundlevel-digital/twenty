@@ -12,6 +12,7 @@ import { INBOX_THREAD_PRESET_FILTER_LABELS } from '@/inbox/constants/InboxThread
 import { INBOX_INSTANCE_ID } from '@/inbox/constants/InboxInstanceId';
 import { inboxSelectedThreadListSourceState } from '@/inbox/states/inboxSelectedThreadListSourceState';
 import { isInboxOpenThreadPresetFilter } from '@/inbox/utils/isInboxOpenThreadPresetFilter';
+import { isCommentsInboxView } from '@/inbox/utils/isCommentsInboxView';
 import { useResetRecordSelection } from '@/object-record/record-selection/hooks/useResetRecordSelection';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
@@ -58,7 +59,11 @@ export const NavigationDrawerInboxTriageItem = ({
       secondaryLabel={isDefined(count) && count > 0 ? `${count}` : undefined}
       isUnread={isUnread}
       Icon={INBOX_THREAD_PRESET_FILTER_ICONS[presetFilter]}
-      active={isInboxPath(location.pathname) && isCurrentFilter}
+      active={
+        isInboxPath(location.pathname) &&
+        !isCommentsInboxView(location) &&
+        isCurrentFilter
+      }
       onClick={handleClick}
       triggerEvent="CLICK"
     />
