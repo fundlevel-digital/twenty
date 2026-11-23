@@ -115,3 +115,27 @@ describe('getAiChatMessageAuthor', () => {
     ).toBe('Unknown sender');
   });
 });
+
+it('attributes an external assistant reply to its app-owned bot identity', () => {
+  const externalAssistant = {
+    id: 'bot',
+    applicationId: 'app',
+    name: 'Research Bot',
+    avatarUrl: null,
+  };
+  expect(
+    getAiChatMessageAuthor({
+      message: {
+        id: 'message',
+        role: 'assistant',
+        metadata: { senderApplicationId: 'app', externalAssistant },
+      },
+      authorLookup: AUTHOR_CONTEXT,
+    }),
+  ).toMatchObject({
+    type: 'application',
+    applicationId: 'app',
+    name: 'Research Bot',
+    externalAssistant,
+  });
+});

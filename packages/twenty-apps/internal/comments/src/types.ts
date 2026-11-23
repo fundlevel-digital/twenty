@@ -1,3 +1,6 @@
+import { type OpenBotAgent } from './openbot/types';
+import { type OpenBotDeliveryStatus } from './openbot/delivery-status';
+
 export type Mention = {
   id: string;
   label: string;
@@ -5,10 +8,12 @@ export type Mention = {
   avatarUrl?: string | null;
 };
 export type RecordComment = {
+  botOwned?: boolean;
   id: string;
   body: string;
   authorId: string;
   authorName: string;
+  authorKind?: 'HUMAN' | 'BOT' | 'SYSTEM' | null;
   parentId: string | null;
   resolved: boolean;
   deleted: boolean;
@@ -47,4 +52,7 @@ export type CommentResponse = {
   recordLabel: string;
   objectLabel?: string;
   notificationFailed?: boolean;
+  openBotAgents?: OpenBotAgent[];
+  openBotDeliveries?: OpenBotDeliveryStatus[];
+  openBotDeliveryFailed?: boolean;
 };

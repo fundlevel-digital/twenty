@@ -1,3 +1,4 @@
+import { AssistantAvatar } from 'twenty-ui/components/data-display';
 import { forwardRef } from 'react';
 import { StandardObjectNameSingular } from 'twenty-shared/types';
 import { isAgentChatAssistantReference } from 'twenty-shared/ai';
@@ -44,6 +45,9 @@ const renderItem = ({
       startIcon={
         isAssistantReference ? (
           <AiChatAssistantAvatar size={14} />
+        ) : ['externalAssistant', 'agent'].includes(item.objectNameSingular) &&
+          !item.imageUrl ? (
+          <AssistantAvatar size={14} />
         ) : (
           <AvatarOrIcon
             name={item.label}

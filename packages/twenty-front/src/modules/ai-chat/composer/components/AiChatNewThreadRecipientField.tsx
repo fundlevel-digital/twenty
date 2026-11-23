@@ -1,3 +1,4 @@
+import { AssistantAvatar } from 'twenty-ui/components/data-display';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { type MouseEvent, useId, useRef, useState } from 'react';
@@ -88,6 +89,7 @@ export const AiChatNewThreadRecipientField = () => {
   );
   const {
     isAssistantSuggested,
+    suggestedExternalAssistants,
     suggestedWorkspaceMembers,
     suggestedChannels,
     suggestionIds,
@@ -179,6 +181,32 @@ export const AiChatNewThreadRecipientField = () => {
               }}
             />
           )}
+          {(recipients.externalAssistants ?? []).map((assistant) => (
+            <ChatRecipientChip
+              key={assistant.id}
+              label={assistant.name}
+              avatar={
+                assistant.avatarUrl ? (
+                  <Avatar
+                    name={assistant.name}
+                    src={assistant.avatarUrl}
+                    size="sm"
+                  />
+                ) : (
+                  <AssistantAvatar size={14} />
+                )
+              }
+              onRemove={() => {
+                focusAddRecipientsInput();
+                setRecipients((current) => ({
+                  ...current,
+                  externalAssistants: current.externalAssistants?.filter(
+                    ({ id }) => id !== assistant.id,
+                  ),
+                }));
+              }}
+            />
+          ))}
           {recipientWorkspaceMembers.map((workspaceMember) => {
             const label = getWorkspaceMemberNameOrEmail(workspaceMember);
 
@@ -240,6 +268,7 @@ export const AiChatNewThreadRecipientField = () => {
       </FormFieldRow>
       <AiChatNewThreadRecipientPicker
         isAssistantSuggested={isAssistantSuggested}
+        suggestedExternalAssistants={suggestedExternalAssistants}
         suggestedWorkspaceMembers={suggestedWorkspaceMembers}
         suggestedChannels={suggestedChannels}
         hasMoreSuggestions={hasMoreSuggestions}

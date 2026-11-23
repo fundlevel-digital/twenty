@@ -1,7 +1,7 @@
 import { useTranslate } from 'twenty-sdk/front-component';
 import { LightIconButton } from 'twenty-ui/components/input';
 import { Dropdown } from 'twenty-ui/components/navigation';
-import { Avatar } from 'twenty-ui/primitives/data-display';
+import { Avatar, Tag } from 'twenty-ui/primitives/data-display';
 import { Text } from 'twenty-ui/primitives/typography';
 import {
   IconArrowBackUp,
@@ -10,6 +10,9 @@ import {
   IconLink,
   IconTrash,
 } from 'twenty-ui/icon';
+import { type OpenBotAgent } from '../openbot/types';
+import { type OpenBotDeliveryStatus } from '../openbot/delivery-status';
+import { OpenBotAvatar } from './OpenBotAvatar';
 import { type RecordComment } from '../types';
 import { CommentBody } from './CommentBody';
 import { Actions, MessageBody, MessageHeader } from './styles';
@@ -22,6 +25,8 @@ type CommentMessageProps = {
   onResolve?: () => void;
   onCopy: () => void;
   onDelete: () => void;
+  openBotAgents?: OpenBotAgent[];
+  openBotDeliveries?: OpenBotDeliveryStatus[];
 };
 export const CommentMessage = ({
   comment,
@@ -31,6 +36,8 @@ export const CommentMessage = ({
   onResolve,
   onCopy,
   onDelete,
+  openBotAgents,
+  openBotDeliveries,
 }: CommentMessageProps) => {
   const { t, locale } = useTranslate();
   const minutes = Math.floor(
@@ -55,7 +62,18 @@ export const CommentMessage = ({
   return (
     <>
       <MessageHeader>
-        <Avatar name={comment.authorName} size="md" shape="circle" />
+        {comment.authorKind === 'BOT' ? (
+          <OpenBotAvatar
+            name={comment.authorName}
+            avatarUrl={
+              openBotAgents?.find(({ id }) => id === comment.authorId)
+                ?.avatarUrl
+            }
+          />
+        ) : (
+          <Avatar name={comment.authorName} size="md" shape="circle" />
+        )}
+        {comment.authorKind === 'BOT' && <Tag color="gray">{t('Bot')}</Tag>}
         <Text weight="medium" truncate>
           {comment.authorName}
         </Text>
@@ -128,6 +146,29 @@ export const CommentMessage = ({
         ) : (
           <CommentBody comment={comment} />
         )}
+        {openBotDeliveries
+          ?.filter(({ commentId }) => commentId === comment.id)
+          .map((delivery) => (
+            <Text
+              key={delivery.agentId}
+              size="sm"
+              color="tertiary"
+              role="status"
+            >
+              {openBotAgents?.find(({ id }) => id === delivery.agentId)?.name ??
+                t('Bot')}
+              {' · '}
+              {delivery.status === 'pending'
+                ? t('Queued')
+                : delivery.status === 'accepted'
+                  ? t('Sent to OpenBot')
+                  : delivery.status === 'retrying'
+                    ? t('Retrying Delivery')
+                    : delivery.status === 'failed'
+                      ? t('Delivery Failed')
+                      : t('Replied')}
+            </Text>
+          ))}
       </MessageBody>
     </>
   );

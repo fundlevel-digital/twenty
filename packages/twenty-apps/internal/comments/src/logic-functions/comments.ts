@@ -8,6 +8,13 @@ import {
   type LogicFunctionExecutionContext,
 } from 'twenty-sdk/logic-function';
 import { IDENTIFIERS } from '../constants/identifiers';
+import { readBotRecord, botProviderRequest } from '../openbot/provider';
+import {
+  getPublicOpenBotAgents,
+  searchOpenBotMentions,
+  validateOpenBotMention,
+} from '../openbot/mentions';
+import { queueOpenBotMentions } from '../openbot/queue-comment';
 import {
   type CommentRequest,
   type CommentResponse,
@@ -28,7 +35,7 @@ import {
 import { getMentionRanges, hasUnselectedMention } from '../utils/mention-draft';
 
 const FIELDS =
-  'id body authorId authorName parentId resolved deleted createdAt mentions targetObject targetRecordId';
+  'id body authorId authorName authorKind: authorType parentId resolved deleted createdAt mentions targetObject targetRecordId';
 type CommentEdges = {
   recordComments: {
     edges: { node: RecordComment }[];
@@ -85,6 +92,7 @@ export const commentsHandler = async (
       ),
     ]);
     return [
+      ...(await searchOpenBotMentions(query)),
       ...members.workspaceMembers.edges
         .map(({ node }) => ({
           id: node.id,
@@ -96,11 +104,13 @@ export const commentsHandler = async (
           label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
         )
         .slice(0, 8),
-      ...records.search.edges.map(({ node }) => ({
-        id: node.recordId,
-        label: node.label,
-        objectName: node.objectNameSingular,
-      })),
+      ...records.search.edges
+        .filter(({ node }) => node.objectNameSingular !== 'bot')
+        .map(({ node }) => ({
+          id: node.recordId,
+          label: node.label,
+          objectName: node.objectNameSingular,
+        })),
     ];
   }
 
@@ -124,14 +134,31 @@ export const commentsHandler = async (
       : undefined;
   } while (cursor);
 
+  const botRecord = await readBotRecord(input);
+  comments.push(...botRecord.comments);
+  comments.sort(
+    (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
+  );
   const result = {
     comments,
     memberId,
     recordLabel,
     objectLabel,
+    openBotAgents: await getPublicOpenBotAgents(),
+    openBotDeliveries: botRecord.statuses,
   };
   if (input.action === 'list') return result;
   const existing = comments.find(({ id }) => id === input.id);
+  if (
+    (input.action === 'delete' || input.action === 'resolve') &&
+    existing?.botOwned
+  ) {
+    await botProviderRequest({ ...input });
+    return commentsHandler(
+      { body: { ...input, action: 'list' } } as RoutePayload<CommentRequest>,
+      context,
+    );
+  }
   if (input.action === 'delete' || input.action === 'resolve') {
     if (!existing || (existing.deleted && input.action === 'delete'))
       throw new Error('Comment unavailable');
@@ -183,18 +210,28 @@ export const commentsHandler = async (
     ),
   ];
   if (mentions.length > 20) throw new Error('Mention up to 20 recipients');
+  const botValidation = await Promise.all(
+    mentions
+      .filter((mention) => ['bot', 'openbotAgent'].includes(mention.objectName))
+      .map((mention) => validateOpenBotMention(mention, input.body ?? '')),
+  );
+  if (botValidation.some((valid) => !valid)) {
+    throw new Error('Select a connected OpenBot agent from the mention picker');
+  }
   // Validate references as the caller before saving or delivering any mention.
   const references = await Promise.all(
-    mentions.map(async (mention) => ({
-      mention,
-      text:
-        mention.objectName === 'workspaceMember'
-          ? await inboxMention({ workspaceMemberId: mention.id })
-          : await inboxReferenceRecord({
-              objectNameSingular: mention.objectName,
-              recordId: mention.id,
-            }),
-    })),
+    mentions
+      .filter(({ objectName }) => !['bot', 'openbotAgent'].includes(objectName))
+      .map(async (mention) => ({
+        mention,
+        text:
+          mention.objectName === 'workspaceMember'
+            ? await inboxMention({ workspaceMemberId: mention.id })
+            : await inboxReferenceRecord({
+                objectNameSingular: mention.objectName,
+                recordId: mention.id,
+              }),
+      })),
   );
   const created = await graphql<{ createRecordComment: RecordComment }>(
     `mutation($data: RecordCommentCreateInput!) { createRecordComment(data: $data) { ${FIELDS} } }`,
@@ -207,6 +244,8 @@ export const commentsHandler = async (
         targetRecordId: input.recordId,
         authorId: memberId,
         authorName,
+        authorKind: 'HUMAN',
+        authorType: 'HUMAN',
         mentions: JSON.stringify(mentions),
         resolved: false,
         deleted: false,
@@ -215,6 +254,12 @@ export const commentsHandler = async (
     true,
   );
   const comment = created.createRecordComment;
+  let openBotDeliveryFailed = false;
+  try {
+    await queueOpenBotMentions(comment, mentions, recordLabel);
+  } catch {
+    openBotDeliveryFailed = true;
+  }
   let notificationFailed = false;
   const recipients = [
     ...new Set(
@@ -253,7 +298,13 @@ export const commentsHandler = async (
       notificationFailed = true;
     }
   }
-  return { ...result, comments: [...comments, comment], notificationFailed };
+  return {
+    ...result,
+    comments: [...comments, comment],
+    notificationFailed,
+    openBotDeliveryFailed,
+    openBotDeliveries: (await readBotRecord(input)).statuses,
+  };
 };
 
 export default defineLogicFunction({

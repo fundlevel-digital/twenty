@@ -42,3 +42,23 @@ describe('getAgentInboxSenderDetails', () => {
     });
   });
 });
+
+it('preserves the owning app thread namespace while carrying the registered assistant identity', () => {
+  const externalAssistant = {
+    id: 'bot',
+    applicationId: 'app',
+    name: 'Research Bot',
+    avatarUrl: null,
+  };
+  expect(
+    getAgentInboxSenderDetails({
+      type: 'application',
+      application: { id: 'app', name: 'OpenBot' } as FlatApplication,
+      externalAssistant,
+    }),
+  ).toMatchObject({
+    key: 'application:app',
+    applicationId: 'app',
+    externalAssistant,
+  });
+});

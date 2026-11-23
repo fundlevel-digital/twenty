@@ -1,3 +1,4 @@
+import { getExternalAssistantIdentity } from '@/ai/utils/get-external-assistant-identity.util';
 import { type AgentMessageRow } from '@/ai/types/AgentMessageRow';
 import { type ExtendedUIMessage } from '@/ai/types/ExtendedUIMessage';
 import { mapAgentMessagePartToUIMessagePart } from '@/ai/utils/map-agent-message-part-to-ui-message-part.util';
@@ -15,6 +16,14 @@ export const mapAgentMessagesToUIMessages = (
       .map(mapAgentMessagePartToUIMessagePart)
       .filter(isDefined),
     metadata: {
+      externalAssistant:
+        message.role === 'assistant'
+          ? getExternalAssistantIdentity(
+              message.parts.find((part) => part.type === 'text')
+                ?.providerMetadata?.externalAssistant,
+              message.senderApplicationId,
+            )
+          : undefined,
       createdAt: message.createdAt,
       senderWorkspaceMemberId: message.senderWorkspaceMemberId,
       senderApplicationId: message.senderApplicationId,

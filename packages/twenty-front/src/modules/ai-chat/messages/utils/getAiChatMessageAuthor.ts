@@ -1,5 +1,8 @@
 import { t } from '@lingui/core/macro';
-import { type ExtendedUIMessage } from 'twenty-shared/ai';
+import {
+  getExternalAssistantIdentity,
+  type ExtendedUIMessage,
+} from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 
 import { AGENT_MESSAGE_ROLE } from '@/ai-chat/messages/constants/AgentMessageRole';
@@ -25,6 +28,10 @@ export const getAiChatMessageAuthor = <
   agentName?: string;
 }): AiChatMessageAuthor<TWorkspaceMember> => {
   const applicationId = message.metadata?.senderApplicationId;
+  const externalAssistant = getExternalAssistantIdentity(
+    message.metadata?.externalAssistant,
+    applicationId,
+  );
   const senderWorkspaceMemberId = message.metadata?.senderWorkspaceMemberId;
   const agentId = message.metadata?.agentId;
 
@@ -36,14 +43,28 @@ export const getAiChatMessageAuthor = <
     };
   }
 
+  if (
+    isDefined(agentId) &&
+    externalAssistant &&
+    externalAssistant.id === agentId
+  ) {
+    return {
+      ...getAiChatAgentAuthor({ agentId, agentName: externalAssistant.name }),
+      externalAssistant,
+    };
+  }
+
   if (isDefined(applicationId)) {
     return {
       type: 'application',
       applicationId,
-      name: getInstalledApplicationDisplayName({
-        applicationId,
-        currentWorkspace: authorLookup.currentWorkspace,
-      }),
+      externalAssistant,
+      name:
+        externalAssistant?.name ??
+        getInstalledApplicationDisplayName({
+          applicationId,
+          currentWorkspace: authorLookup.currentWorkspace,
+        }),
       isNameResolved: true,
     };
   }

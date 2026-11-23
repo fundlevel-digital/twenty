@@ -15,6 +15,7 @@ supersession. Operational instructions stay with their package or skill.
 | GitHub Profiles | [Decisions](decisions/github-profiles/DECISIONS.md) | [App README](../packages/twenty-apps/internal/github-profiles/README.md), [preview handoff](handoffs/2026-11-22-github-profiles-preview.md), [live release](handoffs/2026-11-22-github-profiles-live-release.md) |
 | Comments | [Decisions](decisions/comments/DECISIONS.md) | [App README](../packages/twenty-apps/internal/comments/README.md) |
 | Related Columns | [Decisions](decisions/related-columns/DECISIONS.md) | [Platform handoff](handoffs/2026-11-23-platform-related-fields.md), saved paths, grouping and related-value displays |
+| OpenBot | [Decisions](decisions/openbot/DECISIONS.md) | [Standalone app](../packages/twenty-apps/internal/openbot/README.md) |
 | Cal.com | [Decisions](decisions/cal-com/DECISIONS.md) | [App README](../packages/twenty-apps/public/cal-com/README.md) |
 | Slack Sync | [Decisions](decisions/slack/DECISIONS.md) | [Implementation](slack-sync.md) |
 | LinkedIn Sync | [Decisions](decisions/linkedin/DECISIONS.md) | [App README](../packages/twenty-apps/internal/fundlevel-linkedin/README.md), [handoff](../packages/twenty-apps/internal/fundlevel-linkedin/HANDOFF.md) |
@@ -47,5 +48,6 @@ identify scope, decisions, implementation and verification limits.
 | [0011](decisions/0011-install-plusvibe-and-cal-com-in-sunny-preview.md) | 2026-11-22 | Install PlusVibe and Cal.com in Sunny’s VM preview | accepted |
 | [0012](decisions/0012-verify-google-channel-app-feasibility.md) | 2026-11-22 | Verify shared-channel app feasibility in the running preview | accepted |
 | [0013](decisions/0013-install-matt-pocock-grilling-skill.md) | 2026-11-23 | Install Matt Pocock's Grilling Skill | accepted |
+| [0009](decisions/0009-retire-hindsight-agent-integration.md) | 2026-11-22 | Remove the obsolete Hindsight skill, invocation rules and MCP launch configuration | accepted |
 
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).

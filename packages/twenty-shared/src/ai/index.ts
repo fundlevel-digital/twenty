@@ -120,6 +120,7 @@ export type {
   ExtendedUIMessage,
 } from './types/ExtendedUIMessage';
 export type { ExtendedUIMessagePart } from './types/ExtendedUIMessagePart';
+export type { ExternalAssistantIdentity } from './types/ExternalAssistantIdentity';
 export type { ModelConfiguration } from './types/ModelConfiguration';
 export type { ProposedToolCall } from './types/ProposedToolCall';
 export type { ProposedToolCallTemplate } from './types/ProposedToolCallTemplate';
@@ -157,6 +158,7 @@ export { getAgentChatThreadInboxStatus } from './utils/get-agent-chat-thread-inb
 export { getAgentChatWebPushNotificationTag } from './utils/get-agent-chat-web-push-notification-tag.util';
 export { getAiModelTierFromModelId } from './utils/get-ai-model-tier-from-model-id.util';
 export { getChatReferenceSegments } from './utils/get-chat-reference-segments.util';
+export { getExternalAssistantIdentity } from './utils/get-external-assistant-identity.util';
 export { hasAiRunScopeRepeatedEntries } from './utils/has-ai-run-scope-repeated-entries.util';
 export { inferAiSdkPackage } from './utils/infer-ai-sdk-package.util';
 export { isAgentChatAssistantReference } from './utils/is-agent-chat-assistant-reference.util';
@@ -192,3 +194,4 @@ export { parseAiModelVariantId } from './utils/parse-ai-model-variant-id.util';
 export { parseChatReferenceBody } from './utils/parse-chat-reference-body.util';
 export { parseChatReferences } from './utils/parse-chat-references.util';
 export { replaceMalformedChatReferencesWithDisplayName } from './utils/replace-malformed-chat-references-with-display-name.util';
+export { EXTERNAL_APPLICATION_AGENT_MODEL_ID } from './constants/external-application-agent-model-id.constant';

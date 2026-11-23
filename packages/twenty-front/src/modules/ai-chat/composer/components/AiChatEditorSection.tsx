@@ -1,3 +1,4 @@
+import { useExternalAssistantMentionSearch } from '@/ai-chat/external-assistants/useExternalAssistantMentionSearch';
 import { useAiChatInstanceOrThrow } from '@/ai-chat/hooks/useAiChatInstanceOrThrow';
 import { useCurrentAiChatThreadAccess } from '@/ai-chat/threads/hooks/useCurrentAiChatThreadAccess';
 import { StyledAiChatContentContainer } from '@/ai-chat/components/StyledAiChatContentContainer';
@@ -152,6 +153,8 @@ const EditableAiChatEditorSection = () => {
     !hasReachedAiChatCreditsCap && hasReachedAiChatUsageLimit;
   const aiModels = useAtomStateValue(aiModelsState);
   const hasNoEnabledModels = aiModels.length === 0;
+  const searchExternalAssistants = useExternalAssistantMentionSearch();
+  const hasExternalAssistants = searchExternalAssistants('').length > 0;
   const canSendAiChatMessage = useCanSendAiChatMessage();
   const { threadId } = useAiChatInstanceOrThrow();
   const isDirectMessage = useAtomFamilySelectorValue(
@@ -225,7 +228,11 @@ const EditableAiChatEditorSection = () => {
         {isComposerCentered && <AiChatEmptyState isCentered />}
         {!isDirectMessage && <AiChatContextPreview />}
         {hasNoEnabledModels && !isDirectMessage && (
-          <AiChatInlineBanner>{t`No AI provider is configured on this instance.`}</AiChatInlineBanner>
+          <AiChatInlineBanner status={hasExternalAssistants ? 'info' : 'error'}>
+            {hasExternalAssistants
+              ? t`Mention an assistant to send a request.`
+              : t`No AI provider is configured on this instance.`}
+          </AiChatInlineBanner>
         )}
         {hasReachedAiChatCreditsCap && !isDirectMessage && (
           <AiChatNoMoreBillingCreditsBanner />

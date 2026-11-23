@@ -7,4 +7,6 @@ export const isTeammateMentionSearchResult = (
   item: Pick<MentionSearchResult, 'objectNameSingular'>,
 ) =>
   isWorkspaceMemberMentionSearchResult(item) ||
-  item.objectNameSingular === AGENT_CHAT_ASSISTANT_MENTION_OBJECT_NAME_SINGULAR;
+  item.objectNameSingular ===
+    AGENT_CHAT_ASSISTANT_MENTION_OBJECT_NAME_SINGULAR ||
+  ['externalAssistant', 'agent'].includes(item.objectNameSingular);

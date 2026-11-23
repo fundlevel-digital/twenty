@@ -1,3 +1,4 @@
+import { type ExternalAssistantIdentity } from 'twenty-shared/ai';
 import { type PartialWorkspaceMember } from '@/settings/roles/types/RoleWithPartialMembers';
 
 export type AiChatMessageAuthor<
@@ -11,8 +12,16 @@ export type AiChatMessageAuthor<
   isNameResolved: boolean;
 } & (
   | { type: 'builtInAssistant' }
-  | { type: 'application'; applicationId: string }
-  | { type: 'agent'; agentId: string }
+  | {
+      type: 'application';
+      applicationId: string;
+      externalAssistant?: ExternalAssistantIdentity;
+    }
+  | {
+      type: 'agent';
+      agentId: string;
+      externalAssistant?: ExternalAssistantIdentity;
+    }
   | {
       type: 'member';
       senderWorkspaceMemberId: string;

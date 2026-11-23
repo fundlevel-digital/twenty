@@ -1,4 +1,4 @@
-import { isBoolean } from '@sniptt/guards';
+import { isBoolean, isString } from '@sniptt/guards';
 import { isPlainObject } from 'twenty-shared/utils';
 
 import { type AgentChatAssistantReplyContext } from 'src/engine/metadata-modules/ai/ai-chat/types/agent-chat-assistant-reply-context.type';
@@ -35,6 +35,12 @@ export const readAgentChatAssistantReplyContext = (
     }
 
     return {
+      ...(Array.isArray(context.mentionedExternalAssistantIds)
+        ? {
+            mentionedExternalAssistantIds:
+              context.mentionedExternalAssistantIds.filter(isString),
+          }
+        : {}),
       isAssistantMentioned,
       isDirectAssistantChat,
       isStructuredRequestContinuation,

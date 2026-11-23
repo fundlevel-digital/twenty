@@ -10,6 +10,26 @@ export default defineObject({
   icon: 'IconMessageCircle',
   labelIdentifierFieldMetadataUniversalIdentifier: IDENTIFIERS.name,
   fields: [
+    {
+      universalIdentifier: '4a507093-6271-47c8-a5a9-7640673010f0',
+      name: 'authorKind',
+      label: 'Legacy Author Kind',
+      type: FieldType.TEXT,
+      isUIEditable: false,
+      isNullable: true,
+    },
+    {
+      universalIdentifier: 'b3edd0f5-64fd-4415-8e9a-ac75784a801e',
+      name: 'authorType',
+      label: 'Author Kind',
+      type: FieldType.SELECT,
+      options: [
+        { value: 'HUMAN', label: 'Human', color: 'blue', position: 0 },
+        { value: 'BOT', label: 'Bot', color: 'purple', position: 1 },
+        { value: 'SYSTEM', label: 'System', color: 'gray', position: 2 },
+      ],
+      isNullable: true,
+    },
     ...(
       ['name', 'targetObject', 'body', 'authorName', 'mentions'] as const
     ).map((name) => ({

@@ -1,3 +1,4 @@
+import { ExternalAssistantMentionChip } from '@/ai-chat/external-assistants/ExternalAssistantMentionChip';
 import { AiChatAssistantMentionChip } from '@/ai-chat/components/AiChatAssistantMentionChip';
 import { ChatReferenceChip } from '@/ai-chat/message-content/components/ChatReferenceChip';
 import { StyledChatReferenceChipContainer } from '@/ai-chat/message-content/components/StyledChatReferenceChipContainer';
@@ -23,6 +24,20 @@ export const ChatReferenceSegments = ({
       {segments.map((segment) => {
         if (isString(segment)) {
           return segment;
+        }
+
+        if (
+          segment.kind === 'record' &&
+          ['externalAssistant', 'agent'].includes(segment.objectNameSingular)
+        ) {
+          return (
+            <StyledChatReferenceChipContainer key={segment.index}>
+              <ExternalAssistantMentionChip
+                id={segment.recordId}
+                name={segment.displayName}
+              />
+            </StyledChatReferenceChipContainer>
+          );
         }
 
         if (isAgentChatAssistantReference(segment)) {

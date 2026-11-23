@@ -14,6 +14,11 @@ import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/
 
 @InputType('SendInboxMessageInput')
 export class SendInboxMessageInputDTO {
+  @IsOptional()
+  @IsUUID()
+  @Field(() => UUIDScalarType, { nullable: true })
+  externalAssistantId?: string;
+
   @IsArray()
   @ArrayNotEmpty()
   @IsUUID(undefined, { each: true })

@@ -7,6 +7,7 @@ export const getAiChatNewThreadDirectMessageWorkspaceMemberId = ({
   isDirectMessageIdentityEnabled,
   newInboxChatRecipients,
   isAssistantMentioned,
+  hasExternalAssistant = false,
   channelId,
   initialRecipients,
   participantMentions,
@@ -14,6 +15,7 @@ export const getAiChatNewThreadDirectMessageWorkspaceMemberId = ({
   isDirectMessageIdentityEnabled: boolean;
   newInboxChatRecipients: AiChatNewThreadRecipients | undefined;
   isAssistantMentioned: boolean;
+  hasExternalAssistant?: boolean;
   channelId: string | null | undefined;
   initialRecipients: AiChatParticipantMention[];
   participantMentions: AiChatParticipantMention[];
@@ -23,6 +25,7 @@ export const getAiChatNewThreadDirectMessageWorkspaceMemberId = ({
     !isDefined(newInboxChatRecipients) ||
     newInboxChatRecipients.isAssistantParticipant ||
     isAssistantMentioned ||
+    hasExternalAssistant ||
     isDefined(channelId)
   ) {
     return undefined;

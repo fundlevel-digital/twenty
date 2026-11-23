@@ -1,3 +1,10 @@
+import { AiAgentModule } from '../ai-agent/ai-agent.module';
+import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
+import { LogicFunctionEntity } from 'src/engine/metadata-modules/logic-function/logic-function.entity';
+import { LogicFunctionExecutorModule } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.module';
+import { ExternalAssistantResolver } from './external-assistants/external-assistant.resolver';
+import { ExternalAssistantService } from './external-assistants/external-assistant.service';
 import { ApplicationGrantRoleLookupModule } from 'src/engine/core-modules/application/application-grant-role-lookup/application-grant-role-lookup.module';
 import { AgentChatReplyPolicyModule } from 'src/engine/metadata-modules/ai/ai-chat/agent-chat-reply-policy.module';
 import { CoreEntityCacheModule } from 'src/engine/core-entity-cache/core-entity-cache.module';
@@ -66,6 +73,13 @@ import { AgentChatWebPushNotificationService } from 'src/engine/metadata-modules
 
 @Module({
   imports: [
+    AiAgentModule,
+    LogicFunctionExecutorModule,
+    TypeOrmModule.forFeature([
+      KeyValuePairEntity,
+      LogicFunctionEntity,
+      UserWorkspaceEntity,
+    ]),
     ApplicationGrantRoleLookupModule,
     CoreEntityCacheModule,
     AgentChatStreamStateModule,
@@ -92,6 +106,9 @@ import { AgentChatWebPushNotificationService } from 'src/engine/metadata-modules
     WebPushModule,
   ],
   providers: [
+    ExternalAssistantResolver,
+    ExternalAssistantService,
+    provideWorkspaceScopedRepository(LogicFunctionEntity),
     AgentChatWebPushNotificationService,
     AgentChatWebPushNotificationListener,
     SendAgentChatWebPushNotificationsJob,

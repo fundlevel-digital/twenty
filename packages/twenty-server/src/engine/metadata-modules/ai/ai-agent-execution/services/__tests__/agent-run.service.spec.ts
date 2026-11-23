@@ -1,4 +1,7 @@
-import { type AgentResponseFormat } from 'twenty-shared/ai';
+import {
+  EXTERNAL_APPLICATION_AGENT_MODEL_ID,
+  type AgentResponseFormat,
+} from 'twenty-shared/ai';
 
 import { AgentRunCallerContextService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-run-caller-context.service';
 import { AgentRunService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-run.service';
@@ -49,6 +52,14 @@ const buildService = (overrides: Record<string, unknown>) => {
     findById: jest.fn().mockResolvedValue(APPLICATION),
   };
   const agentActorContextService = {
+    buildRunAsWorkspaceMemberContext: jest.fn().mockResolvedValue({
+      authContext: {
+        type: 'user',
+        workspaceMemberId: 'member',
+        userWorkspaceId: 'membership',
+        workspace: { id: WORKSPACE_ID },
+      },
+    }),
     buildApplicationAgentContext: jest.fn().mockResolvedValue({
       application: APPLICATION,
       authContext: { type: 'application', application: APPLICATION },
@@ -57,6 +68,9 @@ const buildService = (overrides: Record<string, unknown>) => {
   };
   const agentRunnerService = { start: jest.fn().mockResolvedValue(undefined) };
 
+  const nativeApplicationRuntime = {
+    run: jest.fn().mockResolvedValue(undefined),
+  };
   const service = new AgentRunService(
     agentActorContextService as never,
     agentRunnerService as never,
@@ -71,9 +85,10 @@ const buildService = (overrides: Record<string, unknown>) => {
     {} as never,
     applicationLookupService as never,
     agentRepository as never,
+    nativeApplicationRuntime as never,
   );
 
-  return { service, agentRunnerService };
+  return { service, agentRunnerService, nativeApplicationRuntime };
 };
 
 const runAgent = (service: AgentRunService) =>
@@ -172,4 +187,35 @@ describe('AgentRunService', () => {
       });
     });
   });
+});
+
+it('routes a native external Agent API run without starting a model job', async () => {
+  const { service, agentRunnerService, nativeApplicationRuntime } =
+    buildService({ modelId: EXTERNAL_APPLICATION_AGENT_MODEL_ID });
+  const result = await service.run({
+    workspace: { id: WORKSPACE_ID } as never,
+    requestUserWorkspaceId: 'membership',
+    requestWorkspaceMemberId: 'member',
+    callerApplication: APPLICATION as never,
+    input: {
+      agentUniversalIdentifier: AGENT_UNIVERSAL_IDENTIFIER,
+      prompt: 'External work',
+      runAsWorkspaceMemberId: 'member',
+      waitForCompletion: false,
+    },
+  });
+  expect(result.status).toBe('RUNNING');
+  expect(nativeApplicationRuntime.run).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agentId: AGENT_ID,
+      runId: result.runId,
+      text: 'External work',
+      actor: {
+        workspaceId: WORKSPACE_ID,
+        workspaceMemberId: 'member',
+        userWorkspaceId: 'membership',
+      },
+    }),
+  );
+  expect(agentRunnerService.start).not.toHaveBeenCalled();
 });

@@ -44,6 +44,7 @@
 - [Related Attribute Columns Preview](handoffs/2026-11-22-related-columns-preview.md): one-to-many and junction attribute columns, synthetic fixture and isolated VM runtime.
 
 - [Influencer YouTube Channel Migration](handoffs/2026-11-22-influencer-youtube-channels.md): live channel links, migrated details/analytics, preserved pricing and API verification.
+- [OpenBot Comments Preview](handoffs/2026-11-22-openbot-comments-preview.md): bot settings, task assignees and reminder workflows, signed replies, and isolated preview verification.
 
 - [NanoInfluencer Live Release](handoffs/2026-11-22-nano-influencer-live-release.md): pinned core rollout, native app installation, enum backfills and live verification.
 - [NanoInfluencer App And VM Preview](handoffs/2026-11-22-nano-influencer-preview.md): native list/creator sync, search-history imports, enrichment, grouped views and isolated VM verification.
@@ -73,3 +74,12 @@ package. Decision records are centralized under this directory.
 - [Fundlevel Google Groups Preview](handoffs/2026-11-22-fundlevel-google-groups-preview.md): separate Fundlevel snapshot, completed history import, native inbox views and preserved Sunny setup.
 
 - [Google Groups Live Release](handoffs/2026-11-23-google-groups-live-release.md): merged app installation, preservation checks and Google configuration still required.
+
+- [Standalone OpenBot App And VM Preview](handoffs/2026-11-22-openbot-standalone-preview.md)
+
+- [OpenBot Native Assistants](handoffs/2026-11-23-openbot-native-assistants.md): standalone app enrollment, native Inbox mentions and attributed webhook replies.
+- [OpenBot Selection And Reply Compatibility](handoffs/2026-11-23-openbot-selection-and-reply-compatibility.md): recipient and draft Task picker corrections, plus trusted callback setup requirements.
+
+- [OpenBot Native Agent Runtime](handoffs/2026-11-23-openbot-native-agent-runtime.md): app-owned native Agents, delegated external runs, signed completion and isolated verification.
+
+- [OpenBot Public Preview Callback](handoffs/2026-11-23-openbot-public-preview-callback.md): Conductor 403 diagnosis, callback-only HTTPS ingress and public signed-reply verification.

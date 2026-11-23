@@ -22,7 +22,13 @@ import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSe
 import { isStandaloneVariableString } from 'twenty-shared/workflow';
 import { hasFullFormFieldBorder } from '@/ui/input/utils/hasFullFormFieldBorder';
 import { styled } from '@linaria/react';
-import { type KeyboardEvent, useCallback, useId, useState } from 'react';
+import {
+  type ReactNode,
+  type KeyboardEvent,
+  useCallback,
+  useId,
+  useState,
+} from 'react';
 import { CustomError, isDefined, isValidUuid } from 'twenty-shared/utils';
 import { Key } from 'ts-key-enum';
 import { doNotTranslate } from 'twenty-shared/i18n';
@@ -80,6 +86,8 @@ type FormSingleRecordPickerValue =
     };
 
 export type FormSingleRecordPickerProps = {
+  additionalPickerItems?: (pickerId: string) => ReactNode;
+  additionalSelection?: ReactNode;
   label?: string;
   defaultValue?: RecordId | Variable | null;
   onChange: (value: RecordId | Variable | null) => void;
@@ -99,6 +107,8 @@ export type FormSingleRecordPickerProps = {
 };
 
 export const FormSingleRecordPicker = ({
+  additionalPickerItems,
+  additionalSelection,
   label,
   defaultValue,
   objectNameSingulars,
@@ -299,14 +309,17 @@ export const FormSingleRecordPicker = ({
                     preventFocusStackUpdate={true}
                     variant={variant}
                   >
-                    <FormSingleRecordFieldChip
-                      draftValue={draftValue}
-                      selectedRecord={selectedRecord}
-                      objectNameSingular={resolvedObjectNameSingular}
-                      onRemove={handleUnlinkVariable}
-                      disabled={disabled}
-                      variant={variant}
-                    />
+                    {(!additionalSelection || defaultValue) && (
+                      <FormSingleRecordFieldChip
+                        draftValue={draftValue}
+                        selectedRecord={selectedRecord}
+                        objectNameSingular={resolvedObjectNameSingular}
+                        onRemove={handleUnlinkVariable}
+                        disabled={disabled}
+                        variant={variant}
+                      />
+                    )}
+                    {additionalSelection}
                     <StyledIconButton $variant={variant}>
                       <IconChevronDown
                         size={theme.icon.size.md}
@@ -322,6 +335,7 @@ export const FormSingleRecordPicker = ({
               }
               dropdownComponents={
                 <SingleRecordPicker
+                  additionalItems={additionalPickerItems?.(dropdownId)}
                   focusId={dropdownId}
                   componentInstanceId={dropdownId}
                   EmptyIcon={IconForbid}

@@ -83,6 +83,12 @@ export class ApplicationKeyValueService {
     value: unknown;
     scope: AppKeyValueScope;
   }): Promise<AppKeyValue> {
+    if (key.startsWith('external-assistant:')) {
+      throw new ApplicationException(
+        'External assistant keys are managed by the native assistant API',
+        ApplicationExceptionCode.FORBIDDEN,
+      );
+    }
     if (scope === AppKeyValueScope.SERVER) {
       return this.claimServerKey({ application, workspaceId, key });
     }

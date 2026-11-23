@@ -1,3 +1,5 @@
+import { EXTERNAL_APPLICATION_AGENT_MODEL_ID } from 'twenty-shared/ai';
+import { Text } from 'twenty-ui/primitives/typography';
 import { useLingui } from '@lingui/react/macro';
 import { Section } from 'twenty-ui/components/layout';
 
@@ -28,6 +30,25 @@ export const CoreAgentSettingsContent = ({
   areTriggersEnabled,
 }: CoreAgentSettingsContentProps) => {
   const { t } = useLingui();
+
+  if (formValues.modelId === EXTERNAL_APPLICATION_AGENT_MODEL_ID) {
+    return (
+      <>
+        <CoreAgentModelSection
+          formValues={formValues}
+          onFieldChange={onFieldChange}
+          isReadOnly
+        />
+        <Section.Root>
+          <Section.Header
+            title={t`Configuration`}
+            description={t`Manage this agent's instructions and tools in its external application.`}
+          />
+          <Text>{agent.description}</Text>
+        </Section.Root>
+      </>
+    );
+  }
 
   return (
     <>

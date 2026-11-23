@@ -2,6 +2,7 @@ import { type AgentChatInboxDeliveryResult } from 'src/engine/metadata-modules/a
 
 export type AgentChatMemberMessageResult = {
   messageId: string;
+  externalAssistantDeliveryFailed?: boolean;
   isQueued: boolean;
   streamId?: string;
   turnId?: string;

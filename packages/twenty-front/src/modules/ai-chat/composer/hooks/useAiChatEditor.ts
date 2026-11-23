@@ -1,3 +1,4 @@
+import { useExternalAssistantMentionSearch } from '@/ai-chat/external-assistants/useExternalAssistantMentionSearch';
 import { type AiChatRestoreEditorContentEventDetail } from '@/ai-chat/composer/types/AiChatRestoreEditorContentEventDetail';
 import { type AiChatInstanceEventDetail } from '@/ai-chat/types/AiChatInstanceEventDetail';
 import { useAiChatInstanceOrThrow } from '@/ai-chat/hooks/useAiChatInstanceOrThrow';
@@ -38,6 +39,7 @@ import { useLingui } from '@lingui/react/macro';
 
 export const useAiChatEditor = () => {
   const { t } = useLingui();
+  const searchExternalAssistants = useExternalAssistantMentionSearch();
   const { displayName: assistantDisplayName } = useAiChatAssistantProfile();
   const { instanceId, threadId: draftKey } = useAiChatInstanceOrThrow();
   const aiModels = useAtomStateValue(aiModelsState);
@@ -153,8 +155,11 @@ export const useAiChatEditor = () => {
         ? []
         : searchWorkspaceMembers(query);
 
+      const matchingExternalAssistants = isDirectMessage
+        ? []
+        : searchExternalAssistants(query);
       if (!isNonEmptyArray(aiModels)) {
-        return matchingWorkspaceMembers;
+        return [...matchingExternalAssistants, ...matchingWorkspaceMembers];
       }
 
       return [
@@ -164,6 +169,7 @@ export const useAiChatEditor = () => {
           objectLabelSingular: t`Assistant`,
           objectLabelPlural: t`Teammates`,
         }),
+        ...matchingExternalAssistants,
         ...matchingWorkspaceMembers,
       ];
     };

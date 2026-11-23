@@ -119,6 +119,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     provideWorkspaceScopedRepository(PendingWakeUpEntity),
   ],
   exports: [
+    AgentRunSettlementService,
     AgentActorContextService,
     AgentCallerConversationService,
     AgentRunCallerHandlerRegistryService,

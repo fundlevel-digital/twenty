@@ -1,3 +1,5 @@
+import { msg } from '@lingui/core/macro';
+import { ExternalAssistantService } from '../external-assistants/external-assistant.service';
 import { AgentChatThreadConversationType } from 'twenty-shared/ai';
 import { doNotTranslate } from 'twenty-shared/i18n';
 import { throwAgentChatThreadNotFound } from 'src/engine/metadata-modules/ai/ai-chat/utils/throw-agent-chat-thread-not-found.util';
@@ -45,6 +47,7 @@ import {
 @Injectable()
 export class AgentChatMemberMessageSenderService {
   constructor(
+    private readonly externalAssistants: ExternalAssistantService,
     private readonly chatThreadService: AgentChatThreadService,
     private readonly assistantParticipationService: AgentChatAssistantParticipationService,
     private readonly memberMessageWriterService: AgentChatMemberMessageWriterService,
@@ -81,6 +84,20 @@ export class AgentChatMemberMessageSenderService {
       FeatureFlagKey.IS_AI_CHAT_INBOX_ENABLED,
       actor.workspaceId,
     );
+    const externalProfiles = await this.externalAssistants.validateMentions(
+      actor.workspaceId,
+      message.text,
+      addressing.mentionedExternalAssistantIds ?? [],
+    );
+    if (externalProfiles.length && !isInboxEnabled) {
+      throw new AiException(
+        doNotTranslate('External assistants are unavailable in this workspace'),
+        AiExceptionCode.INVALID_AGENT_INPUT,
+        {
+          userFriendlyMessage: msg`External assistants are unavailable in this workspace`,
+        },
+      );
+    }
     const preparedMessage =
       await this.memberMessagePartsService.prepareMemberMessage({
         workspaceId: actor.workspaceId,
@@ -123,6 +140,16 @@ export class AgentChatMemberMessageSenderService {
       writableThread.conversationType ===
       AgentChatThreadConversationType.DIRECT_MESSAGE;
     const messageAddressing = { ...addressing };
+
+    if (isDirectMessage && externalProfiles.length) {
+      throw new AiException(
+        doNotTranslate('External assistants cannot join direct messages'),
+        AiExceptionCode.INVALID_AGENT_INPUT,
+        {
+          userFriendlyMessage: msg`External assistants cannot join direct messages`,
+        },
+      );
+    }
 
     if (isDirectMessage) {
       const isDirectMessageIdentityEnabled =
@@ -197,7 +224,7 @@ export class AgentChatMemberMessageSenderService {
     };
 
     if (isDefined(storedMessage)) {
-      return this.memberMessageReplayService.replayStoredMessage({
+      const replay = await this.memberMessageReplayService.replayStoredMessage({
         ...assistantReplyPolicyArgs,
         storedMessage,
         execution,
@@ -209,13 +236,21 @@ export class AgentChatMemberMessageSenderService {
               : [],
         },
       });
+      replay.externalAssistantDeliveryFailed =
+        !(await this.externalAssistants.dispatch(
+          actor,
+          target.threadId,
+          storedMessage.id,
+        ));
+      return replay;
     }
 
     const replyDecision = participation.replyDecision;
     const shouldGenerateAssistantReply =
-      await this.replyPolicyService.shouldGenerateAssistantReply(
+      (externalProfiles.length === 0 || assistant.isMentioned) &&
+      (await this.replyPolicyService.shouldGenerateAssistantReply(
         assistantReplyPolicyArgs,
-      );
+      ));
 
     if (shouldGenerateAssistantReply) {
       await this.turnPreflightService.getWorkspaceReadyForAgentTurnOrThrow({
@@ -252,6 +287,9 @@ export class AgentChatMemberMessageSenderService {
         isInboxEnabled || isDirectMessage ? messageAddressing : undefined,
       participation,
       assistantReplyContext: {
+        mentionedExternalAssistantIds: externalProfiles.map(
+          (profile) => profile.id,
+        ),
         isAssistantMentioned: assistant.isMentioned,
         isDirectAssistantChat:
           replyDecision === AgentChatReplyDecision.ASSISTANT_CHAT_REPLY,
@@ -290,6 +328,14 @@ export class AgentChatMemberMessageSenderService {
       );
     }
 
+    if (externalProfiles.length) {
+      result.externalAssistantDeliveryFailed =
+        !(await this.externalAssistants.dispatch(
+          actor,
+          target.threadId,
+          result.messageId,
+        ));
+    }
     return result;
   }
 

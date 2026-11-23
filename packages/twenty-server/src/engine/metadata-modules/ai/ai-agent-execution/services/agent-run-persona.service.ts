@@ -1,3 +1,4 @@
+import { EXTERNAL_APPLICATION_AGENT_MODEL_ID } from 'twenty-shared/ai';
 import { Injectable } from '@nestjs/common';
 
 import { msg } from '@lingui/core/macro';
@@ -70,6 +71,13 @@ export class AgentRunPersonaService {
         `Agent "${label}" is archived`,
         AiExceptionCode.AGENT_IS_INACTIVE,
         { userFriendlyMessage: msg`Agent "${label}" is archived.` },
+      );
+    }
+
+    if (effectiveAgent.modelId === EXTERNAL_APPLICATION_AGENT_MODEL_ID) {
+      throw new AiException(
+        'Use the application agent runtime for external agents',
+        AiExceptionCode.INVALID_AGENT_INPUT,
       );
     }
 

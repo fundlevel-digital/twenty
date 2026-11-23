@@ -1,3 +1,5 @@
+import { NativeApplicationAgentRuntimeRegistry } from './native-application-agent-runtime.registry';
+import { NativeApplicationAgentService } from './native-application-agent.service';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -27,10 +29,17 @@ import { ApplicationRegistrationLookupModule } from 'src/engine/core-modules/app
     WorkspaceCacheModule,
   ],
   providers: [
+    NativeApplicationAgentRuntimeRegistry,
+    NativeApplicationAgentService,
     AgentResolver,
     AgentService,
     provideWorkspaceScopedRepository(AgentEntity),
   ],
-  exports: [AgentService, TypeOrmModule.forFeature([AgentEntity])],
+  exports: [
+    NativeApplicationAgentRuntimeRegistry,
+    NativeApplicationAgentService,
+    AgentService,
+    TypeOrmModule.forFeature([AgentEntity]),
+  ],
 })
 export class AiAgentModule {}

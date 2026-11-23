@@ -12,6 +12,12 @@ export const buildAgentChatAssistantReplyProviderMetadata = (
   return {
     twenty: {
       assistantReplyContext: {
+        ...(context.mentionedExternalAssistantIds?.length
+          ? {
+              mentionedExternalAssistantIds:
+                context.mentionedExternalAssistantIds,
+            }
+          : {}),
         isAssistantMentioned: context.isAssistantMentioned,
         isDirectAssistantChat: context.isDirectAssistantChat,
         isStructuredRequestContinuation:

@@ -1,3 +1,5 @@
+import { EXTERNAL_APPLICATION_AGENT_MODEL_ID } from 'twenty-shared/ai';
+import { NativeApplicationAgentRuntimeRegistry } from '../../ai-agent/native-application-agent-runtime.registry';
 import {
   Injectable,
   Logger,
@@ -108,6 +110,7 @@ export class AgentRunService implements AgentRunCallerHandler, OnModuleInit {
     private readonly applicationLookupService: ApplicationLookupService,
     @InjectWorkspaceScopedRepository(AgentEntity)
     private readonly agentRepository: WorkspaceScopedRepository<AgentEntity>,
+    private readonly nativeApplicationRuntime: NativeApplicationAgentRuntimeRegistry,
   ) {}
 
   onModuleInit(): void {
@@ -256,37 +259,73 @@ export class AgentRunService implements AgentRunCallerHandler, OnModuleInit {
 
     const runId = randomUUID();
 
-    await this.agentRunnerService.start({
-      workspaceId: workspace.id,
-      conversation: { threadId, isCreated: !isContinuingConversation },
-      caller: {
-        type: 'AGENT_API_RUN',
-        ref: {
-          ...callerRef,
-          runId,
-          createdBy: executionContext.turnCreatedBy,
-        },
-      },
-      spec: {
+    if (agent.modelId === EXTERNAL_APPLICATION_AGENT_MODEL_ID) {
+      const context = executionContext.authContext;
+      if (!isUserAuthContext(context)) {
+        throw new AiException(
+          'External agents require a workspace member context',
+          AiExceptionCode.INVALID_AGENT_INPUT,
+        );
+      }
+      if (
+        messages.some((message) => message.attachments?.length) ||
+        (responseFormat ?? agent.responseFormat)?.type === 'json'
+      ) {
+        throw new AiException(
+          'External agents currently accept text requests and replies',
+          AiExceptionCode.INVALID_AGENT_INPUT,
+        );
+      }
+      const text = messages
+        .filter((message) => message.role === 'user')
+        .map((message) => message.content)
+        .join('\n');
+      await this.nativeApplicationRuntime.run({
         agentId: agent.id,
-        title,
-        baseSystemPrompt: AGENT_RUN_BASE_SYSTEM_PROMPT,
-        // kept with the run rather than in its messages, so a run that waits still has them when it goes on
-        instructions: input.additionalInstructions ?? null,
-        ...(isDefined(responseFormat) ? { responseFormat } : {}),
-        // the call returns before anyone could answer, so the run can wait but not ask
-        capabilities: {
-          canAskHumans: false,
+        threadId,
+        runId,
+        actor: {
+          workspaceId: workspace.id,
+          workspaceMemberId: context.workspaceMemberId,
+          userWorkspaceId: context.userWorkspaceId,
         },
-        toolLoadingStrategy: 'lazy',
-      },
-      turnId: runId,
-      prompt: {
-        messages,
-        senderUserWorkspaceId: memberUserWorkspaceId,
-        senderApplicationId: callerApplication?.id ?? null,
-      },
-    });
+        text: [input.additionalInstructions, text]
+          .filter(isNonEmptyString)
+          .join('\n'),
+      });
+    } else {
+      await this.agentRunnerService.start({
+        workspaceId: workspace.id,
+        conversation: { threadId, isCreated: !isContinuingConversation },
+        caller: {
+          type: 'AGENT_API_RUN',
+          ref: {
+            ...callerRef,
+            runId,
+            createdBy: executionContext.turnCreatedBy,
+          },
+        },
+        spec: {
+          agentId: agent.id,
+          title,
+          baseSystemPrompt: AGENT_RUN_BASE_SYSTEM_PROMPT,
+          // kept with the run rather than in its messages, so a run that waits still has them when it goes on
+          instructions: input.additionalInstructions ?? null,
+          ...(isDefined(responseFormat) ? { responseFormat } : {}),
+          // the call returns before anyone could answer, so the run can wait but not ask
+          capabilities: {
+            canAskHumans: false,
+          },
+          toolLoadingStrategy: 'lazy',
+        },
+        turnId: runId,
+        prompt: {
+          messages,
+          senderUserWorkspaceId: memberUserWorkspaceId,
+          senderApplicationId: callerApplication?.id ?? null,
+        },
+      });
+    }
 
     if (isDefined(input.waitForCompletion) && !input.waitForCompletion) {
       return this.buildRunAgentResult({ threadId, runId, status: 'RUNNING' });

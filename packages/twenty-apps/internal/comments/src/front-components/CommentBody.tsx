@@ -23,7 +23,9 @@ export const CommentBody = ({ comment }: { comment: RecordComment }) => {
       {fragments.map((fragment, index) =>
         typeof fragment === 'string' ? (
           fragment
-        ) : fragment.objectName === 'workspaceMember' ? (
+        ) : ['workspaceMember', 'openbotAgent'].includes(
+            fragment.objectName,
+          ) ? (
           <InlineMention key={index}>@{fragment.label}</InlineMention>
         ) : (
           <Button

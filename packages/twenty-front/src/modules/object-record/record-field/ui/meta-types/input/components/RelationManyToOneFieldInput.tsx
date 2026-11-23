@@ -1,5 +1,7 @@
 import { FieldInputEventContext } from '@/object-record/record-field/ui/contexts/FieldInputEventContext';
 import { useRelationField } from '@/object-record/record-field/ui/meta-types/hooks/useRelationField';
+import { OpenBotTaskAssignees } from '@/openbot/components/OpenBotTaskAssignees';
+import { useIsOpenBotTaskAssigneeField } from '@/openbot/hooks/useIsOpenBotTaskAssigneeField';
 
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -10,6 +12,7 @@ import { recordFieldInputLayoutDirectionComponentState } from '@/object-record/r
 import { recordFieldInputLayoutDirectionLoadingComponentState } from '@/object-record/record-field/ui/states/recordFieldInputLayoutDirectionLoadingComponentState';
 import { SingleRecordPicker } from '@/object-record/record-picker/single-record-picker/components/SingleRecordPicker';
 import { singleRecordPickerSelectedIdComponentState } from '@/object-record/record-picker/single-record-picker/states/singleRecordPickerSelectedIdComponentState';
+import { singleRecordPickerSearchFilterComponentState } from '@/object-record/record-picker/single-record-picker/states/singleRecordPickerSearchFilterComponentState';
 import { type RecordPickerPickableMorphItem } from '@/object-record/record-picker/types/RecordPickerPickableMorphItem';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { useAvailableComponentInstanceIdOrThrow } from '@/ui/utilities/state/component-state/hooks/useAvailableComponentInstanceIdOrThrow';
@@ -24,6 +27,9 @@ import { IconForbid } from 'twenty-ui/icon';
 export const RelationManyToOneFieldInput = () => {
   const { t } = useLingui();
   const { fieldDefinition, recordId } = useRelationField<ObjectRecord>();
+  const isOpenBotAssignee = useIsOpenBotTaskAssigneeField(
+    fieldDefinition.fieldMetadataId,
+  );
 
   const { objectMetadataItems } = useObjectMetadataItems();
   const { fieldMetadataItem, objectMetadataItem } = getFieldMetadataItemById({
@@ -40,6 +46,10 @@ export const RelationManyToOneFieldInput = () => {
 
   const instanceId = useAvailableComponentInstanceIdOrThrow(
     RecordFieldComponentInstanceContext,
+  );
+  const singleRecordPickerSearchFilter = useAtomComponentStateValue(
+    singleRecordPickerSearchFilterComponentState,
+    instanceId,
   );
 
   const handleMorphItemSelected = (
@@ -106,6 +116,15 @@ export const RelationManyToOneFieldInput = () => {
 
   return (
     <SingleRecordPicker
+      additionalItems={
+        isOpenBotAssignee ? (
+          <OpenBotTaskAssignees
+            recordId={recordId}
+            mode="picker"
+            searchFilter={singleRecordPickerSearchFilter}
+          />
+        ) : undefined
+      }
       focusId={instanceId}
       componentInstanceId={instanceId}
       EmptyIcon={IconForbid}
