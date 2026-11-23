@@ -9,4 +9,6 @@ Owner decisions for the Cal.com integration app.
 | [0003](0003-per-connection-sync-preferences.md) | 2026-11-21 | Add per-account watched links, import, contacts, answers and sync controls | accepted |
 | [0004](0004-merge-and-deploy-to-live-crm.md) | 2026-11-21 | Merge the Cal.com app and deploy it to the live CRM | accepted |
 
-[Repository decision 0007](../0008-use-native-enum-fields-across-apps.md) records the cross-app native enum field rule and backfill request.
+[Repository decision 0011](../0011-install-plusvibe-and-cal-com-in-sunny-preview.md) authorizes installing PlusVibe and Cal.com in Sunny’s isolated VM preview on 2026-11-22.
+
+[Repository decision 0008](../0008-use-native-enum-fields-across-apps.md) records the cross-app native enum field rule and backfill request.

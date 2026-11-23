@@ -15,3 +15,4 @@ Related attributes and single-value grouping across CRM views, widgets and chart
 | [0009](0009-single-value-relation-grouping.md) | 2026-11-23 | Group dashboard tables by single-value relation paths and scalar subfields | accepted |
 | [0010](0010-platform-wide-related-fields-and-grouping.md) | 2026-11-23 | Make related fields and single-value relation grouping available across the platform | accepted |
 | [0011](0011-publish-platform-related-fields-pr.md) | 2026-11-23 | Publish the reviewed workspace PR and export the session to Glen | accepted |
+| [0012](0012-merge-main-and-export-full-session.md) | 2026-11-23 | Merge main into the feature branch and export the full visible session | accepted |
