@@ -1,5 +1,7 @@
 # Twenty Engineering Notes
 
+- [Influencer Enrichment VM Preview](handoffs/2026-11-23-influencer-enrichment-preview.md): copied influencer/contact/social data and a draft containing only a manual trigger.
+
 - [Record Table Widget Save Failure](handoffs/2026-11-23-record-table-widget-save.md): duplicate view creation on retry, local fix and verification limits.
 
 - [Better Lists Live Release](handoffs/2026-11-22-better-lists-live-release.md): pinned core deployment, SDK app installation, preserved workspace data and offsite backups.
