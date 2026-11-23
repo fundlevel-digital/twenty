@@ -43,6 +43,9 @@ export const fromFlatViewToViewManifest = ({
   shouldHideEmptyGroups: flatView.shouldHideEmptyGroups,
   shouldDisplayGroupsAsTabs: flatView.shouldDisplayGroupsAsTabs,
   groupLoadLimit: flatView.groupLoadLimit,
+  ...(isDefined(flatView.mainGroupBySubFieldName)
+    ? { mainGroupBySubFieldName: flatView.mainGroupBySubFieldName }
+    : {}),
   ...(isDefined(flatView.mainGroupByFieldMetadataUniversalIdentifier)
     ? {
         mainGroupByFieldMetadataUniversalIdentifier:

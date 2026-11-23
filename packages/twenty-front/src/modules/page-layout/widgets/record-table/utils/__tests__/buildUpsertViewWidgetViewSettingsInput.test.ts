@@ -16,6 +16,7 @@ describe('buildUpsertViewWidgetViewSettingsInput', () => {
     expect(input).toEqual({
       type: ViewType.TABLE_WIDGET,
       mainGroupByFieldMetadataId: null,
+      mainGroupBySubFieldName: null,
       shouldHideEmptyGroups: false,
       kanbanAggregateOperation: null,
       kanbanAggregateOperationFieldMetadataId: null,
@@ -34,6 +35,7 @@ describe('buildUpsertViewWidgetViewSettingsInput', () => {
         calendarLayout: ViewCalendarLayout.MONTH,
         calendarFieldMetadataId: 'calendar-field-id',
         mainGroupByFieldMetadataId: 'group-by-id',
+        mainGroupBySubFieldName: 'deal.name',
       }),
     );
 
@@ -42,5 +44,6 @@ describe('buildUpsertViewWidgetViewSettingsInput', () => {
     expect(input.calendarLayout).toBe(ViewCalendarLayout.MONTH);
     expect(input.calendarFieldMetadataId).toBe('calendar-field-id');
     expect(input.mainGroupByFieldMetadataId).toBe('group-by-id');
+    expect(input.mainGroupBySubFieldName).toBe('deal.name');
   });
 });

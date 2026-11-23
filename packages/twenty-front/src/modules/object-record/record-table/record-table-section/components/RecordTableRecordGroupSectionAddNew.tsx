@@ -59,7 +59,10 @@ export const RecordTableRecordGroupSectionAddNew = () => {
     objectMetadataItem.id,
   );
 
-  if (isRecordTableCellsNonEditable) {
+  if (
+    isRecordTableCellsNonEditable ||
+    recordIndexGroupFieldMetadataItem?.relatedGroupBy
+  ) {
     return null;
   }
 

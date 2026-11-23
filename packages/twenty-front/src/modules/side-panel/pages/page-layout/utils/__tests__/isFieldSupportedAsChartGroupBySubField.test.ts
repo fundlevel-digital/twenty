@@ -11,6 +11,7 @@ const createFieldMetadataItem = (
     label: 'Test Field',
     type: FieldMetadataType.TEXT,
     isSystem: false,
+    isActive: true,
     ...overrides,
   }) as FieldMetadataItem;
 
@@ -77,3 +78,12 @@ describe('isFieldSupportedAsChartGroupBySubField', () => {
     ).toBe(false);
   });
 });
+
+it.each([FieldMetadataType.ARRAY, FieldMetadataType.MULTI_SELECT])(
+  'rejects a related %s leaf that contains multiple values',
+  (type) => {
+    expect(
+      isFieldSupportedAsChartGroupBySubField(createFieldMetadataItem({ type })),
+    ).toBe(false);
+  },
+);

@@ -1,4 +1,5 @@
-import { FieldMetadataType } from 'twenty-shared/types';
+import { isMorphOrRelationFlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/utils/is-morph-or-relation-flat-field-metadata.util';
+import { FieldMetadataType, RelationType } from 'twenty-shared/types';
 import { isDefined, isPlainObject } from 'twenty-shared/utils';
 
 import { isGroupByDateFieldDefinition } from 'src/engine/api/common/common-args-processors/group-by-arg-processor/utils/is-group-by-date-field-definition.util';
@@ -103,14 +104,6 @@ const getNestedFieldMetadataDetails = ({
     );
   }
 
-  if (nestedFieldMetadata.type === FieldMetadataType.RELATION) {
-    throw new CommonQueryRunnerException(
-      `Cannot group by a relation field of the relation field: "${nestedFieldName}" is a relation field of "${targetObjectMetadata.nameSingular}"`,
-      CommonQueryRunnerExceptionCode.INVALID_QUERY_INPUT,
-      { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
-    );
-  }
-
   const nestedFieldGroupByDefinition =
     nestedFieldGroupByDefinitions[nestedFieldName];
 
@@ -180,7 +173,9 @@ export const validateAndTransformRelationGroupByFieldOrThrow = ({
   flatObjectMetadataMaps,
   flatFieldMetadataMaps,
   groupByFields,
+  relationDepth = 1,
 }: {
+  relationDepth?: number;
   fieldNames: Record<string, unknown>;
   fieldName: string;
   fieldMetadata: OrmFlatFieldMetadata;
@@ -188,6 +183,17 @@ export const validateAndTransformRelationGroupByFieldOrThrow = ({
   flatFieldMetadataMaps: FlatEntityMaps<OrmFlatFieldMetadata>;
   groupByFields: GroupByField[];
 }) => {
+  if (
+    relationDepth > 5 ||
+    !isMorphOrRelationFlatFieldMetadata(fieldMetadata) ||
+    fieldMetadata.settings?.relationType !== RelationType.MANY_TO_ONE
+  ) {
+    throw new CommonQueryRunnerException(
+      'Grouping requires at most five single-record relation steps',
+      CommonQueryRunnerExceptionCode.INVALID_QUERY_INPUT,
+      { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
+    );
+  }
   const { nestedFieldGroupByDefinition, nestedFieldMetadata, nestedFieldName } =
     getNestedFieldMetadataDetails({
       fieldNames,
@@ -196,6 +202,34 @@ export const validateAndTransformRelationGroupByFieldOrThrow = ({
       flatObjectMetadataMaps,
       flatFieldMetadataMaps,
     });
+
+  if (nestedFieldMetadata.type === FieldMetadataType.RELATION) {
+    const nestedGroups: GroupByField[] = [];
+    validateAndTransformRelationGroupByFieldOrThrow({
+      fieldNames: { [nestedFieldName]: nestedFieldGroupByDefinition },
+      fieldName: nestedFieldName,
+      fieldMetadata: nestedFieldMetadata,
+      flatObjectMetadataMaps,
+      flatFieldMetadataMaps,
+      groupByFields: nestedGroups,
+      relationDepth: relationDepth + 1,
+    });
+    for (const nestedGroup of nestedGroups) {
+      if ('nestedFieldMetadata' in nestedGroup) {
+        groupByFields.push({
+          ...nestedGroup,
+          fieldMetadata,
+          relationPathFieldMetadata: [
+            fieldMetadata,
+            ...(nestedGroup.relationPathFieldMetadata ?? [
+              nestedGroup.fieldMetadata,
+            ]),
+          ],
+        });
+      }
+    }
+    return;
+  }
 
   if (
     (nestedFieldMetadata.type === FieldMetadataType.DATE ||

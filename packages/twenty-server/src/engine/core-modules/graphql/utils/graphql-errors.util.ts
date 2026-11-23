@@ -1,3 +1,4 @@
+import { isPlainObject } from 'twenty-shared/utils';
 import { type MessageDescriptor } from '@lingui/core';
 import {
   type ASTNode,
@@ -251,7 +252,8 @@ export class InternalServerError extends BaseGraphQLError {
 export const convertGraphQLErrorToBaseGraphQLError = (
   error: GraphQLError,
 ): BaseGraphQLError => {
-  const httpStatus = error.extensions?.http?.status;
+  const http = error.extensions?.http;
+  const httpStatus = isPlainObject(http) ? http.status : undefined;
   let errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
 
   if (httpStatus && typeof httpStatus === 'number') {

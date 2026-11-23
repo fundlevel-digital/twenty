@@ -20,6 +20,7 @@ export type GroupByDateField = {
 };
 
 export type GroupByRelationField = {
+  relationPathFieldMetadata?: OrmFlatFieldMetadata[];
   fieldMetadata: OrmFlatFieldMetadata;
   nestedFieldMetadata: OrmFlatFieldMetadata;
   nestedSubFieldName?: string;

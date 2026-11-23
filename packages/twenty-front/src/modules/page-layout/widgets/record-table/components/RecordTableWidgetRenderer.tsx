@@ -1,3 +1,4 @@
+import { RecordTableGroupedWidget } from '@/page-layout/widgets/record-table/components/RecordTableGroupedWidget';
 import { useCurrentPageLayoutOrThrow } from '@/page-layout/hooks/useCurrentPageLayoutOrThrow';
 import { useIsPageLayoutInEditMode } from '@/page-layout/hooks/useIsPageLayoutInEditMode';
 import { type PageLayoutWidget } from '@/page-layout/types/PageLayoutWidget';
@@ -43,14 +44,28 @@ export const RecordTableWidgetRenderer = ({
 
   return (
     <StyledWidgetTableOutline>
-      <RecordTableWidgetRendererContent
-        objectMetadataId={widget.objectMetadataId}
-        viewId={viewId}
-        widgetId={widget.id}
-        isEmptyStateHidden
-        recordLimit={recordLimit}
-        isUIEditable={!isPageLayoutInEditMode && isUIEditable}
-      />
+      {isRecordTableConfiguration &&
+      'groupByFieldMetadataIds' in configuration &&
+      configuration.groupByFieldMetadataIds?.length ? (
+        <RecordTableGroupedWidget
+          objectMetadataId={widget.objectMetadataId}
+          widgetId={widget.id}
+          viewId={viewId}
+          path={configuration.groupByFieldMetadataIds}
+          subFieldName={configuration.groupBySubFieldName}
+          isUIEditable={!isPageLayoutInEditMode && isUIEditable}
+          recordLimit={recordLimit}
+        />
+      ) : (
+        <RecordTableWidgetRendererContent
+          objectMetadataId={widget.objectMetadataId}
+          viewId={viewId}
+          widgetId={widget.id}
+          isEmptyStateHidden
+          recordLimit={recordLimit}
+          isUIEditable={!isPageLayoutInEditMode && isUIEditable}
+        />
+      )}
     </StyledWidgetTableOutline>
   );
 };

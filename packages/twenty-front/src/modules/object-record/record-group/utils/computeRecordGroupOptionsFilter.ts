@@ -1,3 +1,4 @@
+import { buildRelatedGroupFilter } from '@/object-record/record-group/utils/buildRelatedGroupFilter';
 import { isNull } from '@sniptt/guards';
 import { type RecordGqlOperationFilter } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -17,6 +18,13 @@ export const computeRecordGroupOptionsFilter = ({
     return {};
   }
 
+  if (recordGroupFieldMetadata.relatedGroupBy) {
+    return {
+      or: recordGroupValues.map((value) =>
+        buildRelatedGroupFilter(recordGroupFieldMetadata, value),
+      ),
+    };
+  }
   const fieldName = getFieldMetadataItemGqlFieldName(recordGroupFieldMetadata);
   const hasNullValue = recordGroupValues.some(isNull);
   const nonNullValues = recordGroupValues.filter(

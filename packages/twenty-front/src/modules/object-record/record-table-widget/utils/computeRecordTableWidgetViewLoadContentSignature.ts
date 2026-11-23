@@ -20,6 +20,8 @@ export const computeRecordTableWidgetViewLoadContentSignature = (
       .map((filter) => ({
         id: filter.id,
         fieldMetadataId: filter.fieldMetadataId,
+        relationTargetFieldMetadataId: filter.relationTargetFieldMetadataId,
+        subFieldName: filter.subFieldName,
         operand: filter.operand,
         value: filter.value,
         viewFilterGroupId: filter.viewFilterGroupId,
@@ -37,6 +39,7 @@ export const computeRecordTableWidgetViewLoadContentSignature = (
     })),
     layout: {
       type: view.type,
+      mainGroupBySubFieldName: view.mainGroupBySubFieldName,
       mainGroupByFieldMetadataId: view.mainGroupByFieldMetadataId,
       shouldHideEmptyGroups: view.shouldHideEmptyGroups,
       kanbanAggregateOperation: view.kanbanAggregateOperation,

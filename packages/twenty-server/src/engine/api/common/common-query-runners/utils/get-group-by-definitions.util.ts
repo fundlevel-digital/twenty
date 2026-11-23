@@ -1,3 +1,4 @@
+import { getGroupByRelationAlias } from 'src/engine/api/common/common-query-runners/utils/get-group-by-relation-alias.util';
 import { type GroupByDefinition } from 'src/engine/api/common/common-query-runners/types/group-by-definition.type';
 import { type GroupByField } from 'src/engine/api/common/common-query-runners/types/group-by-field.type';
 import { getGroupByExpression } from 'src/engine/api/common/common-query-runners/utils/get-group-by-expression.util';
@@ -18,7 +19,10 @@ export const getGroupByDefinitions = ({
     let columnNameWithQuotes: string;
 
     if (isGroupByRelationField(groupByField)) {
-      const joinAlias = groupByField.fieldMetadata.name;
+      const joinAlias = getGroupByRelationAlias(
+        groupByField.relationPathFieldMetadata ?? [groupByField.fieldMetadata],
+        objectMetadataNameSingular,
+      );
       const nestedColumnName = formatColumnNamesFromCompositeFieldAndSubfields(
         groupByField.nestedFieldMetadata.name,
         groupByField.nestedSubFieldName

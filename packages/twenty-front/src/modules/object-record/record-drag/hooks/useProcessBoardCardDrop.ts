@@ -58,7 +58,10 @@ export const useProcessBoardCardDrop = () => {
       destinationDroppableId,
       destinationIndex,
     }: RecordDragDropResult) => {
-      if (!isDefined(selectFieldMetadataItem)) {
+      if (
+        !isDefined(selectFieldMetadataItem) ||
+        selectFieldMetadataItem.relatedGroupBy
+      ) {
         return;
       }
 

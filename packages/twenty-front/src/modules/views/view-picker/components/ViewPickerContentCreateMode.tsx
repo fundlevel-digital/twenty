@@ -1,3 +1,5 @@
+import { RelatedGroupByDropdown } from '@/object-record/record-group/components/RelatedGroupByDropdown';
+import { viewPickerMainGroupBySubFieldNameComponentState } from '@/views/view-picker/states/viewPickerMainGroupBySubFieldNameComponentState';
 import { styled } from '@linaria/react';
 import { Key } from 'ts-key-enum';
 
@@ -80,6 +82,10 @@ export const ViewPickerContentCreateMode = () => {
     viewPickerMainGroupByFieldMetadataId,
     setViewPickerMainGroupByFieldMetadataId,
   ] = useAtomComponentState(viewPickerMainGroupByFieldMetadataIdComponentState);
+
+  const setViewPickerMainGroupBySubFieldName = useSetAtomComponentState(
+    viewPickerMainGroupBySubFieldNameComponentState,
+  );
 
   const [
     viewPickerCalendarFieldMetadataId,
@@ -196,6 +202,15 @@ export const ViewPickerContentCreateMode = () => {
           />
         </ViewPickerSelectContainer>
         {viewPickerType === ViewType.KANBAN && (
+          <RelatedGroupByDropdown
+            onSelect={(field, subFieldName) => {
+              setViewPickerIsDirty(true);
+              setViewPickerMainGroupByFieldMetadataId(field.id);
+              setViewPickerMainGroupBySubFieldName(subFieldName ?? null);
+            }}
+          />
+        )}
+        {viewPickerType === ViewType.KANBAN && (
           <>
             <ViewPickerSelectContainer>
               <Select
@@ -205,6 +220,7 @@ export const ViewPickerContentCreateMode = () => {
                 onChange={(value) => {
                   setViewPickerIsDirty(true);
                   setViewPickerMainGroupByFieldMetadataId(value);
+                  setViewPickerMainGroupBySubFieldName(null);
                 }}
                 options={
                   availableFieldsForGrouping.length > 0

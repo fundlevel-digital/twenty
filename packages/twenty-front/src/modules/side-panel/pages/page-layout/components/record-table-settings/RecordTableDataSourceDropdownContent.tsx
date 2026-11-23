@@ -82,6 +82,8 @@ export const RecordTableDataSourceDropdownContent = () => {
       objectMetadataId: newObjectMetadataItemId,
       configToUpdate: {
         viewId: undefined,
+        groupByFieldMetadataIds: null,
+        groupBySubFieldName: null,
       },
     });
 

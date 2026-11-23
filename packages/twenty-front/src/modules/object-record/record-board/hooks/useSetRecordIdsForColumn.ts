@@ -54,7 +54,9 @@ export const useSetRecordIdsForColumn = (recordBoardId?: string) => {
 
       const recordGroupRowIds = records
         .filter(
-          (record) => record[recordGroupColumnName] === recordGroup?.value,
+          (record) =>
+            isDefined(currentRecordGroupFieldMetadata.relatedGroupBy) ||
+            record[recordGroupColumnName] === recordGroup?.value,
         )
         .map((record) => record.id);
 

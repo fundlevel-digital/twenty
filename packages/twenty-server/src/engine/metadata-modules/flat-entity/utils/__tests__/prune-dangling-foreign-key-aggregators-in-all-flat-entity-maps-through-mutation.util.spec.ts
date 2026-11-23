@@ -78,6 +78,7 @@ const buildFlatView = ({
   calendarFieldMetadataUniversalIdentifier: null,
   calendarEndFieldMetadataUniversalIdentifier: null,
   mainGroupByFieldMetadataUniversalIdentifier: null,
+  mainGroupBySubFieldName: null,
   universalOverrides: null,
 });
 

@@ -37,9 +37,9 @@ export const ChartGroupByFieldSelectionTargetObjectFieldsView = ({
   const targetObjectMetadataItem = objectMetadataItems.find(
     (item) => item.nameSingular === targetObjectNameSingular,
   );
-  const groupableFields = (targetObjectMetadataItem?.fields ?? []).filter(
-    isFieldSupportedAsChartGroupBySubField,
-  );
+  const groupableFields = (
+    targetObjectMetadataItem?.readableFields ?? []
+  ).filter(isFieldSupportedAsChartGroupBySubField);
   const availableFields = filterBySearchQuery({
     items: groupableFields,
     searchQuery,

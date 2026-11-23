@@ -25,13 +25,18 @@ export const getRelationFieldLabel = (
     return field.label;
   }
 
-  const [nestedFieldName, nestedSubFieldName] = subFieldName.split('.');
+  const [nestedFieldName, ...remaining] = subFieldName.split('.');
+  const nestedSubFieldName = remaining.join('.') || undefined;
   const nestedField = targetObjectMetadataItem.fields.find(
     (f) => f.name === nestedFieldName,
   );
 
   if (!isDefined(nestedField)) {
     return field.label;
+  }
+
+  if (nestedField.relation && nestedSubFieldName) {
+    return `${field.label} › ${getRelationFieldLabel(nestedField, nestedSubFieldName, objectMetadataItems)}`;
   }
 
   if (

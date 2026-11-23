@@ -19,7 +19,7 @@ import { useAtomComponentSelectorValue } from '@/ui/utilities/state/jotai/hooks/
 import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
 import { LightIconButton } from 'twenty-ui/components/input';
 import { Dropdown } from 'twenty-ui/components/navigation';
-import { IconEyeOff } from 'twenty-ui/icon';
+import { IconEyeOff, IconListSearch } from 'twenty-ui/icon';
 import { useIcons } from 'twenty-ui/icon/provider';
 import { sortByProperty } from '~/utils/array/sortByProperty';
 import { useLingui } from '@lingui/react/macro';
@@ -27,6 +27,7 @@ import { useLingui } from '@lingui/react/macro';
 type RecordTableFieldsDropdownVisibleFieldsContentProps = {
   objectMetadataId: string;
   recordIndexId: string;
+  canAddRelatedFields?: boolean;
   onFieldUpdated?: (
     viewFieldId: string,
     update: Partial<{ position: number; isVisible: boolean }>,
@@ -36,6 +37,7 @@ type RecordTableFieldsDropdownVisibleFieldsContentProps = {
 export const RecordTableFieldsDropdownVisibleFieldsContent = ({
   objectMetadataId,
   recordIndexId,
+  canAddRelatedFields = false,
   onFieldUpdated,
 }: RecordTableFieldsDropdownVisibleFieldsContentProps) => {
   const { t } = useLingui();
@@ -64,6 +66,7 @@ export const RecordTableFieldsDropdownVisibleFieldsContent = ({
 
   const nonDraggableRecordField = visibleRecordFields.find(
     (recordField) =>
+      isCanonicalRecordField(recordField) &&
       recordField.fieldMetadataItemId === fieldMetadataItemLabelIdentifier?.id,
   );
 
@@ -146,16 +149,13 @@ export const RecordTableFieldsDropdownVisibleFieldsContent = ({
                               applicationId={fieldMetadataItem.applicationId}
                             />
                           }
-                          // A hidden extra column couldn't be shown again: the hidden list only resolves canonical ones
                           actions={
-                            isCanonicalRecordField(recordField) ? (
-                              <LightIconButton
-                                aria-label={t`Hide ${fieldMetadataItem.label}`}
-                                onClick={() => handleHideField(recordField.id)}
-                              >
-                                <IconEyeOff />
-                              </LightIconButton>
-                            ) : undefined
+                            <LightIconButton
+                              aria-label={t`Hide ${columnLabel}`}
+                              onClick={() => handleHideField(recordField.id)}
+                            >
+                              <IconEyeOff />
+                            </LightIconButton>
                           }
                           dragHandleVisibility="always"
                         >
@@ -172,6 +172,14 @@ export const RecordTableFieldsDropdownVisibleFieldsContent = ({
       </ChartSettingsDropdownSection>
       <Dropdown.Separator />
       <Dropdown.Section>
+        {canAddRelatedFields && (
+          <Dropdown.ActionItem
+            page={RECORD_TABLE_FIELDS_DROPDOWN_PAGE.RELATED_FIELDS}
+            startIcon={<IconListSearch />}
+          >
+            {t`Related Fields`}
+          </Dropdown.ActionItem>
+        )}
         <Dropdown.ActionItem
           page={RECORD_TABLE_FIELDS_DROPDOWN_PAGE.HIDDEN_FIELDS}
           startIcon={<IconEyeOff />}

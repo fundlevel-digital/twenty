@@ -367,6 +367,36 @@ describe('CommonQueryOrderGroupByParser - relation order-by under target primary
     ]);
   });
 
+  it('orders shallow and deep dimensions sharing the same relation root', () => {
+    const result = buildParser().parse({
+      orderBy: [
+        { company: { name: OrderByDirection.AscNullsLast } },
+        { company: { owner: { id: OrderByDirection.DescNullsLast } } },
+      ],
+      groupByFields: [
+        {
+          fieldMetadata: companyRelationField,
+          nestedFieldMetadata: companyNameField,
+        },
+        {
+          fieldMetadata: companyRelationField,
+          relationPathFieldMetadata: [companyRelationField, companyOwnerField],
+          nestedFieldMetadata: memberIdField,
+        },
+      ],
+    });
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({
+      '"company"."name"': { order: 'ASC', nulls: 'NULLS LAST' },
+    });
+    expect(Object.keys(result[1])[0]).toMatch(/^"group_by_[a-z0-9]+"\."id"$/);
+    expect(Object.values(result[1])[0]).toEqual({
+      order: 'DESC',
+      nulls: 'NULLS LAST',
+    });
+  });
+
   it('throws when ordering by a relation absent from groupBy', () => {
     const parser = buildParser();
 

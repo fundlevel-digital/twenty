@@ -82,6 +82,9 @@ export class ViewDTO {
   @Field(() => UUIDScalarType, { nullable: true })
   mainGroupByFieldMetadataId?: string | null;
 
+  @Field(() => String, { nullable: true })
+  mainGroupBySubFieldName?: string | null;
+
   @Field({ nullable: false, defaultValue: false })
   shouldHideEmptyGroups: boolean;
 
