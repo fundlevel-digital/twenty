@@ -39,4 +39,6 @@ identify scope, decisions, implementation and verification limits.
 
 | [0008](decisions/0008-use-native-enum-fields-across-apps.md) | 2026-11-22 | Use native Select/Multi-Select attributes for enums and backfill earlier apps | accepted |
 
+| [0009](decisions/0009-fix-live-dashboard-save.md) | 2026-11-23 | Carry the live dashboard save fix through verification and deployment | accepted |
+
 Implementation and verification are summarized in the [session handoff](handoffs/2026-11-21-computed-fields-and-preview.md).
