@@ -7,6 +7,7 @@ supersession. Operational instructions stay with their package or skill.
 
 | Area | Index | Implementation And Handoff |
 | --- | --- | --- |
+| Contracts | [Decisions](decisions/contracts/DECISIONS.md) | Live amendment relationship labels and descriptions |
 | Better Lists | [Decisions](decisions/better-lists/DECISIONS.md) | [App README](../packages/twenty-apps/internal/better-lists/README.md), [Handoff](handoffs/2026-11-22-better-lists.md), [Live release](handoffs/2026-11-22-better-lists-live-release.md) |
 | GitHub Profiles | [Decisions](decisions/github-profiles/DECISIONS.md) | [App README](../packages/twenty-apps/internal/github-profiles/README.md), [preview handoff](handoffs/2026-11-22-github-profiles-preview.md), [live release](handoffs/2026-11-22-github-profiles-live-release.md) |
 | Comments | [Decisions](decisions/comments/DECISIONS.md) | [App README](../packages/twenty-apps/internal/comments/README.md) |
