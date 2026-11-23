@@ -1,5 +1,7 @@
 # Twenty Engineering Notes
 
+- [Influencer Reply Workflow](handoffs/2026-11-23-influencer-reply-workflow.md): active native workflow, verified email-thread lookup, AI drafting correction and first provider draft test.
+
 - [Better Lists Live Release](handoffs/2026-11-22-better-lists-live-release.md): pinned core deployment, SDK app installation, preserved workspace data and offsite backups.
 
 - [GitHub Profiles Live Release](handoffs/2026-11-22-github-profiles-live-release.md): installed native app, preserved applications, verified defaults/runtime and remaining production OAuth setup.
