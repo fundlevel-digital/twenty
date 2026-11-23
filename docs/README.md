@@ -40,3 +40,11 @@ Product and operational documentation that belongs to a package remains with tha
 package. Decision records are centralized under this directory.
 
 - [2026-11-22: TwitterAPI.io App And Preview](handoffs/2026-11-22-twitter-analytics.md)
+
+- [2026-11-22: Sunny Preview](handoffs/2026-11-22-sunny-preview.md): live-state clone, isolated runtime, sign-in and verification.
+
+- [Google Channel App Runtime Verification](handoffs/2026-11-22-google-channel-app-verification.md): app-only native channels, two-member messaging/privacy checks and the limits of Google verification.
+
+- [Google Groups App Preview](handoffs/2026-11-22-google-groups-preview.md): installable app, owner-supplied logo, configuration checklist and preview verification.
+
+- [Fundlevel Google Groups Preview](handoffs/2026-11-22-fundlevel-google-groups-preview.md): separate Fundlevel snapshot, completed history import, native inbox views and preserved Sunny setup.
