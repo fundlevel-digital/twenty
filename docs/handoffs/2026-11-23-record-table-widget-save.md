@@ -40,14 +40,65 @@ HEAD source fails the partial-save retry assertion by issuing two creates.
 `git diff --check` passed.
 
 After the owner requested completing the live fix, frontend dependencies were
-installed and the shared package rebuilt. Three committed Jest regressions pass:
-partial-save retry, reuse of a loaded view, and creation failure propagation.
-Lint, full typecheck and the release build are being verified. The earlier
-isolated harness remains private evidence under `.context/widget-save-check/`.
+installed and the shared/UI packages rebuilt. Three committed Jest regressions
+pass: partial-save retry, reuse of a loaded view, and creation failure propagation.
+Type-aware lint and formatting checks pass for both changed files. Full frontend
+`tsgo --noEmit` ran directly; it reports unrelated source/test errors and missing
+SDK/renderer/Lodash declarations, with no diagnostics in either changed file.
+The earlier isolated harness remains private evidence under
+`.context/widget-save-check/`.
 
-The owner authorized completing the live fix in [decision 0009](../decisions/0009-fix-live-dashboard-save.md).
-At this source commit, production inspection remains read-only; image build and
-release are pending. The existing CLI session was renewed through the supported
-CLI refresh flow, with credentials retained on the Mac.
-Hindsight recall was unavailable because the VM lacks the private profile;
-remote memory retention is not claimed.
+## Merged And Deployed
+
+[PR #34](https://github.com/fundlevel-digital/twenty/pull/34) merged as
+`e9d29bdb14a5569ba3bcf956a10f5108367f4e83`. The tested source commit is
+`27194f251e68c18b3ab44eed9221beeec8593ffd`; the fix and regression test match the
+merged files exactly. Its [image build](https://github.com/fundlevel-digital/twenty/actions/runs/45180964426)
+passed. The subsequent [main build](https://github.com/fundlevel-digital/twenty/actions/runs/45181848206)
+also passed.
+
+Server and worker now use the tested artifact:
+
+- Image: `ghcr.io/fundlevel-digital/twenty:27194f251e68c18b3ab44eed9221beeec8593ffd`
+- Digest: `sha256:d914c3dfba5f5ce684bf7487a3aa2f8b43027248979d35413733a0ba8384f24a`
+- Prior image remains available for rollback.
+
+The owner authorized completing the live fix in
+[decision 0009](../decisions/0009-fix-live-dashboard-save.md).
+The supervised cutover reused the established offsite backup and rollback
+procedure. Application writes stopped at 13:16:41 UTC; fresh pgBackRest and
+restic jobs passed before the new image started at 13:17:50 UTC. Core health and
+preservation checks passed at 13:18:18 UTC. No rollback was needed.
+
+Resolved Compose configuration differs only in the server/worker image pins.
+Environment hashes, mounts, networks and port bindings are preserved. PostgreSQL
+and Redis retain their original containers. APP_VERSION remains 2.61.0;
+automatic database migrations and cron registration remain disabled. No schema
+migration, app reinstall or CRM record edit was performed.
+
+## Live Verification
+
+- Local, shared-login, Fundlevel and Sunny health endpoints pass.
+- All 1,085 public shell-referenced JavaScript/CSS assets load; the public entry
+  asset matches its deployed container file.
+- The public widget bundle `CommandMenuContextProvider-DmNbCbCv.js` matches the
+  container file and contains the compiled existing-view guard.
+- Authenticated native API readback confirms all seven saved dashboard widgets
+  and their view links match the pre-release fingerprint exactly. Both
+  record-table views remain readable, including the view rejected as a duplicate
+  in the original failure.
+- Final post-release pgBackRest and restic backups passed and all four health
+  endpoints passed again. Server is healthy, worker running, database/Redis
+  healthy.
+
+The existing CLI session was renewed through its supported refresh flow, with
+credentials retained on the Mac. Browser automation was unavailable; no live
+browser Save interaction is claimed. The deployed artifact, native metadata and
+regression tests were verified. An already-open browser tab must reload to use
+the new JavaScript; unsaved browser-only changes were not overwritten.
+
+Private release scripts and evidence remain on the Mac under the directory
+referenced by `~/.twenty/.dashboard-save-fix-release-path` and on the production
+host under `/mnt/storage/twenty-dashboard-save-fix-20261123`. No credentials or
+customer records are included here. Hindsight remains unavailable because the
+VM lacks its private profile; remote retention is not claimed.
