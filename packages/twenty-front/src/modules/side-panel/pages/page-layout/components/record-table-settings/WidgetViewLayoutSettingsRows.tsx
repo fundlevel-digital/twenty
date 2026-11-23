@@ -1,3 +1,4 @@
+import { resolveRelatedGroupField } from '@/object-record/record-group/utils/resolveRelatedGroupField';
 import { CommandMenuItemDropdownTrigger } from '@/command-menu/components/CommandMenuItemDropdownTrigger';
 import { CommandMenuItemSwitch } from '@/command-menu/components/CommandMenuItemSwitch';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -86,12 +87,25 @@ export const WidgetViewLayoutSettingsRows = ({
       objectMetadataItemToFind.id === objectMetadataId,
   );
 
-  const mainGroupByFieldLabel = isDefined(mainGroupByFieldMetadataId)
-    ? (objectMetadataItem?.fields.find(
-        (fieldMetadataItem) =>
-          fieldMetadataItem.id === mainGroupByFieldMetadataId,
-      )?.label ?? t`None`)
-    : t`None`;
+  const selectedRootGroupField = objectMetadataItem?.readableFields.find(
+    (field) => field.id === mainGroupByFieldMetadataId,
+  );
+  const selectedRelatedGroupLabel =
+    selectedRootGroupField && widgetView?.mainGroupBySubFieldName
+      ? resolveRelatedGroupField({
+          field: selectedRootGroupField,
+          subFieldName: widgetView.mainGroupBySubFieldName,
+          objects: objectMetadataItems,
+        })?.label
+      : undefined;
+  const mainGroupByFieldLabel =
+    selectedRelatedGroupLabel ??
+    (isDefined(mainGroupByFieldMetadataId)
+      ? (objectMetadataItem?.fields.find(
+          (fieldMetadataItem) =>
+            fieldMetadataItem.id === mainGroupByFieldMetadataId,
+        )?.label ?? t`None`)
+      : t`None`);
 
   const calendarFieldLabel = isDefined(calendarFieldMetadataId)
     ? (objectMetadataItem?.fields.find(
@@ -227,6 +241,7 @@ export const WidgetViewLayoutSettingsRows = ({
                 widgetId={widgetId}
                 objectMetadataId={objectMetadataId}
                 currentMainGroupByFieldMetadataId={mainGroupByFieldMetadataId}
+                selectedRelatedGroupLabel={selectedRelatedGroupLabel}
                 isClearable={!isKanbanLayout}
               />
             </DropdownContent>

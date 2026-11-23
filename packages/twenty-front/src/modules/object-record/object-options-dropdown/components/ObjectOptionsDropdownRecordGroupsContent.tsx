@@ -1,6 +1,7 @@
+import { isManyToOneRelationField } from '@/object-metadata/utils/isManyToOneRelationField';
 import { ListItemButton } from 'twenty-ui/components/navigation';
 import { useEffect } from 'react';
-import { isManyToOneRelationField } from '@/object-metadata/utils/isManyToOneRelationField';
+import { canAddRecordGroupForFieldMetadataItem } from '@/object-record/record-group/utils/canAddRecordGroupForFieldMetadataItem';
 import { useObjectOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsDropdown';
 import { RecordGroupsVisibilityDropdownSection } from '@/object-record/record-group/components/RecordGroupsVisibilityDropdownSection';
 import { useRecordGroupVisibility } from '@/object-record/record-group/hooks/useRecordGroupVisibility';
@@ -102,11 +103,12 @@ export const ObjectOptionsDropdownRecordGroupsContent = () => {
 
   const isGroupByFieldPickerDisabled =
     availableFieldsForGrouping.length <= 1 &&
+    !availableFieldsForGrouping.some(isManyToOneRelationField) &&
     !isRecordGroupingOptionalForViewType(viewType);
 
-  const isRelationGroupBy =
-    isDefined(recordIndexGroupFieldMetadataItem) &&
-    isManyToOneRelationField(recordIndexGroupFieldMetadataItem);
+  const isRelationGroupBy = canAddRecordGroupForFieldMetadataItem(
+    recordIndexGroupFieldMetadataItem,
+  );
 
   const isRecordGroupTabsEnabled = useIsFeatureEnabled(
     FeatureFlagKey.IS_RECORD_GROUP_TABS_ENABLED,
@@ -187,7 +189,11 @@ export const ObjectOptionsDropdownRecordGroupsContent = () => {
                   onClick={() => onContentChange('recordGroupFields')}
                   startIcon={<IconLayoutList />}
                   description={recordIndexGroupFieldMetadataItem?.label}
-                  descriptionPlacement="end"
+                  descriptionPlacement={
+                    recordIndexGroupFieldMetadataItem?.relatedGroupBy
+                      ? 'below'
+                      : 'end'
+                  }
                   hasSubmenu
                 >{t`Group by`}</ListItemButton>
               </SelectableListItem>

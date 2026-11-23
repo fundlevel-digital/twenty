@@ -1,3 +1,4 @@
+import { RelatedRecordFieldDisplay } from '@/object-record/record-column-lookup/components/RelatedRecordFieldDisplay';
 import { type RecordField } from '@/object-record/record-field/types/RecordField';
 import { FieldDisplay } from '@/object-record/record-field/ui/components/FieldDisplay';
 import { FieldContext } from '@/object-record/record-field/ui/contexts/FieldContext';
@@ -35,6 +36,16 @@ export const RecordListRowField = ({
   fieldDefinition,
   maxWidth,
 }: RecordListRowFieldProps) => {
+  if (recordField.relationTargetFieldMetadataId) {
+    return (
+      <StyledFieldContainer style={{ maxWidth }}>
+        <RelatedRecordFieldDisplay
+          recordId={recordId}
+          recordField={recordField}
+        />
+      </StyledFieldContainer>
+    );
+  }
   return (
     <Tooltip.Trigger
       payload={recordField.fieldMetadataItemId}

@@ -1,6 +1,9 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 
 import {
+  ArrayMaxSize,
+  IsArray,
+  IsString,
   IsBoolean,
   IsIn,
   IsInt,
@@ -27,6 +30,18 @@ export class RecordTableConfigurationDTO implements RecordTableConfiguration {
   @IsOptional()
   @IsUUID()
   viewId?: SerializedRelation | null;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(6)
+  @IsUUID('all', { each: true })
+  groupByFieldMetadataIds?: string[] | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  groupBySubFieldName?: string | null;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()

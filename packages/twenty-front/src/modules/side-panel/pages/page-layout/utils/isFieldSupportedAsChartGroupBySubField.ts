@@ -1,3 +1,4 @@
+import { isSingleValueGroupByField } from '@/page-layout/widgets/record-table/utils/resolveRecordTableGroupByPath';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { isHiddenSystemField } from '@/object-metadata/utils/isHiddenSystemField';
 import { isFieldMorphRelation } from '@/object-record/record-field/ui/types/guards/isFieldMorphRelation';
@@ -15,10 +16,13 @@ export const isFieldSupportedAsChartGroupBySubField = (
     return false;
   }
 
-  return isFieldMetadataSupportedInGroupBy({
-    type: field.type,
-    name: field.name,
-    isSystem: field.isSystem ?? false,
-    relationType: field.settings?.relationType ?? null,
-  });
+  return (
+    isSingleValueGroupByField(field) &&
+    isFieldMetadataSupportedInGroupBy({
+      type: field.type,
+      name: field.name,
+      isSystem: field.isSystem ?? false,
+      relationType: field.settings?.relationType ?? null,
+    })
+  );
 };

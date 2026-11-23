@@ -57,12 +57,14 @@ export const useRecordTableWidgetLayoutCallbacks = ({
 
   const handleGroupByFieldChange = (
     fieldMetadataItem: FieldMetadataItem | null,
+    subFieldName?: string,
   ) => {
     setWidgetViewDraft((widgetViewDraft) => ({
       ...widgetViewDraft,
       view: {
         ...widgetViewDraft.view,
         mainGroupByFieldMetadataId: fieldMetadataItem?.id ?? null,
+        mainGroupBySubFieldName: subFieldName ?? null,
       },
       viewGroups: isDefined(fieldMetadataItem)
         ? buildDraftViewGroupsForFieldMetadataItem({

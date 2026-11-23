@@ -25,6 +25,37 @@ export const buildResolvableChartRelationAxis = ({
   flatFieldMetadataMaps: FlatEntityMaps<FlatFieldMetadata>;
 }): ResolvableChartRelationAxis | undefined => {
   if (
+    isMorphOrRelationFlatFieldMetadata(axis.groupByField) &&
+    isDefined(axis.subFieldName)
+  ) {
+    if (axis.subFieldName === 'id') {
+      return buildResolvableChartRelationAxis({
+        dimensionIndex,
+        axis: { groupByField: axis.groupByField },
+        rawResults,
+        flatObjectMetadataMaps,
+        flatFieldMetadataMaps,
+      });
+    }
+    const [name, ...remaining] = axis.subFieldName.split('.');
+    const target = axis.groupByField.relationTargetObjectMetadataId;
+    const nested = Object.values(
+      flatFieldMetadataMaps.byUniversalIdentifier,
+    ).find(
+      (field) => field?.objectMetadataId === target && field.name === name,
+    );
+    if (!isDefined(nested) || remaining.length === 0) {
+      return undefined;
+    }
+    return buildResolvableChartRelationAxis({
+      dimensionIndex,
+      axis: { groupByField: nested, subFieldName: remaining.join('.') },
+      rawResults,
+      flatObjectMetadataMaps,
+      flatFieldMetadataMaps,
+    });
+  }
+  if (
     !isMorphOrRelationFlatFieldMetadata(axis.groupByField) ||
     isDefined(axis.subFieldName)
   ) {

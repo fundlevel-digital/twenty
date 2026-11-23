@@ -17,6 +17,7 @@ export type GraphQLView = {
   type: ViewType;
   key?: ViewKey | null;
   mainGroupByFieldMetadataId?: string | null;
+  mainGroupBySubFieldName?: string | null;
   shouldHideEmptyGroups: boolean;
   shouldDisplayGroupsAsTabs?: boolean | null;
   kanbanColumnWidth?: number | null;

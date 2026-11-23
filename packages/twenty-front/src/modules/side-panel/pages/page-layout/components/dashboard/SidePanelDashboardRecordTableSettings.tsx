@@ -1,3 +1,5 @@
+import { resolveRelatedGroupField } from '@/object-record/record-group/utils/resolveRelatedGroupField';
+import { resolveRecordTableGroupByPath } from '@/page-layout/widgets/record-table/utils/resolveRecordTableGroupByPath';
 import { CommandMenuItemDropdownTrigger } from '@/command-menu/components/CommandMenuItemDropdownTrigger';
 import { CommandMenuItemNumberInput } from '@/command-menu/components/CommandMenuItemNumberInput';
 import { CommandMenuItemSwitch } from '@/command-menu/components/CommandMenuItemSwitch';
@@ -163,12 +165,36 @@ export const SidePanelDashboardRecordTableSettings = () => {
       objectMetadataItemToFind.id === widgetInEditMode?.objectMetadataId,
   );
 
-  const mainGroupByFieldLabel = isDefined(mainGroupByFieldMetadataId)
-    ? (objectMetadataItem?.fields.find(
-        (fieldMetadataItem) =>
-          fieldMetadataItem.id === mainGroupByFieldMetadataId,
-      )?.label ?? t`None`)
-    : t`None`;
+  const relatedGroupBy =
+    isRecordTableConfiguration &&
+    'groupByFieldMetadataIds' in configuration &&
+    configuration.groupByFieldMetadataIds
+      ? resolveRecordTableGroupByPath({
+          objectMetadataId: widgetInEditMode?.objectMetadataId ?? '',
+          objectMetadataItems,
+          fieldMetadataIds: configuration.groupByFieldMetadataIds,
+          subFieldName: configuration.groupBySubFieldName,
+        })
+      : undefined;
+  const selectedRootGroupField = objectMetadataItem?.readableFields.find(
+    (field) => field.id === mainGroupByFieldMetadataId,
+  );
+  const selectedRelatedGroupLabel =
+    selectedRootGroupField && widgetView?.mainGroupBySubFieldName
+      ? resolveRelatedGroupField({
+          field: selectedRootGroupField,
+          subFieldName: widgetView.mainGroupBySubFieldName,
+          objects: objectMetadataItems,
+        })?.label
+      : undefined;
+  const mainGroupByFieldLabel =
+    selectedRelatedGroupLabel ??
+    relatedGroupBy?.label ??
+    (isDefined(mainGroupByFieldMetadataId)
+      ? (objectMetadataItem?.fields.find(
+          (field) => field.id === mainGroupByFieldMetadataId,
+        )?.label ?? t`None`)
+      : t`None`);
 
   const calendarFieldLabel = isDefined(calendarFieldMetadataId)
     ? (objectMetadataItem?.fields.find(
@@ -181,7 +207,8 @@ export const SidePanelDashboardRecordTableSettings = () => {
   }
 
   const hasViewId = isDefined(viewId);
-  const hasGroupBy = isDefined(mainGroupByFieldMetadataId);
+  const hasGroupBy =
+    isDefined(mainGroupByFieldMetadataId) || isDefined(relatedGroupBy);
 
   const selectableItemIds = [
     'record-table-source',
@@ -193,7 +220,7 @@ export const SidePanelDashboardRecordTableSettings = () => {
           ...(isCalendarLayout
             ? ['record-table-calendar-field', 'record-table-calendar-layout']
             : ['record-table-group-by']),
-          ...(!isCalendarLayout && hasGroupBy
+          ...(!isCalendarLayout && hasGroupBy && !isDefined(relatedGroupBy)
             ? ['record-table-hide-empty-groups']
             : []),
           ...(!isCalendarLayout && !hasGroupBy ? ['record-table-limit'] : []),
@@ -274,6 +301,7 @@ export const SidePanelDashboardRecordTableSettings = () => {
                           objectMetadataId={widgetInEditMode.objectMetadataId!}
                           onFieldUpdated={handleFieldUpdated}
                           onFieldCreated={handleFieldCreated}
+                          supportsRelatedFields
                         />
                       </DropdownContent>
                     </DropdownRoot>
@@ -389,23 +417,29 @@ export const SidePanelDashboardRecordTableSettings = () => {
                             currentMainGroupByFieldMetadataId={
                               mainGroupByFieldMetadataId
                             }
+                            selectedRelatedGroupLabel={
+                              selectedRelatedGroupLabel ?? relatedGroupBy?.label
+                            }
+                            supportsRelatedFields
                             isClearable={!isKanbanLayout}
                           />
                         </DropdownContent>
                       </DropdownRoot>
                     </SelectableListItem>
                   )}
-                  {!isCalendarLayout && hasGroupBy && (
-                    <SelectableListItem itemId="record-table-hide-empty-groups">
-                      <CommandMenuItemSwitch
-                        LeftIcon={IconEyeOff}
-                        text={t`Hide empty groups`}
-                        id="record-table-hide-empty-groups"
-                        checked={shouldHideEmptyGroups}
-                        onCheckedChange={handleShouldHideEmptyGroupsChange}
-                      />
-                    </SelectableListItem>
-                  )}
+                  {!isCalendarLayout &&
+                    hasGroupBy &&
+                    !isDefined(relatedGroupBy) && (
+                      <SelectableListItem itemId="record-table-hide-empty-groups">
+                        <CommandMenuItemSwitch
+                          LeftIcon={IconEyeOff}
+                          text={t`Hide empty groups`}
+                          id="record-table-hide-empty-groups"
+                          checked={shouldHideEmptyGroups}
+                          onCheckedChange={handleShouldHideEmptyGroupsChange}
+                        />
+                      </SelectableListItem>
+                    )}
                   {!isCalendarLayout && !hasGroupBy && (
                     <SelectableListItem itemId="record-table-limit">
                       <CommandMenuItemNumberInput

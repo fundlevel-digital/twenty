@@ -2,6 +2,16 @@
 
 - [Influencer Reply Workflow](handoffs/2026-11-23-influencer-reply-workflow.md): active native workflow, verified email-thread lookup, AI drafting correction and first provider draft test.
 
+- [Influencer Enrichment VM Preview](handoffs/2026-11-23-influencer-enrichment-preview.md): copied influencer/contact/social data and a draft containing only a manual trigger.
+
+- [Platform Related Fields And Grouping](handoffs/2026-11-23-platform-related-fields.md): shared record-view/widget grouping, related display fields and nested chart dimensions.
+
+- [Dashboard Relation Grouping Preview](handoffs/2026-11-23-dashboard-relation-grouping.md): single-value relation paths, nested grouping and preview verification.
+
+- [Dashboard Related Fields Preview](handoffs/2026-11-23-dashboard-related-fields-preview.md): related-field picker and synthetic Contracts → Production → Deal filter.
+
+- [Record Table Widget Save Failure](handoffs/2026-11-23-record-table-widget-save.md): duplicate view creation on retry, local fix and verification limits.
+
 - [Better Lists Live Release](handoffs/2026-11-22-better-lists-live-release.md): pinned core deployment, SDK app installation, preserved workspace data and offsite backups.
 
 - [GitHub Profiles Live Release](handoffs/2026-11-22-github-profiles-live-release.md): installed native app, preserved applications, verified defaults/runtime and remaining production OAuth setup.
@@ -40,3 +50,13 @@ Product and operational documentation that belongs to a package remains with tha
 package. Decision records are centralized under this directory.
 
 - [2026-11-22: TwitterAPI.io App And Preview](handoffs/2026-11-22-twitter-analytics.md)
+
+- [2026-11-22: Sunny Preview](handoffs/2026-11-22-sunny-preview.md): live-state clone, isolated runtime, sign-in and verification.
+
+- [Google Channel App Runtime Verification](handoffs/2026-11-22-google-channel-app-verification.md): app-only native channels, two-member messaging/privacy checks and the limits of Google verification.
+
+- [Google Groups App Preview](handoffs/2026-11-22-google-groups-preview.md): installable app, owner-supplied logo, configuration checklist and preview verification.
+
+- [Fundlevel Google Groups Preview](handoffs/2026-11-22-fundlevel-google-groups-preview.md): separate Fundlevel snapshot, completed history import, native inbox views and preserved Sunny setup.
+
+- [Google Groups Live Release](handoffs/2026-11-23-google-groups-live-release.md): merged app installation, preservation checks and Google configuration still required.

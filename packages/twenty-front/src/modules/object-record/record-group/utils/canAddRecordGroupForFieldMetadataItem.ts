@@ -6,5 +6,6 @@ export const canAddRecordGroupForFieldMetadataItem = (
   fieldMetadataItem?: FieldMetadataItem,
 ): fieldMetadataItem is FieldMetadataItem =>
   isDefined(fieldMetadataItem) &&
+  !isDefined(fieldMetadataItem.relatedGroupBy) &&
   isManyToOneRelationField(fieldMetadataItem) &&
   isDefined(fieldMetadataItem.relation?.targetObjectMetadata?.nameSingular);

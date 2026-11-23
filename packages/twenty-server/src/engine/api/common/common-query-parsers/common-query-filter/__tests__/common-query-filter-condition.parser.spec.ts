@@ -1,3 +1,4 @@
+import * as relationJoin from 'src/engine/api/common/common-query-parsers/utils/add-relation-join-alias.util';
 import {
   createWhereExpressionRecorder,
   type RecordedWhereCall,
@@ -14,6 +15,13 @@ import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object
 import { PermissionsException } from 'src/engine/permissions/permissions.exception';
 import { NO_RECORD_READ_RESTRICTIONS } from 'src/engine/permissions/constants/no-record-read-restrictions.constant';
 import { buildQueryBuilder } from 'src/engine/twenty-orm/query-builder/__tests__/workspace-select-query-builder-test-shapes.util';
+
+jest.mock(
+  'src/engine/api/common/common-query-parsers/utils/add-relation-join-alias.util',
+  () => ({
+    addRelationJoinAliasToQueryBuilder: jest.fn(),
+  }),
+);
 
 const createFlatFieldMetadata = (
   overrides: Partial<FlatFieldMetadata>,
@@ -462,5 +470,75 @@ describe('CommonQueryFilterConditionParser', () => {
         ),
       ).toThrow(PermissionsException);
     });
+  });
+});
+
+describe('nested single-record relation filters', () => {
+  const parentField = createFlatFieldMetadata({
+    id: 'parent-field-id',
+    name: 'parent',
+    type: FieldMetadataType.RELATION,
+    universalIdentifier: 'parent-field-universal-id',
+    relationTargetObjectMetadataId: companyObjectMetadata.id,
+    settings: { relationType: RelationType.MANY_TO_ONE },
+  });
+  const objectMetadata = {
+    ...companyObjectMetadata,
+    fieldIds: [...companyObjectMetadata.fieldIds, parentField.id],
+  };
+  const parse = (depth: number) => {
+    const recorder = createWhereExpressionRecorder();
+    const parser = new CommonQueryFilterConditionParser({
+      flatObjectMetadata: objectMetadata,
+      flatFieldMetadataMaps: {
+        ...flatFieldMetadataMaps,
+        byUniversalIdentifier: {
+          ...flatFieldMetadataMaps.byUniversalIdentifier,
+          [parentField.universalIdentifier]: parentField,
+        },
+        universalIdentifierById: {
+          ...flatFieldMetadataMaps.universalIdentifierById,
+          [parentField.id]: parentField.universalIdentifier,
+        },
+      },
+      flatObjectMetadataMaps: {
+        byUniversalIdentifier: {
+          [objectMetadata.universalIdentifier]: objectMetadata,
+        },
+        universalIdentifierById: {
+          [objectMetadata.id]: objectMetadata.universalIdentifier,
+        },
+        universalIdentifiersByApplicationId: {},
+      },
+    });
+    let filter: Record<string, unknown> = { name: { eq: 'Acme' } };
+    for (let step = 0; step < depth; step++) {
+      filter = { parent: filter };
+    }
+    parser.applyFilterEntriesToWhereBrackets({
+      innerQueryBuilder: recorder.whereExpression,
+      outerQueryBuilder,
+      objectNameSingular: 'company',
+      filter,
+    });
+    return recorder.calls;
+  };
+
+  afterEach(() => jest.clearAllMocks());
+
+  it('filters through five relations with distinct aliases for self-relations', () => {
+    const join = jest.mocked(relationJoin.addRelationJoinAliasToQueryBuilder);
+
+    const calls = parse(5);
+
+    expect(join).toHaveBeenCalledTimes(5);
+    expect(new Set(join.mock.calls.map(([args]) => args.alias)).size).toBe(5);
+    expect(JSON.stringify(withNormalizedParameterKeys(calls))).toContain(
+      'Acme',
+    );
+  });
+
+  it('rejects a sixth relation step', () => {
+    expect(() => parse(6)).toThrow('Relation filter nesting deeper than 5 hop');
   });
 });

@@ -1,3 +1,5 @@
+import { useContext } from 'react';
+import { RecordTableWidgetFilterContext } from '@/page-layout/widgets/record-table/components/RecordTableWidgetFilterContext';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { flattenedFieldMetadataItemsSelector } from '@/object-metadata/states/flattenedFieldMetadataItemsSelector';
@@ -91,7 +93,9 @@ export const useFindManyRecordIndexTableParams = (
     objectMetadataItems,
   );
 
+  const widgetFilter = useContext(RecordTableWidgetFilterContext);
   const combinedFilter = combineFilters([
+    widgetFilter ?? {},
     currentFilters,
     recordGroupFilter,
     anyFieldFilter,

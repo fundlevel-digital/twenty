@@ -47,7 +47,10 @@ export const getGroupByExpression = ({
   const shouldUseTimeZone =
     GROUP_BY_DATE_GRANULARITY_THAT_REQUIRE_TIME_ZONE.includes(
       dateGranularity,
-    ) && groupByField.fieldMetadata.type === FieldMetadataType.DATE_TIME;
+    ) &&
+    (isGroupByRelationField(groupByField)
+      ? groupByField.nestedFieldMetadata.type
+      : groupByField.fieldMetadata.type) === FieldMetadataType.DATE_TIME;
 
   const timeZoneIsNotProvided = !isNonEmptyString(groupByField.timeZone);
 

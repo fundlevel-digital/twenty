@@ -17,10 +17,9 @@ import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-m
 import { isMorphOrRelationFlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/utils/is-morph-or-relation-flat-field-metadata.util';
 import { GRAPH_DEFAULT_DATE_GRANULARITY } from 'src/modules/dashboard/chart-data/constants/graph-default-date-granularity.constant';
 
-export type GroupByFieldObject = Record<
-  string,
-  boolean | Record<string, boolean | string | Record<string, boolean | string>>
->;
+export type GroupByFieldObject = {
+  [key: string]: boolean | string | GroupByFieldObject;
+};
 
 type BuildDateGroupByObjectParams = {
   dateGranularity?: ObjectRecordGroupByDateGranularity;
@@ -100,38 +99,19 @@ export const buildGroupByFieldObject = ({
     }
 
     const parts = subFieldName.split('.');
-    const nestedFieldName = parts[0];
-    const nestedSubFieldName = parts[1];
-
-    if (isNestedDateField === true) {
-      const dateGroupByObject = buildDateGroupByObject({
-        dateGranularity,
-        firstDayOfTheWeek,
-        timeZone,
-      });
-
-      return {
-        [fieldMetadata.name]: {
-          [nestedFieldName]: dateGroupByObject,
-        },
-      };
-    }
-
-    if (isDefined(nestedSubFieldName)) {
-      return {
-        [fieldMetadata.name]: {
-          [nestedFieldName]: {
-            [nestedSubFieldName]: true,
-          },
-        },
-      };
-    }
-
-    return {
-      [fieldMetadata.name]: {
-        [nestedFieldName]: true,
-      },
-    };
+    const leaf =
+      isNestedDateField === true
+        ? buildDateGroupByObject({
+            dateGranularity,
+            firstDayOfTheWeek,
+            timeZone,
+          })
+        : true;
+    const nested = parts.reduceRight<boolean | GroupByFieldObject>(
+      (inner, name) => ({ [name]: inner }),
+      leaf,
+    );
+    return { [fieldMetadata.name]: nested };
   }
 
   if (isComposite) {

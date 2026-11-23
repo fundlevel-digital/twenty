@@ -48,7 +48,7 @@ export const RecordBoardColumnNewRecordButton = () => {
     return null;
   }
 
-  if (isRecordBoardCellsNonEditable) {
+  if (isRecordBoardCellsNonEditable || selectFieldMetadataItem.relatedGroupBy) {
     return null;
   }
 

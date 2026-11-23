@@ -2,6 +2,7 @@ import {
   type ObjectRecordGroupByDateGranularity,
   type ObjectRecordOrderByForRelationField,
   type ObjectRecordOrderByForScalarField,
+  type ObjectRecordOrderByWithGroupByDateField,
   type OrderByDirection,
 } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -40,38 +41,25 @@ export const getRelationFieldOrderBy = ({
     });
   }
 
-  const [nestedFieldName, nestedSubFieldName] = groupBySubFieldName.split('.');
-
-  if (isNestedDateField === true || isDefined(dateGranularity)) {
-    return [
-      {
-        [groupByFieldMetadata.name]: {
-          [nestedFieldName]: {
+  const parts = groupBySubFieldName.split('.');
+  const leafFieldName = parts.pop();
+  if (!leafFieldName) {
+    return [];
+  }
+  let nested:
+    | ObjectRecordOrderByForScalarField
+    | ObjectRecordOrderByForRelationField
+    | ObjectRecordOrderByWithGroupByDateField =
+    isNestedDateField === true || isDefined(dateGranularity)
+      ? {
+          [leafFieldName]: {
             orderBy: direction,
             granularity: dateGranularity ?? GRAPH_DEFAULT_DATE_GRANULARITY,
           },
-        },
-      },
-    ];
+        }
+      : { [leafFieldName]: direction };
+  for (const name of parts.reverse()) {
+    nested = { [name]: nested };
   }
-
-  if (!isDefined(nestedSubFieldName)) {
-    return [
-      {
-        [groupByFieldMetadata.name]: {
-          [nestedFieldName]: direction,
-        },
-      },
-    ];
-  }
-
-  return [
-    {
-      [groupByFieldMetadata.name]: {
-        [nestedFieldName]: {
-          [nestedSubFieldName]: direction,
-        },
-      },
-    },
-  ];
+  return [{ [groupByFieldMetadata.name]: nested }];
 };

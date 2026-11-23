@@ -1,3 +1,4 @@
+import { viewPickerMainGroupBySubFieldNameComponentState } from '@/views/view-picker/states/viewPickerMainGroupBySubFieldNameComponentState';
 import { useCallback } from 'react';
 
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
@@ -16,6 +17,10 @@ export const useCloseAndResetViewPicker = () => {
     viewPickerIsPersistingComponentState,
   );
 
+  const setViewPickerMainGroupBySubFieldName = useSetAtomComponentState(
+    viewPickerMainGroupBySubFieldNameComponentState,
+  );
+
   const { closeDropdown } = useCloseDropdown();
   const { recordIndexId } = useRecordIndexContextOrThrow();
 
@@ -23,6 +28,7 @@ export const useCloseAndResetViewPicker = () => {
     const viewPickerDropdownId = getViewPickerDropdownId(recordIndexId);
 
     setViewPickerIsPersisting(false);
+    setViewPickerMainGroupBySubFieldName(null);
     setViewPickerMode('list');
     closeDropdown(`${viewPickerDropdownId}-calendar-field`);
     closeDropdown(`${viewPickerDropdownId}-kanban-field`);
@@ -32,6 +38,7 @@ export const useCloseAndResetViewPicker = () => {
     closeDropdown,
     recordIndexId,
     setViewPickerIsPersisting,
+    setViewPickerMainGroupBySubFieldName,
     setViewPickerMode,
   ]);
 

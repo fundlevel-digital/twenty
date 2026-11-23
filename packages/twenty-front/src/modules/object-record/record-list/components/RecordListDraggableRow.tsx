@@ -1,3 +1,5 @@
+import { recordIndexGroupFieldMetadataItemComponentState } from '@/object-record/record-index/states/recordIndexGroupFieldMetadataComponentState';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSortable } from '@dnd-kit/react/sortable';
 import { styled } from '@linaria/react';
 
@@ -38,6 +40,10 @@ export const RecordListDraggableRow = ({
   index,
   droppableId,
 }: RecordListDraggableRowProps) => {
+  const recordIndexGroupFieldMetadataItem = useAtomComponentStateValue(
+    recordIndexGroupFieldMetadataItemComponentState,
+  );
+
   const { objectMetadataItem } = useRecordIndexContextOrThrow();
   const objectPermissions = useObjectPermissionsForObject(
     objectMetadataItem.id,
@@ -60,10 +66,12 @@ export const RecordListDraggableRow = ({
     type: RECORD_LIST_ROW_DND_TYPE,
     accept: RECORD_LIST_ROW_DND_TYPE,
     data: rowDragData,
-    disabled: !canAccessThroughAllRecordsOrRlsPermission({
-      objectRecordsPermissions: objectPermissions,
-      operationType: 'update',
-    }),
+    disabled:
+      !!recordIndexGroupFieldMetadataItem?.relatedGroupBy ||
+      !canAccessThroughAllRecordsOrRlsPermission({
+        objectRecordsPermissions: objectPermissions,
+        operationType: 'update',
+      }),
     transition: null,
     plugins: DND_KIT_PLUGINS_WITHOUT_OPTIMISTIC,
     feedback: 'clone',

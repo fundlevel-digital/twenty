@@ -44,6 +44,14 @@ export const useRecordTableWidgetFieldCallbacks = ({
             ...widgetViewDraft.viewFields,
             {
               fieldMetadataId: recordField.fieldMetadataItemId,
+              ...(recordField.isCanonical === false
+                ? { id: recordField.id }
+                : {}),
+              isCanonical: recordField.isCanonical,
+              relationTargetFieldMetadataId:
+                recordField.relationTargetFieldMetadataId,
+              relationPathFieldMetadataIds:
+                recordField.relationPathFieldMetadataIds,
               position: recordField.position,
               isVisible: recordField.isVisible,
               size: recordField.size,
