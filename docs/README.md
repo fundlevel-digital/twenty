@@ -1,5 +1,7 @@
 # Twenty Engineering Notes
 
+- [Influencer Enrichment VM Preview](handoffs/2026-11-23-influencer-enrichment-preview.md): copied influencer/contact/social data and a draft containing only a manual trigger.
+
 - [Platform Related Fields And Grouping](handoffs/2026-11-23-platform-related-fields.md): shared record-view/widget grouping, related display fields and nested chart dimensions.
 
 - [Dashboard Relation Grouping Preview](handoffs/2026-11-23-dashboard-relation-grouping.md): single-value relation paths, nested grouping and preview verification.
