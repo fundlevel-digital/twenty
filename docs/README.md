@@ -48,3 +48,5 @@ package. Decision records are centralized under this directory.
 - [Google Groups App Preview](handoffs/2026-11-22-google-groups-preview.md): installable app, owner-supplied logo, configuration checklist and preview verification.
 
 - [Fundlevel Google Groups Preview](handoffs/2026-11-22-fundlevel-google-groups-preview.md): separate Fundlevel snapshot, completed history import, native inbox views and preserved Sunny setup.
+
+- [Google Groups Live Release](handoffs/2026-11-23-google-groups-live-release.md): merged app installation, preservation checks and Google configuration still required.

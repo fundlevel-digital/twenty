@@ -9,5 +9,6 @@ Owner decisions for the Google Workspace shared-channel app.
 | [0003](0003-preview-google-groups-in-fundlevel.md) | 2026-11-22 | Use a separate Fundlevel snapshot for the Google Groups preview and preserve Sunny | accepted |
 | [0004](0004-backfill-all-available-group-mail.md) | 2026-11-22 | Backfill all available mail for the configured Groups in the Fundlevel preview | accepted |
 | [0005](0005-preview-native-group-inbox-views.md) | 2026-11-23 | Preview native Group inbox views using the imported conversations | accepted |
+| [0006](0006-deploy-merged-app-to-live-crm.md) | 2026-11-23 | Deploy the merged Google Groups app to the live Fundlevel workspace | accepted |
 
 Implementation and setup: [App README](../../../packages/twenty-apps/public/google-groups/README.md). Verification: [Preview handoff](../../handoffs/2026-11-22-google-groups-preview.md).
