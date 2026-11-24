@@ -1,11 +1,23 @@
+vi.mock('src/logic-functions/utils/sync-jobs', () => ({
+  enqueueSyncTasks,
+  wakeSyncWorker,
+}));
 import { createHmac } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type RoutePayload } from 'twenty-sdk/define';
 
-const { values, syncActivity, syncNativeEmail } = vi.hoisted(() => ({
+const {
+  values,
+  syncActivity,
+  syncNativeEmail,
+  enqueueSyncTasks,
+  wakeSyncWorker,
+} = vi.hoisted(() => ({
   values: new Map<string, unknown>(),
   syncActivity: vi.fn(),
   syncNativeEmail: vi.fn(),
+  enqueueSyncTasks: vi.fn(),
+  wakeSyncWorker: vi.fn(),
 }));
 vi.mock('twenty-sdk/logic-function', async (importOriginal) => ({
   ...(await importOriginal<typeof import('twenty-sdk/logic-function')>()),
@@ -63,19 +75,43 @@ beforeEach(async () => {
 });
 
 describe('PlusVibe webhook processing', () => {
-  it('parses only the signed raw body and ingests a native email', async () => {
+  it('persists only the signed body before acknowledging delivery', async () => {
     await webhookHandler({
       ...event(),
       body: { email: 'tampered@example.com' },
     });
-    expect(syncNativeEmail).toHaveBeenCalledWith(
+    expect(enqueueSyncTasks).toHaveBeenCalledWith([
       expect.objectContaining({
-        leadEmail: 'lead@example.com',
-        sender: 'sender@example.com',
-        workspaceName: 'Test workspace',
+        kind: 'WEBHOOK',
+        payload: {
+          workspaceId: WORKSPACE_ID,
+          runId: 'webhook',
+          source: JSON.parse(body),
+        },
       }),
-    );
+    ]);
+    expect(syncNativeEmail).not.toHaveBeenCalled();
     expect(syncActivity).not.toHaveBeenCalled();
+  });
+
+  it('saves a signed malformed payload for visible failure instead of exhausting provider retries', async () => {
+    const rawBody = 'not-json';
+    expect(
+      await webhookHandler({
+        ...event(),
+        rawBody,
+        headers: {
+          signature: createHmac('sha256', 'secret')
+            .update(rawBody)
+            .digest('hex'),
+        },
+      }),
+    ).toEqual({ success: true });
+    expect(enqueueSyncTasks).toHaveBeenCalledWith([
+      expect.objectContaining({
+        payload: expect.objectContaining({ source: rawBody }),
+      }),
+    ]);
   });
 
   it('ignores deselected workspaces', async () => {
@@ -106,7 +142,7 @@ describe('PlusVibe webhook processing', () => {
   });
 
   it('retries record failures instead of reporting success', async () => {
-    syncNativeEmail.mockRejectedValueOnce(new Error('Database unavailable'));
+    enqueueSyncTasks.mockRejectedValueOnce(new Error('Database unavailable'));
     await expect(webhookHandler(event())).rejects.toThrow(
       'Database unavailable',
     );

@@ -278,6 +278,32 @@ describe('Twenty record synchronization', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  it('does not overwrite a Person selected while source refresh is in flight', async () => {
+    const id = recordId('lead', 'workspace-1', 'lead-1');
+    records.add(`/rest/plusvibeLeads/${id}`);
+    const selected = recordId('manual-selection');
+    let relation = selected;
+    patch.mockImplementation(
+      async (path: string, fields: Record<string, unknown>) => {
+        if (
+          fields.personId &&
+          !decodeURIComponent(path).includes('personId[is]:NULL')
+        )
+          relation = String(fields.personId);
+      },
+    );
+    await syncLead(
+      { lead_id: 'lead-1', email: 'lead@example.com' },
+      'workspace-1',
+      recordId('automatic-match'),
+      true,
+    );
+    expect(relation).toBe(selected);
+    expect(patch).toHaveBeenCalledWith(expect.stringContaining('filter='), {
+      personId: recordId('automatic-match'),
+    });
+  });
+
   it('creates source Leads once per workspace and links the Person, Campaign and Workspace', async () => {
     const workspaceId = recordId('workspace', 'workspace-1');
     const campaignId = recordId('campaign', 'workspace-1', 'campaign-1');
@@ -446,8 +472,9 @@ it('retains directory Leads without creating People before qualifying email acti
   );
 });
 it('does not create internal employees but still relates an existing employee Person', async () => {
-  const { isInternalPerson } =
-    await import('src/logic-functions/utils/internal-people');
+  const { isInternalPerson } = await import(
+    'src/logic-functions/utils/internal-people'
+  );
   vi.mocked(isInternalPerson).mockResolvedValueOnce(true);
   expect(
     await syncPerson({ email: 'employee@our-company.com' }, 'workspace-1', {

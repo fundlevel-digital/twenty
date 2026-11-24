@@ -1,4 +1,4 @@
-import { RestApiClient } from 'twenty-client-sdk/rest';
+import { createSyncRestClient } from 'src/logic-functions/utils/sync-context';
 
 import { type PlusvibeWorkspace } from 'src/constants/plusvibe';
 import {
@@ -17,9 +17,6 @@ export const syncWorkspace = async (
     isSelected,
   };
   await createRecordIfMissing('plusvibeWorkspaces', id, fields);
-  await new RestApiClient({ runAs: 'application' }).patch(
-    `/rest/plusvibeWorkspaces/${id}`,
-    fields,
-  );
+  await createSyncRestClient().patch(`/rest/plusvibeWorkspaces/${id}`, fields);
   return id;
 };

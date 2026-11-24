@@ -11,10 +11,13 @@ import {
   ACCOUNT_PROVIDER_NAMES,
   getRegistrationKey,
   type PlusvibeRegistration,
+  type PlusvibeImportState,
+  getImportKey,
   SELECTION_KEY,
 } from 'src/constants/plusvibe';
 import { REQUEST_BACKFILL_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 import { canManageApplication } from 'src/logic-functions/utils/require-application-manager';
+import { retryFailedSyncJobs } from 'src/logic-functions/utils/sync-jobs';
 import { startImport } from 'src/logic-functions/utils/start-import';
 
 export const requestBackfillHandler = async (
@@ -69,7 +72,29 @@ export const requestBackfillHandler = async (
         );
     }
   }
-  for (const workspaceId of workspaceIds) await startImport(workspaceId);
+  for (const workspaceId of workspaceIds) {
+    const key = getImportKey(workspaceId);
+    const state = await kv.get<PlusvibeImportState>(key);
+    if (state?.version === 5) {
+      await retryFailedSyncJobs(workspaceId, state.runId);
+      if (
+        state.phase === 'failed' &&
+        ['campaigns', 'leads', 'emails', 'archivedEmails'].includes(
+          state.failedPhase ?? '',
+        )
+      ) {
+        await kv.set(key, {
+          ...state,
+          phase: state.failedPhase,
+          failedPhase: undefined,
+          error: undefined,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+      await retryFailedSyncJobs(workspaceId, 'webhook');
+    }
+    await startImport(workspaceId);
+  }
   return { success: true };
 };
 

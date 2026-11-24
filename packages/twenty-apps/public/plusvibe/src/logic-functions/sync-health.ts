@@ -1,4 +1,4 @@
-import { RestApiClient } from 'twenty-client-sdk/rest';
+import { createSyncRestClient } from 'src/logic-functions/utils/sync-context';
 import { defineLogicFunction } from 'twenty-sdk/define';
 import { kv, Response } from 'twenty-sdk/logic-function';
 import { z } from 'zod';
@@ -98,13 +98,10 @@ export const syncHealthHandler = async (payload: unknown) => {
       { type: typeof value, nonEmpty: isNonEmptyString(value) },
     ]),
   );
-  const native = await new RestApiClient({ runAs: 'application' }).post(
-    '/graphql',
-    {
-      query:
-        '{messages(filter:{source:{eq:PLUSVIBE}}){totalCount} messageThreads(filter:{source:{eq:PLUSVIBE}}){totalCount}}',
-    },
-  );
+  const native = await createSyncRestClient().post('/graphql', {
+    query:
+      '{messages(filter:{source:{eq:PLUSVIBE}}){totalCount} messageThreads(filter:{source:{eq:PLUSVIBE}}){totalCount}}',
+  });
   return {
     campaigns,
     leads,

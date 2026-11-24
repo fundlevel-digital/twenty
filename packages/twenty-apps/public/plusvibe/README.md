@@ -145,8 +145,9 @@ refreshes retain source last-send dates, workspace last-send dates, latest sent
 step, reply count, completion and send evidence. A sent step is not a lifetime
 message count. Partial webhooks preserve these full-source fields.
 
-History jobs are spaced out, and background requests back off on provider rate
-limits. Bodies are converted to plain text and quoted reply history is removed for
+Normal history imports and signed deliveries share a persisted worker lease
+and request pacing. Rate limits save the current work and schedule a later
+attempt; the recurring recovery worker can resume interrupted executions. Bodies are converted to plain text and quoted reply history is removed for
 Twenty’s native email renderer. Signatures and quote-only forwards are preserved. Imported bodies are capped at Twenty's 262,144-character ingestion
 limit so a very large email does not stop the history import. The full original
 remains in PlusVibe. Attachments are not imported yet.
@@ -155,7 +156,7 @@ When PlusVibe leaves sender or lead fields blank, Unibox participants are
 recovered from the email headers. Campaign history without a sender uses an
 existing conversation only when the same workspace, campaign, and lead email have
 one unambiguous sender. Missing or ambiguous sender history is reported as a
-failed email job rather than assigned an invented address.
+preserved in Unresolved Historical Inbox rather than assigned an invented address.
 
 New sends and replies arrive through signed webhooks. HMAC-SHA256 is checked
 against the exact raw body before any message writes. Selected workspace and
@@ -173,13 +174,25 @@ update matching native threads. Existing webhooks retain the label subscriptions
 present when they were created; new PlusVibe label definitions require updating
 the source webhook subscription.
 
-Transient failures use Twenty's `RetryableLogicFunctionError` protocol; a plain
-Error alone does not make its queue retry. Permanent discovery failures are
-marked Failed. Campaign-email job failures are exposed in Apps preferences. Discovery
-can finish while individual email-history jobs are still running, so Apps preferences
-say so. Execution logs provide per-job details. Both current paginated API
-responses and legacy array pages are supported. Legacy lists continue using the
-last record ID until an empty page, with repeated cursors rejected.
+Discovery saves each source record as durable work before advancing its cursor.
+A rejected record is isolated as Failed rather than stopping unrelated records.
+Raw inputs live in private application storage; the app-owned Sync Job object
+contains metadata and sanitized rejected-field diagnostics. Completed inputs are
+released after native record identity readback. A completed platform queue job is
+not treated as proof of a completed import.
+
+Apps preferences show pending and failed work, lead coverage, source email imports
+checked, and recurring recovery status. Discovery can finish while records still
+need importing. Sync Complete requires both completed discovery and no pending
+or failed current-run work. Signed malformed deliveries are saved for diagnosis
+without repeatedly failing the provider endpoint. Both paginated API responses
+and legacy array pages are supported; non-advancing and repeated cursors are
+rejected.
+
+Replaying an existing provider message preserves its native ID, content,
+timestamp and thread. It refreshes source metadata without re-ingesting or
+rewriting message text. Automatic Person linking updates only an empty source
+Lead relation, so a concurrent manual choice is preserved.
 
 **Stop syncing** clears the selected connection’s workspace selection. Queued jobs and deliveries check it before
 processing, and existing CRM records remain. Provider webhooks are retained for
@@ -306,9 +319,10 @@ This prevents a missing sender from terminating a history page or creating a
 creator as one of our inboxes. Unresolved outbound messages use an opaque native
 channel identity rather than an invented email address.
 
-Native REST rate limits retry with bounded backoff before propagating a failed
-message to its job or repair checkpoint. Recovery operators should pace source
-records and inventory existing associations before retrying partial batches.
+Normal background work handles native REST and provider rate limits through
+persisted retries and a shared cooldown. Administrative maintenance operators
+should still pace source records and reconcile actual associations before
+retrying partial batches.
 
 Provider record IDs take precedence over RFC message IDs because distinct
 PlusVibe records can share an RFC ID. Replays reuse an existing native channel
@@ -320,6 +334,8 @@ channel preparation, bounded ingestion, guarded history resumption and paced
 history scheduling are explicit maintenance operations. Resume requires the
 expected current run ID, retains the old checkpoint privately in app KV and
 starts at Unibox history only after directory coverage has been verified.
+`restart-import` instead performs fresh version-5 discovery from campaigns;
+`retry-history-page` preserves an existing failed history cursor and run.
 Enqueued campaign history is not proof that all history has imported.
 
 Public API permissions prohibit native association writes. Existing-message
@@ -335,3 +351,25 @@ identifiers for compatibility. Imports populate the typed values; the shared
 [backfill CLI](../../operations/README.md) fills existing records without provider
 calls or overwriting selections. Review a dry run after installing the updated
 metadata. Source/preview verification does not imply production deployment.
+
+
+## Durable Sync Recovery
+
+The [durable sync handoff](../../../../docs/handoffs/2026-11-24-plusvibe-durable-sync.md)
+tracks deployed code, verified preservation and outstanding recovery separately.
+The worker runs every minute and also schedules continuation deliveries. Its
+conditional lease prevents concurrent workers from spending the import budget.
+Expired Running jobs remain recoverable even when the original queue delivery
+reported Completed or a process stopped before saving its result.
+
+The one-time original-text restoration helper uses private recovery snapshots:
+
+```sh
+python3 scripts/restore-original-message-text.py --private-root /tmp/twenty-plusvibe-sync-fix
+python3 scripts/restore-original-message-text.py --private-root /tmp/twenty-plusvibe-sync-fix --apply
+```
+
+It requires the deployed preservation guard and idle legacy replay jobs. It
+restores only text matching the proven old reply-extraction transformation, uses
+compare-and-set updates to preserve concurrent edits, and verifies readback.
+Original content and credentials remain in the private recovery directory.

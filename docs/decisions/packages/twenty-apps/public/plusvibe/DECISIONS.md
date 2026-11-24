@@ -28,6 +28,9 @@ Lead/history refresh and final pruning remain pending. See the
 | [0015](0015-merge-confirmed-duplicate-into-existing-poc.md) | 2026-11-23 | Merge The Confirmed Duplicate Into The Existing POC | accepted |
 | [0016](0016-senders-are-owned-historical-inboxes.md) | 2026-11-23 | PlusVibe Senders Contains Only Owned Current And Historical Inboxes | accepted |
 | [0017](0017-complete-the-live-sync-repair.md) | 2026-11-23 | Complete The Live Sync And Sender-Data Repair | accepted |
+| [0018](0018-resume-and-verify-live-sync-repair.md) | 2026-11-24 | Resume And Verify The Live Sync Repair | accepted |
+| [0019](0019-require-durable-sync-reliability.md) | 2026-11-24 | Require Durable Sync Reliability | accepted |
+| [0020](0020-harden-and-deploy-normal-sync-recovery.md) | 2026-11-24 | Harden And Deploy Normal Sync Recovery | accepted |
 
 Current setup and implementation: [PlusVibe README](../../../../../../packages/twenty-apps/public/plusvibe/README.md).
 

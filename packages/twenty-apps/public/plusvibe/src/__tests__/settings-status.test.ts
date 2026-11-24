@@ -1,3 +1,15 @@
+vi.mock('src/logic-functions/utils/sync-jobs', () => ({
+  getSyncWorkerHealth: vi.fn(),
+  getSyncSummary: vi.fn(async () => ({
+    pending: 0,
+    failed: 0,
+    completed: 0,
+    sourceLeads: 0,
+    importedLeads: 0,
+    sourceEmails: 0,
+    importedEmails: 0,
+  })),
+}));
 import { beforeEach, expect, it, vi } from 'vitest';
 
 const { values, listConnections, listWorkspaces, findMailConnection } =

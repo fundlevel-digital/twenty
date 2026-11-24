@@ -1,3 +1,4 @@
+import { SYNC_JOB_UNIVERSAL_IDENTIFIER } from 'src/constants/sync';
 import {
   defineApplicationRole,
   STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS,
@@ -35,6 +36,7 @@ export default defineApplicationRole({
     objects: [
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember.universalIdentifier,
+      SYNC_JOB_UNIVERSAL_IDENTIFIER,
       CAMPAIGN_UNIVERSAL_IDENTIFIER,
       ACTIVITY_UNIVERSAL_IDENTIFIER,
       WORKSPACE_UNIVERSAL_IDENTIFIER,

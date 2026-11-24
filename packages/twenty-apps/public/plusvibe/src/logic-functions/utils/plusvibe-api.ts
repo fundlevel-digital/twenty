@@ -1,3 +1,8 @@
+import {
+  isDurableSync,
+  SyncHttpError,
+  getRetryAfterMilliseconds,
+} from 'src/logic-functions/utils/sync-context';
 import { createHash } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import { isNonEmptyString, isObject } from '@sniptt/guards';
@@ -120,7 +125,12 @@ export const plusvibeRequest = async <TData>(
       ...request,
       signal: AbortSignal.timeout(20_000),
     });
-    if (response.status !== 429 || !options.retryRateLimits || attempt >= 3)
+    if (
+      isDurableSync() ||
+      response.status !== 429 ||
+      !options.retryRateLimits ||
+      attempt >= 3
+    )
       break;
     const retryAfter = response.headers.get('retry-after');
     const retryAfterMilliseconds = retryAfter
@@ -136,6 +146,19 @@ export const plusvibeRequest = async <TData>(
     await setTimeout(delayMilliseconds + Math.random() * 1000);
   }
   if (!response.ok) {
+    if (
+      isDurableSync() &&
+      (response.status === 429 || response.status >= 500)
+    ) {
+      const retryAfter = getRetryAfterMilliseconds(
+        response.headers.get('retry-after'),
+      );
+      await response.body?.cancel();
+      throw new SyncHttpError(
+        response.status,
+        Number.isFinite(retryAfter) ? retryAfter : 60_000,
+      );
+    }
     // Provider response bodies can echo credentials or lead data.
     const details =
       response.status === 400

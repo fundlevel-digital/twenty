@@ -1,3 +1,7 @@
+import {
+  getSyncWorkerHealth,
+  getSyncSummary,
+} from 'src/logic-functions/utils/sync-jobs';
 import { getPreferences } from 'src/logic-functions/utils/preferences';
 import { defineLogicFunction, type RoutePayload } from 'twenty-sdk/define';
 import {
@@ -146,7 +150,29 @@ export const settingsStatusHandler = async (
     if (failure?.jobId) jobIds.push(failure.jobId);
   }
   const jobs = jobIds.length > 0 ? await getJobs(jobIds) : [];
+  const coverage = Object.fromEntries(
+    await Promise.all(
+      selectedWorkspaceIds.map(async (workspaceId) => {
+        const state = imports[workspaceId] as PlusvibeImportState | null;
+        return [
+          workspaceId,
+          state ? await getSyncSummary(workspaceId, state.runId) : undefined,
+        ];
+      }),
+    ),
+  );
+  const webhookCoverage = Object.fromEntries(
+    await Promise.all(
+      selectedWorkspaceIds.map(async (workspaceId) => [
+        workspaceId,
+        await getSyncSummary(workspaceId, 'webhook'),
+      ]),
+    ),
+  );
   const status: PlusvibeSettingsStatus = {
+    workerHealth: await getSyncWorkerHealth(),
+    coverage,
+    webhookCoverage,
     isApiKeySet,
     preferences: accounts[0]?.preferences ?? (await getPreferences()),
     accounts,

@@ -1,61 +1,68 @@
 import { randomUUID } from 'node:crypto';
-import { enqueueJobs, getJobs, kv } from 'twenty-sdk/logic-function';
-
+import { kv } from 'twenty-sdk/logic-function';
 import {
-  getEmailFailureKey,
   getImportKey,
+  getEmailFailureKey,
   type PlusvibeImportState,
 } from 'src/constants/plusvibe';
-import { BACKFILL_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import { enqueueSyncTasks, wakeSyncWorker, getSyncSummary } from './sync-jobs';
 
 export const enqueueImportPage = async (
   workspaceId: string,
   state: PlusvibeImportState,
   delayMilliseconds = 2000,
 ) => {
-  const result = await enqueueJobs({
-    logicFunctionUniversalIdentifier: BACKFILL_UNIVERSAL_IDENTIFIER,
-    jobs: [
-      {
-        jobId: `plusvibe-${workspaceId}-${state.runId}-${state.phase}-${state.cursor ?? 'start'}`,
-        payload: {
-          workspaceId,
-          runId: state.runId,
-          phase: state.phase,
-          cursor: state.cursor ?? null,
-        },
+  await enqueueSyncTasks([
+    {
+      kind: 'IMPORT_PAGE',
+      workspaceId,
+      runId: state.runId,
+      identity: [state.phase, state.cursor ?? 'start'],
+      payload: {
+        workspaceId,
+        runId: state.runId,
+        phase: state.phase,
+        cursor: state.cursor ?? null,
       },
-    ],
-    retryLimit: 3,
-    delayMs: delayMilliseconds,
-  });
-  if (!result.enqueued) throw new Error('Could not queue PlusVibe import');
+      delayMilliseconds,
+    },
+  ]);
+  await wakeSyncWorker();
 };
 
 export const startImport = async (workspaceId: string, force = false) => {
-  const current = await kv.get<PlusvibeImportState>(getImportKey(workspaceId));
-  if (
-    current &&
-    !force &&
-    current.version === 4 &&
-    ['campaigns', 'leads', 'emails', 'archivedEmails'].includes(
-      current.phase,
-    ) &&
-    Date.now() - Date.parse(current.updatedAt) < 3_600_000
-  ) {
-    const [job] = await getJobs([
-      `plusvibe-${workspaceId}-${current.runId}-${current.phase}-${current.cursor ?? 'start'}`,
-    ]);
-    if (job && !['COMPLETED', 'FAILED'].includes(job.state)) return;
+  const key = getImportKey(workspaceId);
+  const current = await kv.get<PlusvibeImportState>(key);
+  if (current?.version === 5 && !force) {
+    const summary = await getSyncSummary(workspaceId, current.runId);
+    if (
+      summary.failed > 0 ||
+      summary.pending > 0 ||
+      current.phase !== 'complete'
+    ) {
+      if (current.phase === 'awaitingConnection') {
+        const state: PlusvibeImportState = {
+          ...current,
+          phase: current.resumePhase ?? 'emails',
+          updatedAt: new Date().toISOString(),
+        };
+        await kv.set(key, state);
+        await enqueueImportPage(workspaceId, state);
+      } else if (!['complete', 'failed'].includes(current.phase)) {
+        await enqueueImportPage(workspaceId, current);
+      }
+      await wakeSyncWorker();
+      return;
+    }
   }
   const state: PlusvibeImportState = {
-    version: 4,
+    version: 5,
     runId: randomUUID(),
     phase: 'campaigns',
     processed: 0,
     updatedAt: new Date().toISOString(),
   };
-  await kv.set(getImportKey(workspaceId), state);
+  await kv.set(key, state);
   await kv.delete(getEmailFailureKey(workspaceId));
   await enqueueImportPage(workspaceId, state);
 };

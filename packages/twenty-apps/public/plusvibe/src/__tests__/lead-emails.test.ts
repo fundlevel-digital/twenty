@@ -7,6 +7,8 @@ const {
   enqueueJobs,
   post,
   syncPerson,
+  enqueueSyncTasks,
+  wakeSyncWorker,
 } = vi.hoisted(() => ({
   values: new Map<string, unknown>(),
   plusvibeRequest: vi.fn(),
@@ -14,6 +16,8 @@ const {
   enqueueJobs: vi.fn(),
   post: vi.fn(),
   syncPerson: vi.fn(),
+  enqueueSyncTasks: vi.fn(),
+  wakeSyncWorker: vi.fn(),
 }));
 vi.mock('twenty-sdk/logic-function', async (importOriginal) => ({
   ...(await importOriginal<typeof import('twenty-sdk/logic-function')>()),
@@ -30,7 +34,16 @@ vi.mock('src/logic-functions/utils/plusvibe-api', () => ({ plusvibeRequest }));
 vi.mock('src/logic-functions/utils/native-email', () => ({ syncNativeEmail }));
 vi.mock('src/logic-functions/utils/sync-records', () => ({
   syncPerson,
+  enqueueSyncTasks,
+  wakeSyncWorker,
   recordId: (...parts: string[]) => parts.join(':'),
+}));
+vi.mock('src/logic-functions/utils/sync-jobs', () => ({
+  enqueueSyncTasks,
+  wakeSyncWorker,
+}));
+vi.mock('src/logic-functions/backfill', () => ({
+  sourceIdentity: (source: { id: string }) => source.id,
 }));
 vi.mock('twenty-client-sdk/rest', () => ({
   RestApiClient: class {
@@ -39,7 +52,6 @@ vi.mock('twenty-client-sdk/rest', () => ({
 }));
 
 import {
-  getEmailFailureKey,
   getImportKey,
   getRegistrationKey,
   SELECTION_KEY,
@@ -47,6 +59,7 @@ import {
 import {
   findCampaignSender,
   leadEmailsHandler,
+  processLeadEmails,
 } from 'src/logic-functions/lead-emails';
 
 const INPUT = {
@@ -84,32 +97,33 @@ beforeEach(() => {
 });
 
 describe('Campaign sent-email history', () => {
-  it('clears a recorded email failure when the same history job succeeds', async () => {
-    plusvibeRequest.mockResolvedValue({ data: [EMAIL] });
-    syncNativeEmail.mockRejectedValueOnce(new Error('Unavailable'));
-    await expect(
-      leadEmailsHandler(INPUT, { ...CONTEXT, retryCount: 3 }),
-    ).rejects.toThrow('Unavailable');
-    expect(values.has(getEmailFailureKey(INPUT.workspaceId))).toBe(true);
-    await leadEmailsHandler(INPUT, CONTEXT);
-    expect(values.has(getEmailFailureKey(INPUT.workspaceId))).toBe(false);
-  });
-
-  it('uses an unambiguous sender from the same person, workspace, and campaign', async () => {
+  it('resolves an unambiguous campaign sender from participant connections', async () => {
     plusvibeRequest.mockResolvedValueOnce({
       data: [{ ...EMAIL, eaccount: '', campaign_id: 'campaign-1' }],
     });
     post.mockResolvedValueOnce({
       data: {
         messages: {
-          totalCount: 2,
+          totalCount: 3,
           edges: [
             {
               node: {
                 plusvibeSenderRecord: {
                   emails: { primaryEmail: 'sender@example.com' },
                 },
-                messageParticipants: [{ handle: INPUT.leadEmail }],
+                messageParticipants: {
+                  edges: [{ node: { handle: INPUT.leadEmail } }],
+                },
+              },
+            },
+            {
+              node: {
+                plusvibeSenderRecord: {
+                  emails: { primaryEmail: 'unrelated@example.com' },
+                },
+                messageParticipants: {
+                  edges: [{ node: { handle: 'other@example.com' } }],
+                },
               },
             },
             {
@@ -117,19 +131,22 @@ describe('Campaign sent-email history', () => {
                 plusvibeSenderRecord: {
                   emails: { primaryEmail: 'SENDER@example.com' },
                 },
-                messageParticipants: [{ handle: INPUT.leadEmail }],
+                messageParticipants: {
+                  edges: [{ node: { handle: INPUT.leadEmail } }],
+                },
               },
             },
           ],
         },
       },
     });
-    await expect(leadEmailsHandler(INPUT, CONTEXT)).resolves.toEqual({
-      imported: 1,
-    });
-    expect(syncNativeEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ sender: 'sender@example.com' }),
-    );
+    expect(
+      await findCampaignSender(
+        INPUT.workspaceId,
+        'campaign-1',
+        INPUT.leadEmail,
+      ),
+    ).toBe('sender@example.com');
     expect(post).toHaveBeenCalledWith(
       '/graphql',
       expect.objectContaining({
@@ -153,7 +170,9 @@ describe('Campaign sent-email history', () => {
                 plusvibeSenderRecord: {
                   emails: { primaryEmail: 'first@example.com' },
                 },
-                messageParticipants: [{ handle: INPUT.leadEmail }],
+                messageParticipants: {
+                  edges: [{ node: { handle: INPUT.leadEmail } }],
+                },
               },
             },
             {
@@ -161,7 +180,9 @@ describe('Campaign sent-email history', () => {
                 plusvibeSenderRecord: {
                   emails: { primaryEmail: 'second@example.com' },
                 },
-                messageParticipants: [{ handle: INPUT.leadEmail }],
+                messageParticipants: {
+                  edges: [{ node: { handle: INPUT.leadEmail } }],
+                },
               },
             },
           ],
@@ -185,7 +206,9 @@ describe('Campaign sent-email history', () => {
                 plusvibeSenderRecord: {
                   emails: { primaryEmail: 'first@example.com' },
                 },
-                messageParticipants: [{ handle: INPUT.leadEmail }],
+                messageParticipants: {
+                  edges: [{ node: { handle: INPUT.leadEmail } }],
+                },
               },
             },
           ],
@@ -201,53 +224,54 @@ describe('Campaign sent-email history', () => {
     ).toBeUndefined();
   });
 
-  it('imports campaign sends and queues the next page with its cursor', async () => {
-    plusvibeRequest.mockResolvedValueOnce({
+  it('persists source emails before publishing the next page', async () => {
+    plusvibeRequest.mockResolvedValue({
       data: [EMAIL],
       has_more: false,
       page_trail: 'next',
     });
-    expect(await leadEmailsHandler(INPUT, CONTEXT)).toEqual({ imported: 1 });
-    expect(syncNativeEmail).toHaveBeenCalledWith(
+    expect(await processLeadEmails(INPUT)).toEqual({ discovered: 1 });
+    expect(enqueueSyncTasks).toHaveBeenNthCalledWith(1, [
       expect.objectContaining({
-        externalId: EMAIL.id,
-        direction: 'OUT',
-        leadEmail: INPUT.leadEmail,
+        kind: 'EMAIL',
+        payload: expect.objectContaining({ source: EMAIL, origin: 'campaign' }),
       }),
-    );
-    expect(enqueueJobs).toHaveBeenCalledWith(
+    ]);
+    expect(enqueueSyncTasks).toHaveBeenNthCalledWith(2, [
       expect.objectContaining({
-        jobs: [
-          expect.objectContaining({ payload: { ...INPUT, pageTrail: 'next' } }),
-        ],
+        kind: 'CAMPAIGN_HISTORY',
+        payload: { ...INPUT, pageTrail: 'next', visitedTrails: ['start'] },
       }),
-    );
+    ]);
+    expect(syncNativeEmail).not.toHaveBeenCalled();
   });
-
-  it('ignores deselected workspaces and superseded import runs', async () => {
-    expect(
-      await leadEmailsHandler({ ...INPUT, runId: 'old' }, CONTEXT),
-    ).toEqual({ skipped: true });
-    values.set(SELECTION_KEY, []);
-    expect(await leadEmailsHandler(INPUT, CONTEXT)).toEqual({ skipped: true });
+  it('does not publish another page when saving its source emails fails', async () => {
+    plusvibeRequest.mockResolvedValue({ data: [EMAIL], page_trail: 'next' });
+    enqueueSyncTasks.mockRejectedValueOnce(new Error('Storage unavailable'));
+    await expect(processLeadEmails(INPUT)).rejects.toThrow(
+      'Storage unavailable',
+    );
+    expect(enqueueSyncTasks).toHaveBeenCalledOnce();
+  });
+  it('rejects incomplete or repeated pagination', async () => {
+    plusvibeRequest.mockResolvedValue({ data: [], has_more: true });
+    await expect(processLeadEmails(INPUT)).rejects.toThrow('pagination');
+    plusvibeRequest.mockResolvedValue({ data: [], page_trail: 'current' });
+    await expect(
+      processLeadEmails({ ...INPUT, pageTrail: 'current' }),
+    ).rejects.toThrow('pagination');
+  });
+  it('keeps superseded runs from fetching source history', async () => {
+    expect(await processLeadEmails({ ...INPUT, runId: 'old' })).toEqual({
+      skipped: true,
+    });
     expect(plusvibeRequest).not.toHaveBeenCalled();
   });
-
-  it('uses the worker’s retry protocol for transient failures', async () => {
-    plusvibeRequest.mockRejectedValueOnce(new Error('Rate limited'));
-    await expect(leadEmailsHandler(INPUT, CONTEXT)).rejects.toMatchObject({
-      name: 'RetryableLogicFunctionError',
-    });
-    expect(values.has(getEmailFailureKey(INPUT.workspaceId))).toBe(false);
-  });
-
-  it('records a visible failure after retries are exhausted', async () => {
-    plusvibeRequest.mockRejectedValueOnce(new Error('Unavailable'));
-    await expect(
-      leadEmailsHandler(INPUT, { ...CONTEXT, retryCount: 3 }),
-    ).rejects.toThrow('Unavailable');
-    expect(values.get(getEmailFailureKey(INPUT.workspaceId))).toMatchObject({
-      runId: INPUT.runId,
-    });
+  it('turns old queue deliveries into durable tasks without inline ingestion', async () => {
+    expect(await leadEmailsHandler(INPUT, CONTEXT)).toEqual({ queued: true });
+    expect(enqueueSyncTasks).toHaveBeenCalledWith([
+      expect.objectContaining({ kind: 'CAMPAIGN_HISTORY', payload: INPUT }),
+    ]);
+    expect(plusvibeRequest).not.toHaveBeenCalled();
   });
 });
