@@ -173,6 +173,8 @@ export const plusvibeRequest = async <TData>(
       'api_key',
       'Invalid API key',
     ].filter((field) => details.includes(field));
+    if (isDurableSync())
+      throw new SyncHttpError(response.status, 0, rejectedFields);
     throw new Error(
       `PlusVibe request failed (${response.status})${rejectedFields.length ? `: ${rejectedFields.join(', ')}` : ''}`,
     );

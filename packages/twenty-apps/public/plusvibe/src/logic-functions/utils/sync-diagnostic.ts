@@ -11,7 +11,9 @@ export const describeSyncFailure = (error: unknown, attempts: number) => {
         ? Number(error.message.match(/(?:status|HTTP)[ :]*(\d{3})\b/i)?.[1]) ||
           undefined
         : undefined;
-  const fields = new Set<string>();
+  const fields = new Set<string>(
+    error instanceof SyncHttpError ? error.rejectedFields : [],
+  );
   const codes = new Set<string>();
   const constraints = new Set<string>();
   const inspect = (value: unknown, depth = 0) => {
@@ -67,6 +69,19 @@ export const describeSyncFailure = (error: unknown, attempts: number) => {
       );
       codes.add(issue.code);
     });
+  const reasons: Record<string, string> = {
+    'PlusVibe pagination did not advance': 'SOURCE_CURSOR_DID_NOT_ADVANCE',
+    'PlusVibe campaign email pagination did not advance':
+      'SOURCE_CURSOR_DID_NOT_ADVANCE',
+    'PlusVibe rejected the request': 'PROVIDER_REJECTED_REQUEST',
+    'Saved sync input is missing': 'SAVED_INPUT_MISSING',
+    'Workspace connection changed': 'CONNECTION_CHANGED',
+    'The workspace connection changed': 'CONNECTION_CHANGED',
+    'Source identity did not match the imported record':
+      'RECEIPT_IDENTITY_MISMATCH',
+  };
+  const reason = error instanceof Error ? reasons[error.message] : undefined;
+  if (reason) codes.add(reason);
   const yielded = error instanceof SyncYieldError;
   const transient =
     yielded ||

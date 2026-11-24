@@ -13,6 +13,7 @@ export class SyncHttpError extends Error {
   constructor(
     readonly status: number,
     readonly retryAfterMilliseconds = 0,
+    readonly rejectedFields: string[] = [],
   ) {
     super(`Sync request failed with HTTP ${status}`);
   }

@@ -1,4 +1,7 @@
-vi.mock('node:timers/promises', () => ({ setTimeout: (delay: number) => new Promise<void>((resolve) => globalThis.setTimeout(resolve, delay)) }));
+vi.mock('node:timers/promises', () => ({
+  setTimeout: (delay: number) =>
+    new Promise<void>((resolve) => globalThis.setTimeout(resolve, delay)),
+}));
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RestApiClientError } from 'twenty-client-sdk/rest';
 import {
@@ -92,4 +95,17 @@ describe('Import request budget', () => {
       delayMilliseconds: 900_000,
     });
   });
+});
+
+it('retains provider rejection status and allowlisted fields without losing its diagnostic', () => {
+  expect(
+    describeSyncFailure(new SyncHttpError(400, 0, ['starting_after']), 1),
+  ).toMatchObject({
+    retryable: false,
+    diagnostic: { status: 400, fields: ['starting_after'] },
+  });
+  expect(
+    describeSyncFailure(new Error('PlusVibe pagination did not advance'), 1)
+      .diagnostic.codes,
+  ).toContain('SOURCE_CURSOR_DID_NOT_ADVANCE');
 });

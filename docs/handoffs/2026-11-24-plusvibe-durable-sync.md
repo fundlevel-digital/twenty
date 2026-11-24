@@ -43,8 +43,8 @@ Unresolved owned-inbox attribution remains explicit rather than fabricated.
 
 ## Verification And Deployment
 
-Implementation and runtime verification are in progress. No complete-history
-claim is made. The durable app plan/apply succeeded: 83 creates, 19 updates, zero
+Source implementation is complete; live restoration and reconciliation are in
+progress. No complete-history claim is made. The durable app plan/apply succeeded: 83 creates, 19 updates, zero
 metadata deletions or destructive actions. Source deployment uses the complete
 current app source; the old Mac staging directory lacked helpers already on main.
 The initial Select protocol-value validation failure was corrected before apply;
@@ -55,7 +55,7 @@ checkpoints remain under `/tmp/twenty-plusvibe-sync-fix/` on the owner's Mac.
 Credentials, raw customer rows and message bodies are excluded from this handoff.
 
 
-## Live Preservation Finding And Current Blocker
+## Live Preservation Finding And Restoration
 
 A fresh pre-deployment API inventory found 2,376 native messages and preserved all
 15,814 exported lead IDs and 7,241 selected Person links. All 1,480 original
@@ -70,14 +70,24 @@ use that guard. Native identity verification uses the standard association's
 workspace-prefixed provider ID rather than relying on retained legacy fields.
 
 The old recovery run was paused with private payload backups: 9,871 delayed jobs
-were moved one day out. Two old executions were active then; the last successful
-follow-up read saw one. No zero-active assertion has been obtained. The applied
-durable bundle includes the content-preservation guard. The restoration itself
-has **not run**. The Mac command bridge stopped responding after apply; even a
-connectivity-only command returned `Timed out waiting for client`. The owner confirmed Conductor was open and connected and requested a retry.
-Two subsequent connectivity-only attempts still waited for the client; one
-returned the same timeout. A quit/reopen request is pending while independent
-source verification continues.
+were moved one day out. After intermittent Mac bridge timeouts, connectivity
+returned. The idle guard passed before restoration began. The final idle snapshot
+found **528** changed original texts, all matching the same proven extraction
+transformation. Restoration is running with current-text compare-and-set guards;
+completion and independent verification are still pending at this checkpoint.
+
+The final candidate applied successfully with nine updates, zero creates/deletes.
+A follow-up diagnostic refinement applied 16 function updates, again without
+pruning: provider HTTP 400/401 errors retain their typed HTTP status and
+allowlisted rejected parameter names, and known invariant failures retain stable
+reason codes. Raw provider error bodies remain private. This closes a diagnostic
+gap observed when an old-run discovery task retained only a generic Error.
+
+All 9,871 postponed legacy jobs were backed up again and removed after verifying
+none were active. This prevents their delayed delivery from flooding the repaired
+app. A manager-guarded full version-5 import started at 02:13 UTC with run ID
+`d4388ea2-38fc-4a57-97d7-f28af5b3b316`. The earlier version-5 checkpoint was a
+partial migration; its provenance is not evidence of complete discovery.
 
 The guarded restoration operator is maintained at
 [`restore-original-message-text.py`](../../packages/twenty-apps/public/plusvibe/scripts/restore-original-message-text.py).
@@ -90,33 +100,31 @@ conditioned on the current text and original ID/source; it never upserts records
 
 ## Candidate Verification And Remaining Execution
 
-- 208 app tests across 28 files pass, including concurrent lease acquisition,
+- 210 app tests across 28 files pass, including concurrent lease acquisition,
   expired-lease recovery, retained checkpoints after failed publication,
   indefinite rate-limit recovery, rejection isolation, source identity readback,
   private payload handling and settings completion/failure behavior.
 - Four original-text restoration tests pass. Direct TypeScript, source Oxlint
   and diff whitespace checks pass.
-- The applied core app bundle is verified by the CLI's successful no-prune apply
-  result. No host code was deployed. Runtime worker behavior and complete history
-  import remain unverified because the Mac bridge disconnected.
-- Source refinements after that apply (full-import restart, old-version provenance,
-  cooldown status wording, grouped coverage counts and additional recovery tests) still need the final
-  candidate applied. Do not equate the committed candidate with a fully verified
-  production release.
+- All three app apply results succeeded with no pruning or destructive metadata
+  actions. No host code was deployed.
+- Live worker evidence before the restart: 40 email receipts and 37 discovery
+  tasks completed. A stopped old-run provider page could be fetched successfully
+  by the read-only diagnostic; its original generic error cannot be reconstructed.
+- The final Settings handler executes successfully and returns the validated
+  grouped coverage counts. At 02:17 UTC the fresh run had discovered 66 campaigns
+  and its first 100 leads, advanced into the Leads phase, and had zero failed
+  tasks. Discovery counts are distinct from imported receipt counts.
+- The grouped-query runtime shape was verified live. The platform rejects aliases
+  of the same root resolver, so coverage uses one flat kind/status grouping. The
+  restoration operator similarly sends one mutation root per paced request.
 
-A live coverage diagnostic also exposed a platform constraint: aliases of the
-same root resolver are rejected. The final candidate uses one grouped query
-over kind/status, validates the flat result, and refuses to report zero coverage
-when the result is malformed. Two regression tests cover this contract. The
-restoration operator likewise issues a single mutation root per paced request.
-The grouped query still needs its live result checked after reconnection.
+An independent verifier is scheduled on the Mac to run only after restoration
+reports complete. It checks all original message fields, selected Person links,
+source-lead coverage, sender ownership and duplicate participant direction. Full
+history reconciliation must still wait for the paced background import; no
+full-history completion is claimed by this handoff.
 
-When the bridge returns: stage/apply the final candidate with `--no-prune`, run
-restoration dry-run/apply after the idle guard passes, then independently verify
-all original message fields and Person links. Read the live settings checkpoint
-and invoke manager-only `restart-import` with its expected run ID for a full
-version-5 discovery. Retire the backed-up old-run queue deliveries so their
-one-day postponement does not produce a stale-job burst. Confirm the new worker
-can acquire/release its lease, recover a delivery and import/verify real records.
-Reconcile all source coverage and outstanding failures after the backlog runs;
-no full-history completion is claimed by this handoff.
+Code review: [PR #44](https://github.com/fundlevel-digital/twenty/pull/44), draft
+while live recovery is being verified. Initial implementation commit:
+`76819535b0`.
