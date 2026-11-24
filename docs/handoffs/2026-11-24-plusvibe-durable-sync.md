@@ -43,8 +43,8 @@ Unresolved owned-inbox attribution remains explicit rather than fabricated.
 
 ## Verification And Deployment
 
-Source implementation is complete; live restoration and reconciliation are in
-progress. No complete-history claim is made. The durable app plan/apply succeeded: 83 creates, 19 updates, zero
+Source implementation and original-text restoration are complete; full history
+reconciliation remains in progress. No complete-history claim is made. The durable app plan/apply succeeded: 83 creates, 19 updates, zero
 metadata deletions or destructive actions. Source deployment uses the complete
 current app source; the old Mac staging directory lacked helpers already on main.
 The initial Select protocol-value validation failure was corrected before apply;
@@ -73,8 +73,10 @@ The old recovery run was paused with private payload backups: 9,871 delayed jobs
 were moved one day out. After intermittent Mac bridge timeouts, connectivity
 returned. The idle guard passed before restoration began. The final idle snapshot
 found **528** changed original texts, all matching the same proven extraction
-transformation. Restoration is running with current-text compare-and-set guards;
-completion and independent verification are still pending at this checkpoint.
+transformation. Guarded restoration completed: all 528 bodies were restored,
+and readback of all 1,480 originals found zero text mismatches. A subsequent
+live replay of one restored message returned the same native ID and preserved
+its body, subject, timestamp and thread. The independent audit subsequently passed as recorded below.
 
 The final candidate applied successfully with nine updates, zero creates/deletes.
 A follow-up diagnostic refinement applied 16 function updates, again without
@@ -119,11 +121,46 @@ conditioned on the current text and original ID/source; it never upserts records
   of the same root resolver, so coverage uses one flat kind/status grouping. The
   restoration operator similarly sends one mutation root per paced request.
 
-An independent verifier is scheduled on the Mac to run only after restoration
-reports complete. It checks all original message fields, selected Person links,
-source-lead coverage, sender ownership and duplicate participant direction. Full
-history reconciliation must still wait for the paced background import; no
-full-history completion is claimed by this handoff.
+## Final Independent Audit
+
+At 02:26 UTC, the post-restoration verifier completed successfully:
+
+| Check | Result |
+| --- | --- |
+| Original messages checked | 1,480 |
+| Original content, timestamp or thread differences | 0 |
+| Exported source leads checked | 15,814 |
+| Exported source leads missing in CRM | 0 |
+| CRM source lead records | 15,825 |
+| Previously selected Person links changed | 0 (7,241 protected links) |
+| Native PlusVibe messages | 2,475 |
+| Sender records | 115 |
+| Sender records without verified ownership | 0 |
+| Messages with identical From/To handles | 0 |
+| Explicit unresolved historical inbox attributions | 604 |
+
+The restored-message replay also passed independently: the existing native ID,
+body, subject, timestamp and thread were unchanged after re-ingestion through the
+deployed guard. A hash comparison verified all **165** tracked non-test source
+files in the Mac deployment directory match the committed candidate.
+
+The latest Settings read returned Success: the new run had discovered 66 campaigns
+and 600 leads, advanced its cursor repeatedly, and had zero failed tasks. Its
+600 lead source observations were still pending native receipt processing; the
+existing exported 15,814 leads were independently present already. These are
+different checks and must not be conflated.
+
+Full history reconciliation must still wait for the paced background import;
+no full-history completion is claimed. The 604 unresolved inbox attributions
+remain visible and must be reconciled only with source evidence, never by
+assigning prospect addresses or guessing an owned inbox. If a source task fails,
+its private input and diagnostic remain available for retry. Original idle-run
+payload backups, all three successful deployment results, restoration results,
+the replay result and the independent audit are retained privately on the Mac.
+
+Hindsight recall/retention was unavailable because this cloud workspace lacks
+its private profile. No memory-retention success is claimed; this handoff and the
+linked decision records retain the verified evidence in version control.
 
 Code review: [PR #44](https://github.com/fundlevel-digital/twenty/pull/44), draft
 while live recovery is being verified. Initial implementation commit:

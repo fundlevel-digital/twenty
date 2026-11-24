@@ -18,6 +18,7 @@ Known-case test passes did not establish the requested reliability outcome.
   durable recovery, actionable failure reporting, source-to-CRM completeness
   verification, and committing deployed changes as remaining work.
 - 2026-11-24 Kareem: "Ok fix all dat'"
+- 2026-11-24 Kareem, after a Mac bridge timeout: "It is open and connected—retry"
 - 2026-11-24 Agent: implementing and testing these changes inside the PlusVibe
   application, then deploying through the existing no-prune app workflow.
 

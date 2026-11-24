@@ -281,9 +281,12 @@ Do not claim those errors cleared merely because the replacement page is active.
 ## Durable Pipeline Continuation
 
 The [2026-11-24 durable sync handoff](2026-11-24-plusvibe-durable-sync.md)
-records the subsequent app-only deployment, preservation finding and current
-execution blocker. A fresh inventory proved 304 old texts were rewritten by the
-old replay extractor after the earlier zero-difference checks. The guard is
-fixed in the applied durable bundle; exact snapshot restoration remains pending
-Mac reconnection. Earlier preserved-count snapshots are historical evidence,
-not proof that the later replay left all original text unchanged.
+records the subsequent app-only deployment, durable worker and preservation
+repair. An early inventory found 304 texts changed by the old replay extractor;
+the final idle snapshot found 528, all matching that exact transformation.
+All 528 were restored with guarded updates and zero text mismatches across all
+1,480 originals. A live replay of one restored message preserved its content and
+thread. The 9,871 postponed legacy deliveries were backed up and removed; a fresh
+version-5 import is running. See the newer handoff for current verification and
+remaining full-history reconciliation. Earlier snapshots are historical evidence,
+not proof that the intervening replay left original text unchanged.
