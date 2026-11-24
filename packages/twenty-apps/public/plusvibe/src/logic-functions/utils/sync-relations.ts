@@ -1,4 +1,4 @@
-import { RestApiClient } from 'twenty-client-sdk/rest';
+import { createSyncRestClient } from 'src/logic-functions/utils/sync-context';
 import {
   createRecordIfMissing,
   recordId,
@@ -48,7 +48,7 @@ export const findSourceLeadIds = async (
     personId ? 'MATCHED' : 'UNMATCHED',
   );
   if (leadId) return [leadId];
-  const result = await new RestApiClient({ runAs: 'application' }).post<{
+  const result = await createSyncRestClient().post<{
     data?: {
       plusvibeLeads: {
         edges: { node: { id: string; emails: { primaryEmail: string } } }[];

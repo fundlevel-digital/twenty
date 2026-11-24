@@ -1,248 +1,163 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 const {
   values,
   plusvibeRequest,
-  syncPerson,
-  syncCampaign,
+  enqueueSyncTasks,
   enqueueImportPage,
+  wakeSyncWorker,
   findMailConnection,
-  enqueueLeadEmails,
 } = vi.hoisted(() => ({
   values: new Map<string, unknown>(),
   plusvibeRequest: vi.fn(),
-  syncPerson: vi.fn(),
-  syncCampaign: vi.fn(),
+  enqueueSyncTasks: vi.fn(),
   enqueueImportPage: vi.fn(),
+  wakeSyncWorker: vi.fn(),
   findMailConnection: vi.fn(),
-  enqueueLeadEmails: vi.fn(),
 }));
-vi.mock('twenty-sdk/logic-function', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('twenty-sdk/logic-function')>()),
+vi.mock('twenty-sdk/logic-function', () => ({
   kv: {
-    get: vi.fn(async (key: string) => values.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => {
-      values.set(key, value);
-    }),
+    get: vi.fn(async (key: string) => values.get(key)),
+    set: vi.fn(async (key: string, value: unknown) => values.set(key, value)),
   },
 }));
 vi.mock('src/logic-functions/utils/plusvibe-api', () => ({
   plusvibeRequest,
-  getApiKeyFingerprint: () => 'fingerprint',
+  getApiKeyFingerprint: async () => 'fingerprint',
+}));
+vi.mock('src/logic-functions/utils/sync-jobs', () => ({
+  enqueueSyncTasks,
+  wakeSyncWorker,
 }));
 vi.mock('src/logic-functions/utils/start-import', () => ({
   enqueueImportPage,
 }));
-vi.mock('src/logic-functions/utils/sync-records', () => ({
-  syncPerson,
-  syncCampaign,
+vi.mock('src/logic-functions/utils/native-email', () => ({
+  findMailConnection,
 }));
-
 import {
   getImportKey,
   getRegistrationKey,
   SELECTION_KEY,
 } from 'src/constants/plusvibe';
-vi.mock('src/logic-functions/utils/native-email', () => ({
-  findMailConnection,
-  syncNativeEmail: vi.fn(),
-}));
-vi.mock('src/logic-functions/utils/sync-workspace', () => ({
-  syncWorkspace: vi.fn(),
-}));
-vi.mock('src/logic-functions/lead-emails', () => ({
-  enqueueLeadEmails,
-}));
-
-import { AmbiguousPersonMatchError } from 'src/logic-functions/errors/ambiguous-person-match.error';
-import { backfillHandler } from 'src/logic-functions/backfill';
-
-const WORKSPACE_ID = '65099a0dd96fae8ab61130c0';
-const PAYLOAD = {
-  workspaceId: WORKSPACE_ID,
+import {
+  backfillHandler,
+  processImportPage,
+} from 'src/logic-functions/backfill';
+const INPUT = {
+  workspaceId: 'workspace-1',
   runId: 'run-1',
   phase: 'leads',
   cursor: null,
 };
-const CONTEXT = {
-  workspaceId: 'twenty-workspace',
-  userWorkspaceId: null,
-  workspaceMemberId: null,
-  retryCount: 0,
-  maxRetries: 3,
-};
-
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   values.clear();
-  findMailConnection.mockResolvedValue(undefined);
-  values.set(SELECTION_KEY, [WORKSPACE_ID]);
-  values.set(getRegistrationKey(WORKSPACE_ID), {
-    workspaceName: 'Test',
+  values.set(SELECTION_KEY, [INPUT.workspaceId]);
+  values.set(getRegistrationKey(INPUT.workspaceId), {
+    workspaceName: 'Sales',
     apiKeyFingerprint: 'fingerprint',
   });
-  values.set(getImportKey(WORKSPACE_ID), {
-    runId: 'run-1',
+  values.set(getImportKey(INPUT.workspaceId), {
+    version: 5,
+    runId: INPUT.runId,
     phase: 'leads',
     processed: 0,
   });
+  findMailConnection.mockResolvedValue({ id: 'mail' });
 });
-
-describe('PlusVibe paginated import', () => {
-  it('continues lead discovery when a source Lead needs Person review', async () => {
-    plusvibeRequest.mockResolvedValueOnce({
-      data: [{ _id: 'lead-1', email: 'lead@example.com' }],
-      has_more: false,
-    });
-    syncPerson.mockRejectedValueOnce(new AmbiguousPersonMatchError());
-    expect(await backfillHandler(PAYLOAD, CONTEXT)).toEqual({ success: true });
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'emails',
-      processed: 1,
-    });
-    expect(enqueueLeadEmails).not.toHaveBeenCalled();
-  });
-
-  it('spaces out lead history jobs before starting another discovery page', async () => {
-    findMailConnection.mockResolvedValue({ id: 'connection' });
-    plusvibeRequest.mockResolvedValueOnce({
-      data: [{ email: 'first@example.com' }, { email: 'second@example.com' }],
+describe('Durable provider discovery', () => {
+  it('saves every source row, including invalid rows, before advancing discovery', async () => {
+    const sources = [
+      { _id: 'valid', email: 'lead@example.com' },
+      { _id: 'invalid', email: 'bad-email' },
+    ];
+    plusvibeRequest.mockResolvedValue({
+      data: sources,
       has_more: true,
       next_starting_after: 'next',
     });
-    await backfillHandler(PAYLOAD, CONTEXT);
-    expect(enqueueLeadEmails).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ leadEmail: 'first@example.com' }),
-      2000,
+    await processImportPage(INPUT);
+    expect(enqueueSyncTasks).toHaveBeenCalledWith(
+      sources.map((source) =>
+        expect.objectContaining({
+          kind: 'LEAD',
+          identity: ['leads', source._id],
+          payload: expect.objectContaining({ source }),
+        }),
+      ),
     );
-    expect(enqueueLeadEmails).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ leadEmail: 'second@example.com' }),
-      5000,
-    );
-    expect(enqueueImportPage).toHaveBeenCalledWith(
-      WORKSPACE_ID,
-      expect.objectContaining({ cursor: 'next' }),
-      8000,
-    );
-  });
-
-  it('imports a page and checkpoints its cursor', async () => {
-    plusvibeRequest.mockResolvedValueOnce({
-      data: [{ email: 'lead@example.com', workspace_id: WORKSPACE_ID }],
-      has_more: true,
-      next_starting_after: 'next',
-    });
-    await backfillHandler(PAYLOAD, CONTEXT);
-    expect(syncPerson).toHaveBeenCalledOnce();
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
+    expect(values.get(getImportKey(INPUT.workspaceId))).toMatchObject({
+      processed: 2,
       cursor: 'next',
-      processed: 1,
     });
-    expect(enqueueImportPage).toHaveBeenCalledOnce();
   });
-
-  it('imports the lead directory before conversation history', async () => {
-    findMailConnection.mockResolvedValue({ id: 'connection' });
-    values.set(getImportKey(WORKSPACE_ID), {
-      runId: 'run-1',
-      phase: 'campaigns',
+  it('retains the cursor when saving source records fails', async () => {
+    plusvibeRequest.mockResolvedValue({
+      data: [{ _id: 'lead-1' }],
+      has_more: true,
+      next_starting_after: 'next',
+    });
+    enqueueSyncTasks.mockRejectedValue(new Error('Storage unavailable'));
+    await expect(processImportPage(INPUT)).rejects.toThrow(
+      'Storage unavailable',
+    );
+    expect(values.get(getImportKey(INPUT.workspaceId))).toMatchObject({
       processed: 0,
     });
-    plusvibeRequest.mockResolvedValueOnce({
-      data: [{ id: 'campaign-1', camp_name: 'Outreach', status: 'ACTIVE' }],
-      has_more: false,
-    });
-    await backfillHandler({ ...PAYLOAD, phase: 'campaigns' }, CONTEXT);
-    expect(syncCampaign).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Outreach' }),
-    );
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'leads',
-    });
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'leads',
-    });
-    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
-    await backfillHandler(PAYLOAD, CONTEXT);
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'emails',
-    });
-    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
-    await backfillHandler({ ...PAYLOAD, phase: 'emails' }, CONTEXT);
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'archivedEmails',
-    });
-    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
-    await backfillHandler({ ...PAYLOAD, phase: 'archivedEmails' }, CONTEXT);
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'complete',
-    });
+    expect(enqueueImportPage).not.toHaveBeenCalled();
   });
-
-  it('stops imports for deselected workspaces or superseded runs', async () => {
-    expect(
-      await backfillHandler({ ...PAYLOAD, runId: 'old-run' }, CONTEXT),
-    ).toEqual({ skipped: true });
-    values.set(SELECTION_KEY, []);
-    expect(await backfillHandler(PAYLOAD, CONTEXT)).toEqual({ skipped: true });
-    expect(plusvibeRequest).not.toHaveBeenCalled();
-  });
-
-  it('does not advance the cursor when a CRM write fails', async () => {
-    plusvibeRequest.mockResolvedValueOnce({
-      data: [{ email: 'lead@example.com' }],
-      has_more: true,
-      next_starting_after: 'next',
-    });
-    syncPerson.mockRejectedValueOnce(new Error('Database failed'));
-    await expect(backfillHandler(PAYLOAD, CONTEXT)).rejects.toThrow(
-      'Database failed',
-    );
-    expect(values.get(getImportKey(WORKSPACE_ID))).not.toHaveProperty('cursor');
-  });
-
-  it('recovers a failed next-page enqueue without processing an obsolete page', async () => {
-    plusvibeRequest.mockResolvedValueOnce({
+  it('recovers publication interrupted after checkpoint advancement without fetching the old page again', async () => {
+    plusvibeRequest.mockResolvedValue({
       data: [],
       has_more: true,
       next_starting_after: 'next',
     });
     enqueueImportPage.mockRejectedValueOnce(new Error('Queue unavailable'));
-    await expect(backfillHandler(PAYLOAD, CONTEXT)).rejects.toThrow(
-      'Queue unavailable',
-    );
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      cursor: 'next',
-    });
-    expect(await backfillHandler(PAYLOAD, CONTEXT)).toEqual({ skipped: true });
+    await expect(processImportPage(INPUT)).rejects.toThrow('Queue unavailable');
+    expect(await processImportPage(INPUT)).toEqual({ skipped: true });
     expect(plusvibeRequest).toHaveBeenCalledOnce();
     expect(enqueueImportPage).toHaveBeenLastCalledWith(
-      WORKSPACE_ID,
+      INPUT.workspaceId,
       expect.objectContaining({ cursor: 'next' }),
     );
   });
-
-  it('rejects foreign lead records and a stuck pagination cursor', async () => {
-    plusvibeRequest.mockResolvedValueOnce({
-      data: [{ email: 'lead@example.com', workspace_id: 'foreign' }],
-      has_more: false,
-    });
-    await expect(backfillHandler(PAYLOAD, CONTEXT)).rejects.toThrow('foreign');
-    plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: true });
-    await expect(backfillHandler(PAYLOAD, CONTEXT)).rejects.toThrow(
-      'pagination',
-    );
+  it('discovers all four phases without claiming the separately queued records are imported', async () => {
+    for (const [phase, next] of [
+      ['campaigns', 'leads'],
+      ['leads', 'emails'],
+      ['emails', 'archivedEmails'],
+      ['archivedEmails', 'complete'],
+    ]) {
+      values.set(getImportKey(INPUT.workspaceId), {
+        version: 5,
+        runId: INPUT.runId,
+        phase,
+        processed: 0,
+      });
+      plusvibeRequest.mockResolvedValueOnce({ data: [], has_more: false });
+      await processImportPage({ ...INPUT, phase });
+      expect(values.get(getImportKey(INPUT.workspaceId))).toMatchObject({
+        phase: next,
+      });
+    }
   });
-
-  it('shows a failed import after retries are exhausted', async () => {
-    plusvibeRequest.mockRejectedValueOnce(new Error('Rate limited'));
-    await expect(
-      backfillHandler(PAYLOAD, { ...CONTEXT, retryCount: 3 }),
-    ).rejects.toThrow('Rate limited');
-    expect(values.get(getImportKey(WORKSPACE_ID))).toMatchObject({
-      phase: 'failed',
-    });
+  it('rejects a non-advancing cursor before saving any work', async () => {
+    plusvibeRequest.mockResolvedValue({ data: [], has_more: true });
+    await expect(processImportPage(INPUT)).rejects.toThrow('pagination');
+    expect(enqueueSyncTasks).not.toHaveBeenCalled();
+  });
+  it('does not fetch records for superseded or deselected runs', async () => {
+    await processImportPage({ ...INPUT, runId: 'old' });
+    values.set(SELECTION_KEY, []);
+    await processImportPage(INPUT);
+    expect(plusvibeRequest).not.toHaveBeenCalled();
+  });
+  it('persists legacy queued deliveries instead of starting concurrent imports', async () => {
+    expect(await backfillHandler(INPUT)).toEqual({ queued: true });
+    expect(enqueueSyncTasks).toHaveBeenCalledWith([
+      expect.objectContaining({ kind: 'IMPORT_PAGE', payload: INPUT }),
+    ]);
+    expect(wakeSyncWorker).toHaveBeenCalledOnce();
+    expect(plusvibeRequest).not.toHaveBeenCalled();
   });
 });

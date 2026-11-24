@@ -55,6 +55,7 @@ beforeEach(() => {
     ],
     imports: {
       'workspace-1': {
+        version: 5,
         runId: 'run-1',
         phase: 'complete',
         processed: 50,
@@ -502,4 +503,44 @@ it('saves the email-style creation policy and validates explicit employee domain
   await user.click(screen.getByRole('button', { name: 'Save Domains' }));
   await screen.findByText('Enter valid domains separated by commas.');
   expect(post).toHaveBeenCalledTimes(calls);
+});
+
+describe('Durable sync progress', () => {
+  const counts = {
+    pending: 0,
+    failed: 0,
+    completed: 4,
+    sourceLeads: 2,
+    importedLeads: 2,
+    sourceEmails: 2,
+    importedEmails: 2,
+  };
+  it('does not report complete when discovery finished but imports remain', async () => {
+    status.coverage = { 'workspace-1': { ...counts, pending: 1 } };
+    renderSettings();
+    await screen.findByText(/Importing Email History/);
+    expect(screen.queryByText(/Sync Complete/)).toBeNull();
+  });
+  it('reports saved failures even when platform jobs completed', async () => {
+    status.coverage = { 'workspace-1': { ...counts, failed: 1 } };
+    renderSettings();
+    await screen.findByText(/Sync Needs Attention/);
+    expect(
+      await screen.findByText(
+        'Some source records could not be imported. Retry to resume saved work.',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Sync Complete/)).toBeNull();
+  });
+  it('reports completion only after discovery and saved imports both finish', async () => {
+    status.coverage = { 'workspace-1': counts };
+    renderSettings();
+    expect(await screen.findByText(/Sync Complete/)).toBeTruthy();
+  });
+  it('shows webhook failures alongside discovery coverage', async () => {
+    status.coverage = { 'workspace-1': counts };
+    status.webhookCoverage = { 'workspace-1': { ...counts, failed: 1 } };
+    renderSettings();
+    expect(await screen.findByText(/Sync Needs Attention/)).toBeTruthy();
+  });
 });

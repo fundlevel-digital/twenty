@@ -1,6 +1,6 @@
+import { createSyncRestClient } from 'src/logic-functions/utils/sync-context';
 import freeEmailDomains from 'free-email-domains';
 import psl from 'psl';
-import { RestApiClient } from 'twenty-client-sdk/rest';
 
 import { type PlusvibePreferences } from 'src/constants/preferences';
 import { recordId } from 'src/logic-functions/utils/record-id';
@@ -46,7 +46,7 @@ const readInternalAddresses = async (
   const addresses = new Set<string>();
   let after: string | undefined;
   do {
-    const response = await new RestApiClient({ runAs: 'application' }).post<{
+    const response = await createSyncRestClient().post<{
       data?: Record<string, InternalContactPage>;
       errors?: unknown[];
     }>('/graphql', { query, variables: { ...variables, after } });

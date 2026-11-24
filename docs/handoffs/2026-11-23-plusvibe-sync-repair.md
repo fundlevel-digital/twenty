@@ -145,3 +145,148 @@ a deployment or change the outstanding live-history repair status above.
 Main advanced to `c04a803857` during the push. Integrated that reply-workflow
 commit too, preserving both added documentation indexes; PlusVibe implementation
 was unchanged by this second merge.
+
+
+## 2026-11-24 Live Repair Resumed
+
+Owner continuation: [0018](../decisions/packages/twenty-apps/public/plusvibe/0018-resume-and-verify-live-sync-repair.md).
+The Mac command bridge and maintenance SSH connection work again. The Mac still
+had the old channel-table guard because the earlier delivery had timed out. The
+operator now validates destinations against `core.messageChannel` and the explicit
+workspace ID. Python compilation and a rollback-only preflight passed for all
+1,480 rows. The maintenance transaction then committed all 1,480 associations.
+A separate database readback verified channel, external identity and direction
+against the prepared plan for every original row.
+
+At 00:25 UTC, independent database and API inventories both verified:
+
+- 15,814 exported leads; 15,825 CRM leads; zero missing exported IDs.
+- All 7,241 previously selected Person links unchanged.
+- 1,842 native messages: all 1,480 originals plus all 362 missing source identities.
+- Zero changed original message subjects, text, received timestamps or thread links.
+- 111 owned Sender records, zero unverified Sender records, zero identical From/To handles.
+- 17 preserved messages with unresolved owned-inbox attribution.
+
+The old five-message import batches were reconciled against actual associations
+and marked complete, with the previous checkpoint retained privately. Replaying
+those completed imports is unnecessary. Forty cached reply flags across 870
+conversations disagreed with corrected incoming associations; the API repaired
+those flags after preserving a private before snapshot.
+
+History resumed at 00:25:57 UTC under a new guarded import run. The campaign
+scheduler `queue-history-recovery.py` checkpoints `history-recovery-queue.json`
+and schedules 10,199 distinct source lead addresses with three-second pacing.
+Both files remain in the private Mac recovery directory. Scheduling completion
+must not be described as history import completion.
+
+A campaign job exposed `messageParticipants.some is not a function` in
+`findCampaignSender`. A live API query confirmed the relation needs explicit
+`edges { node { handle } }` selection. The handler and regression fixture now use
+that connection shape, preserving exact recipient matching and ambiguous-sender
+safeguards. All 168 app tests, direct TypeScript and changed-file lint pass.
+The app-only fix deployed successfully with `--no-prune`; its plan/apply reported
+three function checksum updates and zero creates, deletes or destructive actions.
+Host source was not deployed. Campaign jobs that failed before this deployment
+still require replay and verification; the whole history recovery is not yet
+verified complete.
+
+
+### Campaign Recovery And Rate Limits
+
+The exact reproduced sender-lookup failure succeeds after deployment and imports
+four source messages. All 10,199 campaign lead-history jobs were scheduled in 102
+batches. A bounded BullMQ operator selected 77 current-workspace/current-run jobs
+that began before deployment (including one still active) and queued distinct,
+paced replays. It retained their payloads/options privately, reset application
+retry counters, guarded the selection at 200 jobs, and delayed active-job replays
+until the original execution window expired.
+
+At 00:35 UTC the live count had grown to 2,024 messages, 15,825 leads and 115
+Sender records. The 193 unresolved inbox messages at that point are preserved;
+these later counts are ongoing imports, not the earlier completed integrity
+snapshot. Account authentication and native mail connectivity were healthy.
+The main history page nevertheless exhausted retries on Twenty REST HTTP 429.
+The app's native-email retries already back off, but concurrent campaign work
+still exceeded the application's request budget.
+
+A workspace/run-scoped BullMQ pacing operator moved 10,011 remaining delayed
+campaign jobs to fifteen-second spacing with a one-minute cooldown, prioritizing
+the bounded replays. Other applications/workspaces were excluded. This is about
+42 hours of scheduled lead lookups before accounting for execution and additional
+pagination; it is intentionally not a completion estimate. The scheduling Mac
+coordinator has finished; the delayed jobs now live on the server.
+
+The app now exposes administration-only `retry-history-page`, guarded by selected
+workspace, expected run ID and failed email/archive phase. It preserves cursor,
+processed count and run ID, so existing campaign jobs remain valid. A distinct
+short delivery ID avoids retained completed IDs and the 128-character SDK limit.
+If enqueue fails, the old failed checkpoint is restored. Regression tests cover
+run/cursor preservation, superseded runs, wrong phases, scheduling failure and the
+actual enqueue payload/short ID. All 174 tests across 23 files, direct TypeScript
+and changed-file Oxlint pass. The final app-only plan/apply reports six function
+checksum updates, zero creates/deletes/destructive actions.
+
+The first retry attempt updated the checkpoint but its long delivery ID could not
+be queued. After correcting the ID and rollback safeguard, a one-time guarded
+BullMQ delivery restored that missing page job from its existing payload, checking
+that no same-run page was active. Its ID ends in `plusvibe-retry-20261124`.
+The canonical job shown by the settings screen may still show the earlier
+completed delivery until this page advances. Inspect the actual retry delivery
+and checkpoint before issuing another retry. No complete-history claim is made.
+
+Private evidence remains under `/tmp/twenty-plusvibe-sync-fix/recovery/`:
+`database-integrity-verification-2026-11-24.json`,
+`thread-reply-flags-before-2026-11-24.json`, `history-recovery-queue.json`,
+`history-pacing-2026-11-24.json`, `pre-fix-history-replay-scheduled.json`,
+`latest-fixed-history-replay-2026-11-24.json`,
+`native-history-page-requeued-2026-11-24.json`, and
+`history-status-2026-11-24.json`. The original recovery snapshots/checkpoints and
+before-script copies remain private on the Mac. Inspect live job outcomes and
+reconcile outstanding failure markers after the paced jobs run; do not infer
+success from BullMQ's completed state alone because permanent app errors can be
+returned as completed platform deliveries.
+
+
+### 00:48 UTC Recovery Handoff
+
+The exact fixed campaign replay returned `SUCCESS` and imported four messages.
+At 00:44 UTC, native messages reached 2,149 with 309 unresolved inbox attributions
+and 115 Sender records. The four additional Sender addresses were independently
+matched to explicit `eaccount` fields in the original private provider export;
+they are historical accounts absent from the current directory. Their verified
+evidence was added to the private verifier registry after retaining its old copy.
+
+Sixty-eight current-run campaign jobs were already waiting/prioritized rather
+than delayed and therefore escaped the initial pacing pass. A bounded operator
+moved those jobs to delays, skipping active jobs. A final pass merged all 10,043
+remaining delayed campaign jobs into a single fifteen-second schedule, so the two
+pacing schedules do not overlap. Its aggregate checkpoint is
+`final-history-pacing-2026-11-24.json`; the selected waiting-job before data remains
+in `waiting-history-pacing-2026-11-24.json` on the Mac. The native history page
+retry is now independently confirmed **active**. The campaign coordinator is
+finished; queued server jobs do not depend on the Mac staying awake.
+
+The final deployed retry fix uses short IDs within the SDK's 128-character limit
+and restores the failed checkpoint on enqueue failure. All 174 tests, direct
+TypeScript and changed-file lint pass; the final app plan/apply again had zero
+metadata deletions/destructive actions. Source changes and this handoff are local
+workspace changes; no new PR or main merge has been performed in this continuation.
+
+Full history completion, exhausted campaign-job retries and final unresolved
+inbox attribution still need reconciliation after the long-running jobs execute.
+A recorded `emailFailures` marker was still present before the final pacing pass.
+Do not claim those errors cleared merely because the replacement page is active.
+
+
+## Durable Pipeline Continuation
+
+The [2026-11-24 durable sync handoff](2026-11-24-plusvibe-durable-sync.md)
+records the subsequent app-only deployment, durable worker and preservation
+repair. An early inventory found 304 texts changed by the old replay extractor;
+the final idle snapshot found 528, all matching that exact transformation.
+All 528 were restored with guarded updates and zero text mismatches across all
+1,480 originals. A live replay of one restored message preserved its content and
+thread. The 9,871 postponed legacy deliveries were backed up and removed; a fresh
+version-5 import is running. See the newer handoff for current verification and
+remaining full-history reconciliation. Earlier snapshots are historical evidence,
+not proof that the intervening replay left original text unchanged.

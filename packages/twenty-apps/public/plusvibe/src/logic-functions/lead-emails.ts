@@ -1,17 +1,12 @@
-import { createHash } from 'node:crypto';
+import { createSyncRestClient } from 'src/logic-functions/utils/sync-context';
 import { defineLogicFunction } from 'twenty-sdk/define';
 import {
-  enqueueJobs,
   kv,
-  RetryableLogicFunctionError,
   type LogicFunctionExecutionContext,
 } from 'twenty-sdk/logic-function';
 import { z } from 'zod';
-import { isNonEmptyString } from '@sniptt/guards';
-import { RestApiClient } from 'twenty-client-sdk/rest';
 
 import {
-  getEmailFailureKey,
   getImportKey,
   getRegistrationKey,
   SELECTION_KEY,
@@ -19,8 +14,11 @@ import {
   type PlusvibeRegistration,
 } from 'src/constants/plusvibe';
 import { LEAD_EMAILS_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
-import { mapEmail } from 'src/logic-functions/utils/map-email';
-import { syncNativeEmail } from 'src/logic-functions/utils/native-email';
+import {
+  enqueueSyncTasks,
+  wakeSyncWorker,
+} from 'src/logic-functions/utils/sync-jobs';
+import { sourceIdentity } from 'src/logic-functions/backfill';
 import { PAGE_SCHEMA } from 'src/logic-functions/utils/page-schema';
 import { plusvibeRequest } from 'src/logic-functions/utils/plusvibe-api';
 import { recordId } from 'src/logic-functions/utils/sync-records';
@@ -30,6 +28,7 @@ const INPUT_SCHEMA = z.object({
   runId: z.string(),
   leadEmail: z.email(),
   pageTrail: z.string().optional(),
+  visitedTrails: z.array(z.string()).optional(),
 });
 type LeadEmailInput = z.infer<typeof INPUT_SCHEMA>;
 
@@ -38,14 +37,16 @@ export const findCampaignSender = async (
   campaignId: string,
   leadEmail: string,
 ) => {
-  const response = await new RestApiClient({ runAs: 'application' }).post<{
+  const response = await createSyncRestClient().post<{
     data?: {
       messages: {
         totalCount: number;
         edges: {
           node: {
             plusvibeSenderRecord: { emails: { primaryEmail: string } } | null;
-            messageParticipants: { handle: string }[];
+            messageParticipants: {
+              edges: { node: { handle: string } }[];
+            };
           };
         }[];
       };
@@ -53,7 +54,7 @@ export const findCampaignSender = async (
     errors?: unknown[];
   }>('/graphql', {
     query:
-      'query($workspace:UUID!,$campaign:UUID!,$lead:String!){messages(filter:{source:{eq:PLUSVIBE},plusvibeWorkspaceRecordId:{eq:$workspace},plusvibeCampaignRecordId:{eq:$campaign},messageParticipants:{handle:{ilike:$lead}}},first:1000){totalCount edges{node{plusvibeSenderRecord{emails{primaryEmail}} messageParticipants{handle}}}}}',
+      'query($workspace:UUID!,$campaign:UUID!,$lead:String!){messages(filter:{source:{eq:PLUSVIBE},plusvibeWorkspaceRecordId:{eq:$workspace},plusvibeCampaignRecordId:{eq:$campaign},messageParticipants:{handle:{ilike:$lead}}},first:1000){totalCount edges{node{plusvibeSenderRecord{emails{primaryEmail}} messageParticipants{edges{node{handle}}}}}}}',
     variables: {
       workspace: recordId('workspace', workspaceId),
       campaign: recordId('campaign', workspaceId, campaignId),
@@ -68,8 +69,8 @@ export const findCampaignSender = async (
   const senders = new Set(
     messages.edges
       .filter(({ node }) =>
-        node.messageParticipants.some(
-          ({ handle }) =>
+        node.messageParticipants.edges.some(
+          ({ node: { handle } }) =>
             handle.trim().toLowerCase() === leadEmail.toLowerCase(),
         ),
       )
@@ -83,29 +84,27 @@ export const findCampaignSender = async (
   return senders.size === 1 ? [...senders][0] : undefined;
 };
 
-const getLeadEmailsJobId = (input: LeadEmailInput) => {
-  const identity = createHash('sha256')
-    .update(JSON.stringify(input))
-    .digest('hex');
-  return `plusvibe-mail-${identity}`;
-};
-
 export const enqueueLeadEmails = async (
   input: LeadEmailInput,
   delayMilliseconds = 2000,
 ) => {
-  await enqueueJobs({
-    logicFunctionUniversalIdentifier: LEAD_EMAILS_UNIVERSAL_IDENTIFIER,
-    jobs: [{ jobId: getLeadEmailsJobId(input), payload: input }],
-    delayMs: delayMilliseconds,
-    retryLimit: 3,
-  });
+  await enqueueSyncTasks([
+    {
+      kind: 'CAMPAIGN_HISTORY',
+      workspaceId: input.workspaceId,
+      runId: input.runId,
+      identity: [
+        input.leadEmail.trim().toLowerCase(),
+        input.pageTrail ?? 'start',
+      ],
+      payload: input,
+      delayMilliseconds,
+    },
+  ]);
+  await wakeSyncWorker();
 };
 
-export const leadEmailsHandler = async (
-  payload: unknown,
-  context: LogicFunctionExecutionContext,
-) => {
+export const processLeadEmails = async (payload: unknown) => {
   const input = INPUT_SCHEMA.parse(payload);
   if (
     !((await kv.get<string[]>(SELECTION_KEY)) ?? []).includes(input.workspaceId)
@@ -119,88 +118,59 @@ export const leadEmailsHandler = async (
     getRegistrationKey(input.workspaceId),
   );
   if (!registration) return { skipped: true };
-  try {
-    const query: Record<string, string> = {
+  const page = await plusvibeRequest('/unibox/campaign-emails', PAGE_SCHEMA, {
+    query: {
       workspace_id: input.workspaceId,
       lead: input.leadEmail,
-    };
-    if (input.pageTrail) query.page_trail = input.pageTrail;
-    const page = await plusvibeRequest('/unibox/campaign-emails', PAGE_SCHEMA, {
-      query,
-      retryRateLimits: true,
-    });
-    const campaignSenders = new Map<string, string | undefined>();
-    for (const value of page.data) {
-      const source = z
-        .object({
-          eaccount: z.string().nullish(),
-          email_account_name: z.string().nullish(),
-          sender_email: z.string().nullish(),
-          campaign_id: z.string().nullish(),
-          camp_id: z.string().nullish(),
-        })
-        .parse(value);
-      const campaignId = source.campaign_id ?? source.camp_id;
-      let fallbackSender: string | undefined;
-      if (
-        ![source.eaccount, source.email_account_name, source.sender_email].some(
-          isNonEmptyString,
-        ) &&
-        isNonEmptyString(campaignId)
-      ) {
-        if (!campaignSenders.has(campaignId))
-          campaignSenders.set(
-            campaignId,
-            await findCampaignSender(
-              input.workspaceId,
-              campaignId,
-              input.leadEmail,
-            ),
-          );
-        fallbackSender = campaignSenders.get(campaignId);
-      }
-      await syncNativeEmail(
-        mapEmail(
-          value,
-          input.workspaceId,
-          registration.workspaceName,
-          input.leadEmail,
-          true,
-          fallbackSender,
-        ),
-      );
-    }
-    const next = page.page_trail ?? page.next_starting_after;
-    if (next && next === input.pageTrail)
-      throw new Error('PlusVibe campaign email pagination did not advance');
-    if (next) await enqueueLeadEmails({ ...input, pageTrail: next });
-    const failure = await kv.get<{ jobId?: string }>(
-      getEmailFailureKey(input.workspaceId),
-    );
-    if (failure?.jobId === getLeadEmailsJobId(input))
-      await kv.delete(getEmailFailureKey(input.workspaceId));
-    return { imported: page.data.length };
-  } catch (error) {
-    if (error instanceof z.ZodError || context.retryCount >= context.maxRetries)
-      await kv.set(getEmailFailureKey(input.workspaceId), {
+      ...(input.pageTrail ? { page_trail: input.pageTrail } : {}),
+    },
+    retryRateLimits: true,
+  });
+  const next = page.page_trail ?? page.next_starting_after;
+  if (
+    (page.has_more && !next) ||
+    (next &&
+      (next === input.pageTrail || (input.visitedTrails ?? []).includes(next)))
+  )
+    throw new Error('PlusVibe campaign email pagination did not advance');
+  await enqueueSyncTasks(
+    page.data.map((source) => ({
+      kind: 'EMAIL',
+      workspaceId: input.workspaceId,
+      runId: input.runId,
+      identity: ['campaign', sourceIdentity(source)],
+      payload: {
+        workspaceId: input.workspaceId,
         runId: input.runId,
-        failedAt: new Date().toISOString(),
-        jobId: getLeadEmailsJobId(input),
-      });
-    if (
-      !(error instanceof z.ZodError) &&
-      context.retryCount < context.maxRetries
-    )
-      throw new RetryableLogicFunctionError(
-        error instanceof Error ? error.message : 'PlusVibe email import failed',
-      );
-    throw error;
-  }
+        source,
+        leadEmail: input.leadEmail,
+        origin: 'campaign',
+      },
+    })),
+  );
+  if (next)
+    await enqueueLeadEmails({
+      ...input,
+      pageTrail: next,
+      visitedTrails: [
+        ...(input.visitedTrails ?? []),
+        input.pageTrail ?? 'start',
+      ],
+    });
+  return { discovered: page.data.length };
+};
+
+export const leadEmailsHandler = async (
+  payload: unknown,
+  _context?: LogicFunctionExecutionContext,
+) => {
+  await enqueueLeadEmails(INPUT_SCHEMA.parse(payload));
+  return { queued: true };
 };
 
 export default defineLogicFunction({
   universalIdentifier: LEAD_EMAILS_UNIVERSAL_IDENTIFIER,
   name: 'plusvibe-lead-emails',
-  timeoutSeconds: 300,
+  timeoutSeconds: 60,
   handler: leadEmailsHandler,
 });

@@ -7,6 +7,8 @@ const { wait, fetchRequest } = vi.hoisted(() => ({
 }));
 vi.mock('node:timers/promises', () => ({ setTimeout: wait }));
 
+import { withSyncContext } from 'src/logic-functions/utils/sync-context';
+import { describeSyncFailure } from 'src/logic-functions/utils/sync-diagnostic';
 import { plusvibeRequest } from 'src/logic-functions/utils/plusvibe-api';
 
 const SCHEMA = z.object({ data: z.array(z.string()) });
@@ -85,4 +87,25 @@ describe('PlusVibe rate limits', () => {
     expect(fetchRequest).toHaveBeenCalledOnce();
     expect(wait).not.toHaveBeenCalled();
   });
+});
+
+it('keeps the durable provider HTTP status and rejected field while discarding echoed values', async () => {
+  fetchRequest.mockResolvedValueOnce(
+    Response.json(
+      {
+        error: 'starting_after is required',
+        value: 'private@example.com secret',
+      },
+      { status: 400 },
+    ),
+  );
+  const error = await withSyncContext(Date.now() + 60_000, () =>
+    plusvibeRequest('/unibox/emails', SCHEMA, OPTIONS),
+  ).catch((error) => error);
+  const failure = describeSyncFailure(error, 1);
+  expect(failure).toMatchObject({
+    retryable: false,
+    diagnostic: { status: 400, fields: ['starting_after'] },
+  });
+  expect(JSON.stringify(failure)).not.toMatch(/private@example.com|secret/);
 });

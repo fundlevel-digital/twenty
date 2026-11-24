@@ -85,6 +85,24 @@ export const PlusvibeSettings = () => {
   const [error, setError] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
 
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setInterval(() => {
+      loadPlusvibeStatus()
+        .then((result) => {
+          if (!cancelled) setStatus(result);
+        })
+        .catch(() => {
+          if (!cancelled)
+            setError(t('Could not refresh sync status. Try again.'));
+        });
+    }, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
+
   const loadStatus = async () => {
     const result = await loadPlusvibeStatus();
     setStatus(result);
@@ -222,8 +240,8 @@ export const PlusvibeSettings = () => {
   };
   const isConnected = Boolean(
     accountStatus?.isApiKeySet &&
-    accountStatus.isMailConnected &&
-    !accountStatus.hasAccountError,
+      accountStatus.isMailConnected &&
+      !accountStatus.hasAccountError,
   );
   const hasSelection = (accountStatus?.selectedWorkspaceIds.length ?? 0) > 0;
 
@@ -282,6 +300,25 @@ export const PlusvibeSettings = () => {
             {error}
           </InlineBanner>
         )}
+        {status?.workerHealth?.nextAttemptAt &&
+          Date.parse(status.workerHealth.nextAttemptAt) > Date.now() + 5000 && (
+            <InlineBanner status="warning" layout="compact">
+              {t(
+                'Sync is waiting for the API limit to reset. Saved work will resume automatically.',
+              )}
+            </InlineBanner>
+          )}
+        {status?.workerHealth &&
+          Object.values(status.coverage ?? {}).some(
+            (value) => value.pending > 0,
+          ) &&
+          !(Date.parse(status.workerHealth.nextAttemptAt ?? '') > Date.now()) &&
+          Date.now() - Date.parse(status.workerHealth.lastActivityAt) >
+            480_000 && (
+            <InlineBanner status="error" layout="compact">
+              {t('Sync Has Stalled. Saved Work Is Preserved. Retry to Resume.')}
+            </InlineBanner>
+          )}
         {accountStatus?.hasAccountError && (
           <InlineBanner status="error" layout="compact">
             {t(
@@ -462,6 +499,9 @@ export const PlusvibeSettings = () => {
                   {(accountStatus?.workspaces ?? []).map((workspace) => {
                     const selected = workspaceIds.includes(workspace._id);
                     const importState = status.imports[workspace._id];
+                    const coverage = status.coverage?.[workspace._id];
+                    const webhookCoverage =
+                      status.webhookCoverage?.[workspace._id];
                     return (
                       <Card.Content
                         key={workspace._id}
@@ -475,20 +515,55 @@ export const PlusvibeSettings = () => {
                             <span>{workspace.name}</span>
                             {importState && (
                               <StyledHint>
-                                {importState.phase === 'complete'
-                                  ? t(
-                                      'Contact discovery complete; email history may still be importing',
-                                    )
-                                  : importState.phase === 'failed'
-                                    ? t('Import failed. Retry the import.')
-                                    : importState.phase === 'awaitingConnection'
-                                      ? t('Reconnect PlusVibe to continue')
-                                      : t('Import in progress')}
+                                {coverage &&
+                                (coverage.failed > 0 ||
+                                  (webhookCoverage?.failed ?? 0) > 0)
+                                  ? t('Sync Needs Attention')
+                                  : importState.phase === 'complete' &&
+                                      importState.version === 5 &&
+                                      coverage?.pending === 0 &&
+                                      coverage.completed > 0
+                                    ? t('Sync Complete')
+                                    : importState.phase === 'complete'
+                                      ? t('Importing Email History')
+                                      : importState.phase === 'failed'
+                                        ? t('Import failed. Retry the import.')
+                                        : importState.phase ===
+                                            'awaitingConnection'
+                                          ? t('Reconnect PlusVibe to continue')
+                                          : t('Import in progress')}
                                 {' · '}
-                                {importState.processed} {t('records processed')}
+                                {importState.processed}{' '}
+                                {t('Source Records Discovered')}
                               </StyledHint>
                             )}
-                            {status.emailFailures?.[workspace._id] &&
+                            {coverage && (
+                              <StyledHint>
+                                {t('Lead Coverage')}: {coverage.importedLeads}/
+                                {coverage.sourceLeads}
+                                {' · '}
+                                {t('Email History Checked')}:{' '}
+                                {coverage.importedEmails}/
+                                {coverage.sourceEmails}
+                                {' · '}
+                                {t('Pending')}: {coverage.pending}
+                                {' · '}
+                                {t('Failed')}:{' '}
+                                {coverage.failed +
+                                  (webhookCoverage?.failed ?? 0)}
+                              </StyledHint>
+                            )}
+                            {coverage &&
+                              (coverage.failed > 0 ||
+                                (webhookCoverage?.failed ?? 0) > 0) && (
+                                <InlineBanner status="error" layout="compact">
+                                  {t(
+                                    'Some source records could not be imported. Retry to resume saved work.',
+                                  )}
+                                </InlineBanner>
+                              )}
+                            {!coverage &&
+                              status.emailFailures?.[workspace._id] &&
                               status.emailFailures[workspace._id]?.runId ===
                                 importState?.runId && (
                                 <StyledHint>

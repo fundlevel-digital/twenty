@@ -49,6 +49,8 @@ export type PlusvibeImportState = {
     | 'complete'
     | 'failed';
   failedPhase?: string;
+  visitedCursors?: string[];
+  resumePhase?: 'emails' | 'archivedEmails';
   error?: string;
   cursor?: string;
   processed: number;
@@ -63,7 +65,23 @@ export type PlusvibeAccountStatus = {
   workspaces: PlusvibeWorkspace[];
   selectedWorkspaceIds: string[];
 };
+export type PlusvibeSyncCoverage = {
+  pending: number;
+  failed: number;
+  completed: number;
+  sourceLeads: number;
+  importedLeads: number;
+  sourceEmails: number;
+  importedEmails: number;
+};
 export type PlusvibeSettingsStatus = {
+  workerHealth?: {
+    lastActivityAt: string;
+    leaseExpiresAt?: string | null;
+    nextAttemptAt?: string | null;
+  };
+  coverage?: Record<string, PlusvibeSyncCoverage>;
+  webhookCoverage?: Record<string, PlusvibeSyncCoverage>;
   preferences?: PlusvibePreferences;
   accounts?: PlusvibeAccountStatus[];
   jobs?: {

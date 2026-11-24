@@ -151,15 +151,48 @@ describe('Native PlusVibe emails', () => {
     post.mockResolvedValue({
       data: {
         messageChannelMessageAssociations: {
-          edges: [{ node: { messageChannelId: existing.id } }],
+          edges: [
+            {
+              node: {
+                messageChannelId: existing.id,
+                messageId: 'native-message-1',
+              },
+            },
+          ],
         },
       },
     });
     listMessageChannels.mockResolvedValue([existing]);
-    await syncNativeEmail(EMAIL);
-    expect(ingestMessages).toHaveBeenCalledWith(
-      expect.objectContaining({ messageChannelId: existing.id }),
+    get.mockImplementation(async (path: string) =>
+      path.startsWith('/rest/messages/')
+        ? {
+            data: {
+              message: {
+                id: 'native-message-1',
+                messageThreadId: 'original-thread',
+                text: 'Original untouched body',
+              },
+            },
+          }
+        : { data: { messageThread: CURRENT_THREAD } },
     );
+    const result = await syncNativeEmail({
+      ...EMAIL,
+      text: 'Different replay body',
+    });
+    expect(result).toMatchObject({
+      messageId: 'native-message-1',
+      messageThreadId: 'original-thread',
+    });
+    expect(ingestMessages).not.toHaveBeenCalled();
+    for (const [path, fields] of patch.mock.calls) {
+      if (path === '/rest/messages/native-message-1') {
+        expect(fields).not.toHaveProperty('text');
+        expect(fields).not.toHaveProperty('subject');
+        expect(fields).not.toHaveProperty('receivedAt');
+        expect(fields).not.toHaveProperty('messageThreadId');
+      }
+    }
     expect(updateMessageChannel).not.toHaveBeenCalled();
   });
   it('preserves a reply with no resolvable inbox without inventing a recipient or sender record', async () => {

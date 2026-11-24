@@ -1,8 +1,12 @@
+import {
+  pacedFetch,
+  createSyncRestClient,
+} from 'src/logic-functions/utils/sync-context';
 import { getLeadOutreachFields } from 'src/logic-functions/utils/lead-outreach';
 import { normalizeEnumValue } from 'src/utils/enum-fields';
 import { isNonEmptyString } from '@sniptt/guards';
 import { CoreApiClient } from 'twenty-client-sdk/core';
-import { RestApiClient, RestApiClientError } from 'twenty-client-sdk/rest';
+import { RestApiClientError } from 'twenty-client-sdk/rest';
 import { kv } from 'twenty-sdk/logic-function';
 import { z } from 'zod';
 
@@ -19,7 +23,7 @@ import {
 import { recordId } from 'src/logic-functions/utils/record-id';
 export { recordId } from 'src/logic-functions/utils/record-id';
 
-const restClient = () => new RestApiClient({ runAs: 'application' });
+const restClient = () => createSyncRestClient();
 
 const CAMPAIGN_STATUS_SCHEMA = z
   .enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'ARCHIVED', 'OTHER'])
@@ -97,7 +101,7 @@ export const syncPerson = async (
     if (isNonEmptyString(mappedId) && (await findRecord('people', mappedId)))
       return linkPerson(mappedId);
   }
-  const client = new CoreApiClient({ runAs: 'application' });
+  const client = new CoreApiClient({ runAs: 'application', fetch: pacedFetch });
   const matches = new Set<string>();
   let cursor: string | undefined;
   do {
@@ -262,6 +266,7 @@ export const syncLead = async (
     ...links,
   });
   if (created) return id;
+  delete links.personId;
   await restClient().patch(`/rest/plusvibeLeads/${id}`, {
     ...(isFullLeadRecord
       ? sourceFields
@@ -275,6 +280,13 @@ export const syncLead = async (
         }),
     ...links,
   });
+  if (personId) {
+    const filter = encodeURIComponent(`and(id[eq]:${id},personId[is]:NULL)`);
+    // A manual selection made after lookup must win over automatic linking.
+    await restClient().patch(`/rest/plusvibeLeads?filter=${filter}&fields=id`, {
+      personId,
+    });
+  }
   return id;
 };
 

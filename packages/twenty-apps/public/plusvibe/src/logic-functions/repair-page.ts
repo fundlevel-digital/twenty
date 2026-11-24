@@ -1,3 +1,4 @@
+import { retryFailedSyncJobs } from 'src/logic-functions/utils/sync-jobs';
 import { defineLogicFunction } from 'twenty-sdk/define';
 import { kv } from 'twenty-sdk/logic-function';
 import { RestApiClientError } from 'twenty-client-sdk/rest';
@@ -9,7 +10,10 @@ import {
   getEmailFailureKey,
   type PlusvibeImportState,
 } from 'src/constants/plusvibe';
-import { enqueueImportPage } from 'src/logic-functions/utils/start-import';
+import {
+  startImport,
+  enqueueImportPage,
+} from 'src/logic-functions/utils/start-import';
 import { enqueueLeadEmails } from 'src/logic-functions/lead-emails';
 import { canManageApplication } from 'src/logic-functions/utils/require-application-manager';
 import { plusvibeRequest } from 'src/logic-functions/utils/plusvibe-api';
@@ -39,7 +43,9 @@ export const repairPageHandler = async (payload: unknown) => {
         'prepare-unresolved-channel',
         'register-owned-inboxes',
         'ingest-emails',
+        'restart-import',
         'resume-history',
+        'retry-history-page',
         'enqueue-lead-history',
       ]),
       cursor: z.string().optional(),
@@ -57,13 +63,45 @@ export const repairPageHandler = async (payload: unknown) => {
   )
     throw new Error('Workspace is not selected');
   if (
+    input.operation === 'restart-import' ||
     input.operation === 'resume-history' ||
+    input.operation === 'retry-history-page' ||
     input.operation === 'enqueue-lead-history'
   ) {
     const key = getImportKey(input.workspaceId);
     const current = await kv.get<PlusvibeImportState>(key);
     if (!current || current.runId !== input.expectedRunId)
       throw new Error('Import run changed; inspect the current checkpoint');
+    if (input.operation === 'restart-import') {
+      await kv.set(`${key}:before-restart:${current.runId}`, current);
+      await startImport(input.workspaceId, true);
+      return kv.get<PlusvibeImportState>(key);
+    }
+    if (input.operation === 'retry-history-page') {
+      if (
+        current.phase !== 'failed' ||
+        (current.failedPhase !== 'emails' &&
+          current.failedPhase !== 'archivedEmails')
+      )
+        throw new Error('Only a failed history page can be retried');
+      await kv.set(`${key}:before-page-retry:${current.runId}`, current);
+      const state: PlusvibeImportState = {
+        ...current,
+        phase: current.failedPhase,
+        failedPhase: undefined,
+        error: undefined,
+        updatedAt: new Date().toISOString(),
+      };
+      await kv.set(key, state);
+      try {
+        await retryFailedSyncJobs(input.workspaceId, current.runId);
+        await enqueueImportPage(input.workspaceId, state);
+      } catch (error) {
+        await kv.set(key, current);
+        throw error;
+      }
+      return state;
+    }
     if (input.operation === 'enqueue-lead-history') {
       const emails = [...new Set(input.leadEmails ?? [])];
       for (const [index, leadEmail] of emails.entries())
